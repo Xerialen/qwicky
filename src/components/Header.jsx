@@ -28,9 +28,9 @@ export default function Header({
             </div>
             <div>
               <h1 className="font-display font-bold text-lg text-white">
-                {tournament.name || 'TOURNAMENT ADMIN'}
+                QWICKY
               </h1>
-              <p className="text-xs text-qw-muted -mt-0.5">QUAKEWORLD</p>
+              <p className="text-xs text-qw-muted -mt-0.5">tournament admin tools - by Xerial</p>
             </div>
           </div>
 
