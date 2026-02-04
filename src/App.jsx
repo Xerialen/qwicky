@@ -520,10 +520,10 @@ function App() {
       />
 
       {/* Status Bar */}
-      <div className="fixed bottom-0 left-0 right-0 bg-qw-panel border-t border-qw-border py-2 px-4 flex items-center justify-between text-xs font-mono text-qw-muted z-30" style={{ boxShadow: 'inset 0 1px 0 rgba(255, 177, 0, 0.1)' }}>
+      <div className="fixed bottom-0 left-0 right-0 bg-qw-panel border-t border-qw-border py-2 px-4 flex items-center justify-between text-xs font-mono text-qw-muted z-30">
         <div className="flex items-center gap-4">
           <span className="flex items-center gap-2">
-            <span className="w-2 h-2 bg-qw-win" style={{ boxShadow: '0 0 8px rgba(0, 255, 136, 0.8)' }}></span>
+            <span className="w-2 h-2 rounded-full bg-qw-win"></span>
             <span className="text-qw-text">{tournament.name || 'NEW_TOURNAMENT'}</span>
           </span>
           <span className="text-qw-accent">|</span>
@@ -534,7 +534,6 @@ function App() {
           <span><span className="text-qw-win">{stats.completed}</span>/<span className="text-qw-text">{stats.matches}</span> MATCHES</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-qw-accent">//</span>
           <span>QW_ADMIN</span>
           <span className="text-qw-blue">v0.4</span>
         </div>
