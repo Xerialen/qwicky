@@ -1,149 +1,124 @@
-# QW Tournament Admin - Wiki Generator
+# QuakeWorld Tournament Admin
 
-A QuakeWorld tournament administration tool that fetches tournament data from a Google Sheets API and generates Liquipedia-compatible MediaWiki markup.
+A React-based tournament administration application with full support for multiple divisions, each with their own teams, schedules, standings, and playoff brackets.
 
 ## Features
 
-- **Live Data Fetching**: Pulls tournament data from Google Sheets via Apps Script API
-- **Standings View**: Display team standings with wins, losses, map differential
-- **Schedule View**: Group stage and playoff match schedules with detailed map scores
-- **Player Statistics**: Individual player performance metrics
-- **Team Management**: View team rosters and information
-- **Wiki Export**: Generate professional MediaWiki markup for:
-  - Standings tables (GroupTableStart format)
-  - Match lists (MatchMaps format)
-  - Playoff brackets (4SE, 8SE, 16SE, 32SE bracket templates)
-  - Player statistics tables
-  - Combined full tournament pages
+- **Multi-Division Support**: Create multiple divisions (e.g., Div 1, Div 2, Pro, Amateur)
+- **Per-Division Settings**: Each division has its own format, teams, and rules
+- **Flexible Formats**: Group stage Bo1/3/5/7, separate playoff formats (QF/SF/Final)
+- **Team Management**: Add teams individually or bulk import
+- **Schedule Generation**: Auto-generate group stage or add matches manually
+- **Results Import**: Fetch from API or import JSON files
+- **Auto Standings**: Calculated automatically from results
+- **Playoff Brackets**: Visual bracket with auto-updating scores
+- **Wiki Export**: Generate MediaWiki markup for each division
+- **Save/Load**: Full tournament backup and restore
 
-## Quick Start
+## Structure
 
-1. **Install dependencies**:
-   ```bash
-   npm install
-   ```
-
-2. **Configure API URL**:
-   Copy `.env.example` to `.env` and set your Google Apps Script URL:
-   ```
-   VITE_API_BASE_URL=https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec
-   ```
-
-3. **Start development server**:
-   ```bash
-   npm run dev
-   ```
-
-4. **Build for production**:
-   ```bash
-   npm run build
-   ```
-
-## API Endpoints
-
-The Google Apps Script API should provide these endpoints via query parameter `?endpoint=`:
-
-- `standings` - Team standings array
-- `players` - Player statistics array
-- `groupGames` - Group stage matches
-- `playoffGames` - Playoff matches
-- `teams` - Team information
-- `scheduleConfig` - Schedule configuration
-
-### Expected Data Formats
-
-**Standings**:
-```json
-[
-  { "#": 1, "Team": "TeamName", "Games": "3-0", "Maps": "9-2", "Diff": "+7" }
-]
+```
+Tournament
+├── Name, Mode, Dates
+├── Division 1
+│   ├── Format Settings (groups, playoffs, points)
+│   ├── Teams
+│   ├── Schedule
+│   ├── Standings (auto-calculated)
+│   ├── Bracket
+│   └── Wiki Export
+├── Division 2
+│   └── ... (own teams, schedule, etc.)
+└── Division 3...
 ```
 
-**Players**:
-```json
-[
-  { "Rank": 1, "Player": "PlayerName", "Maps Played": 12, "Avg Frags": 45.5, "Win Rate": 0.75, "Avg Eff": 0.65, "Avg Dmg": 5200 }
-]
+## Workflow
+
+1. **Tournament Info** → Set tournament name, mode, dates
+2. **Create Divisions** → Add divisions with their own format settings
+3. **For each Division**:
+   - **Setup** → Configure groups, playoff format, points system
+   - **Teams** → Add teams (single or bulk)
+   - **Schedule** → Generate or manually add matches
+   - **Results** → Import game results
+   - **Standings** → View auto-calculated tables
+   - **Bracket** → Configure playoff bracket
+   - **Wiki** → Export to MediaWiki format
+
+## Setup
+
+```bash
+npm install
+npm run dev
 ```
-
-**Games (Group/Playoff)**:
-```json
-[
-  {
-    "round": "Quarter Final",
-    "teamA": "Team1",
-    "teamB": "Team2", 
-    "mapsWonA": "2",
-    "mapsWonB": "1",
-    "played": 1,
-    "date": "2024-01-15",
-    "maps": [
-      { "mapName": "dm2", "teamAFrags": 150, "teamBFrags": 120, "gameUrl": "https://..." }
-    ]
-  }
-]
-```
-
-**Teams**:
-```json
-[
-  { "Team Name": "Full Team Name", "Team Tag": "TAG", "Players": "player1, player2, player3" }
-]
-```
-
-## Wiki Export Templates
-
-The wiki generator outputs code compatible with Liquipedia's QuakeWorld templates:
-
-- `{{GroupTableStart}}` / `{{GroupTableSlot}}` / `{{GroupTableEnd}}`
-- `{{MatchList}}` / `{{MatchMaps}}`
-- `{{4SEBracket}}`, `{{8SEBracket}}`, `{{16SEBracket}}`, `{{32SEBracket}}`
-- `{{BracketMatchSummary}}`
-- `{{TeamAbbr}}`, `{{Abbr}}`
 
 ## Project Structure
 
 ```
 src/
+├── App.jsx                    # Main app with division state
 ├── components/
-│   ├── division/
-│   │   └── DivisionWiki.jsx    # Main wiki generator
-│   ├── Header.jsx
-│   ├── StandingsView.jsx
-│   ├── ScheduleView.jsx
-│   ├── PlayersView.jsx
-│   ├── TeamsView.jsx
-│   ├── WikiExport.jsx
-│   ├── LoadingSpinner.jsx
-│   └── ErrorMessage.jsx
-├── hooks/
-│   └── useTournamentData.js    # Data fetching hooks
-├── services/
-│   ├── api.js                  # API client
-│   └── dataTransformer.js      # Data transformation layer
+│   ├── Header.jsx             # Navigation with division dropdown
+│   ├── TournamentInfo.jsx     # Basic tournament info
+│   ├── DivisionManager.jsx    # Create/manage divisions
+│   ├── DivisionView.jsx       # Division sub-tab container
+│   ├── DataManager.jsx        # Save/Load/Reset
+│   └── division/
+│       ├── DivisionSetup.jsx      # Format & rules
+│       ├── DivisionTeams.jsx      # Team management
+│       ├── DivisionSchedule.jsx   # Match schedule
+│       ├── DivisionResults.jsx    # Import results
+│       ├── DivisionStandings.jsx  # Group tables
+│       ├── DivisionBracket.jsx    # Playoff bracket
+│       └── DivisionWiki.jsx       # Wiki export
 ├── utils/
-│   ├── matchLogic.js           # Match parsing utilities
-│   ├── statsLogic.js           # Statistics calculation
-│   └── wikiExport.js           # Wiki generation helpers
-├── App.jsx
-├── main.jsx
-└── index.css
+│   └── matchLogic.js          # Parsing utilities
+└── hooks/
+    └── useLocalStorage.js
 ```
 
-## Customization
+## Format Settings Per Division
 
-### Changing the API Source
+**Group Stage:**
+- Number of groups
+- Teams per group
+- Series format (Bo1/3/5/7)
+- Teams advancing to playoffs
+- Points for Win/Draw/Loss
 
-To use a different data source, modify `src/services/api.js` to match your API structure, then update `src/services/dataTransformer.js` to transform the data into the expected division format.
+**Playoffs:**
+- Quarter Finals format
+- Semi Finals format
+- Grand Final format
+- 3rd Place match (optional)
 
-### Modifying Wiki Output
+## API Integration
 
-The main wiki generation logic is in `src/components/division/DivisionWiki.jsx`. This file contains generators for:
-- Standings tables
-- Match lists
-- Brackets (4, 8, 16, 32 team single elimination)
-- Double elimination brackets
+For API fetching, your proxy should provide:
+```
+GET /api/game/:gameId
+```
 
-## Credits
+Returning:
+```json
+{
+  "teams": ["Team A", "Team B"],
+  "date": "2024-01-15 20:00",
+  "map": "dm3",
+  "mode": "4on4",
+  "team_stats": {
+    "Team A": { "frags": 150 },
+    "Team B": { "frags": 120 }
+  }
+}
+```
 
-Built for the QuakeWorld community. Wiki templates designed for Liquipedia compatibility.
+## Tech Stack
+
+- React 18 + Vite
+- Tailwind CSS
+- localStorage persistence
+
+## License
+
+MIT

@@ -1,0 +1,838 @@
+// src/components/division/DivisionWiki.jsx
+import React, { useState, useMemo } from 'react';
+import { calculateStats, generateWikiTable } from '../../utils/statsLogic';
+import { unicodeToAscii } from '../../utils/matchLogic';
+
+function getTeamInfo(teams, teamName) {
+  const team = teams.find(t => t.name === teamName);
+  return team || { name: teamName, tag: '', country: '', players: '' };
+}
+
+function calculateStandings(schedule, division) {
+  const standings = {};
+  const isPlayAll = (division.groupStageType || 'bestof') === 'playall';
+  const pointsWin = division.pointsWin ?? 3;
+  const pointsLoss = division.pointsLoss ?? 0;
+  const groupMatches = schedule.filter(m => m.round === 'group' && m.maps?.length > 0);
+
+  groupMatches.forEach(match => {
+    const { team1, team2, maps, group } = match;
+    [team1, team2].forEach(t => {
+      if (!standings[t]) standings[t] = { 
+        name: t, group: group || 'A', played: 0, points: 0, 
+        mapsWon: 0, mapsLost: 0, matchesWon: 0, matchesLost: 0
+      };
+    });
+
+    let t1 = 0, t2 = 0;
+    maps.forEach(m => {
+      if (m.score1 > m.score2) { 
+        t1++; 
+        standings[team1].mapsWon++; 
+        standings[team2].mapsLost++;
+        if (isPlayAll) {
+          standings[team1].points += pointsWin;
+          standings[team2].points += pointsLoss;
+        }
+      } else if (m.score2 > m.score1) { 
+        t2++; 
+        standings[team2].mapsWon++; 
+        standings[team1].mapsLost++;
+        if (isPlayAll) {
+          standings[team2].points += pointsWin;
+          standings[team1].points += pointsLoss;
+        }
+      }
+    });
+
+    if (t1 > 0 || t2 > 0) {
+      standings[team1].played++; standings[team2].played++;
+      if (t1 > t2) { 
+        standings[team1].matchesWon++;
+        standings[team2].matchesLost++;
+        if (!isPlayAll) {
+          standings[team1].points += pointsWin;
+          standings[team2].points += pointsLoss;
+        }
+      } else if (t2 > t1) { 
+        standings[team2].matchesWon++;
+        standings[team1].matchesLost++;
+        if (!isPlayAll) {
+          standings[team2].points += pointsWin;
+          standings[team1].points += pointsLoss;
+        }
+      }
+    }
+  });
+
+  return Object.values(standings).sort((a, b) => 
+    b.points - a.points || 
+    (b.mapsWon - b.mapsLost) - (a.mapsWon - a.mapsLost) || 
+    b.mapsWon - a.mapsWon
+  );
+}
+
+// Generate Liquipedia GroupTableStart format
+function generateStandingsWiki(standings, teams, division, options) {
+  const groups = {};
+  standings.forEach(t => { 
+    const g = t.group || 'A'; 
+    if (!groups[g]) groups[g] = []; 
+    groups[g].push(t); 
+  });
+
+  let wiki = '';
+
+  Object.entries(groups).sort().forEach(([groupName, gs]) => {
+    const info = options.advanceCount ? `Top ${options.advanceCount} advance to Playoffs.` : '';
+    
+    wiki += `{{GroupTableStart|${options.title || division.name} - Group ${groupName}|width=100%|finished=|date=|info=${info}}}\n`;
+    wiki += `{{GroupTableColHeader|Team|games=1|maps=1|diff=1}}\n`;
+    
+    gs.forEach((t, i) => {
+      const teamInfo = getTeamInfo(teams, t.name);
+      const cleanName = unicodeToAscii(t.name).trim();
+      const diff = t.mapsWon - t.mapsLost;
+      const diffStr = diff > 0 ? `+${diff}` : `${diff}`;
+      
+      // Determine background based on position and advanceCount
+      let bg = 'stay';
+      if (i < (options.advanceCount || 2)) bg = 'up';
+      else if (i < (options.advanceCount || 2) + 2) bg = 'stayup';
+      else if (i >= gs.length - 2) bg = 'staydown';
+      
+      const players = teamInfo.players || '';
+      const flag = teamInfo.country || 'eu';
+      
+      wiki += `{{GroupTableSlot|{{TeamAbbr|link=false|${cleanName}|${players}|flag=${flag}}}|place=${i + 1}|win_m=${t.matchesWon}|lose_m=${t.matchesLost}|win_g=${t.mapsWon}|lose_g=${t.mapsLost}|diff=${diffStr}|bg=${bg}}}\n`;
+    });
+    
+    wiki += `{{GroupTableEnd}}\n\n`;
+  });
+  
+  return wiki;
+}
+
+// Generate Liquipedia MatchList format
+function generateMatchListWiki(schedule, teams, division, options) {
+  const groupMatches = schedule.filter(m => m.round === 'group' && m.maps?.length > 0);
+  if (!groupMatches.length) return '';
+
+  // Group matches by week/date
+  const weeks = {};
+  groupMatches.forEach(m => {
+    const weekKey = m.date || 'TBD';
+    if (!weeks[weekKey]) weeks[weekKey] = [];
+    weeks[weekKey].push(m);
+  });
+
+  let wiki = `{{MatchList\n|width=100%\n|title=Detailed Results\n|uncollapsed-maps=false\n\n`;
+  
+  let matchNum = 1;
+  Object.entries(weeks).sort((a, b) => a[0].localeCompare(b[0])).forEach(([weekDate, matches], weekIdx) => {
+    matches.forEach((match, matchIdx) => {
+      const team1Info = getTeamInfo(teams, match.team1);
+      const team2Info = getTeamInfo(teams, match.team2);
+      const cleanTeam1 = unicodeToAscii(match.team1).trim();
+      const cleanTeam2 = unicodeToAscii(match.team2).trim();
+      
+      // Calculate series score
+      let s1 = 0, s2 = 0;
+      (match.maps || []).forEach(map => {
+        if (map.score1 > map.score2) s1++;
+        else if (map.score2 > map.score1) s2++;
+      });
+      
+      const winner = s1 > s2 ? 1 : s2 > s1 ? 2 : '';
+      
+      // Add week title for first match of each week
+      const titleLine = matchIdx === 0 ? `|title=Week ${weekIdx + 1}\n|date=${weekDate} 23:59 {{Abbr/CET}}\n` : '';
+      
+      wiki += `|match${matchNum}={{MatchMaps\n`;
+      if (titleLine) wiki += titleLine;
+      wiki += `|player1={{Abbr|${cleanTeam1}|${team1Info.players || ''}}}|player1flag=${team1Info.country || 'eu'}\n`;
+      wiki += `|player2={{Abbr|${cleanTeam2}|${team2Info.players || ''}}}|player2flag=${team2Info.country || 'eu'}\n`;
+      wiki += `|winner=${winner}\n`;
+      wiki += `|games1=${s1} |games2=${s2}\n`;
+      wiki += `|details={{BracketMatchSummary\n`;
+      wiki += `|date=\n`;
+      
+      // Add individual maps
+      (match.maps || []).forEach((map, mapIdx) => {
+        const mapWinner = map.score1 > map.score2 ? 1 : map.score2 > map.score1 ? 2 : '';
+        const mapName = (map.map || '').toUpperCase();
+        wiki += `|map${mapIdx + 1}win=${mapWinner}|map${mapIdx + 1}=${mapName}|map${mapIdx + 1}p1frags=${map.score1 || ''}|map${mapIdx + 1}p2frags=${map.score2 || ''}|map${mapIdx + 1}p1lineup=|map${mapIdx + 1}p2lineup=\n`;
+      });
+      
+      wiki += `}}\n}}\n\n`;
+      matchNum++;
+    });
+  });
+  
+  wiki += `}}\n`;
+  return wiki;
+}
+
+// Generate Liquipedia bracket format for playoffs
+function generateBracketWiki(bracket, schedule, teams, division, options) {
+  if (!bracket?.winners) return '';
+  
+  const teamCount = bracket.teamCount || 4;
+  const isDoubleElim = bracket.format === 'double';
+  
+  // Route to appropriate generator based on team count
+  if (isDoubleElim) {
+    return generateDoubleElimBracket(bracket, schedule, teams, division, options);
+  }
+  
+  if (teamCount >= 32) {
+    return generate32SEBracket(bracket, schedule, teams, division, options);
+  } else if (teamCount >= 16) {
+    return generate16SEBracket(bracket, schedule, teams, division, options);
+  } else if (teamCount >= 8) {
+    return generate8SEBracket(bracket, schedule, teams, division, options);
+  } else {
+    return generate4SEBracket(bracket, schedule, teams, division, options);
+  }
+}
+
+// Helper functions for bracket generation
+function getMatchResultHelper(team1, team2, schedule) {
+  if (!team1 || !team2) return { maps: [], s1: 0, s2: 0 };
+  
+  const match = schedule.find(m => 
+    (m.team1 === team1 && m.team2 === team2) ||
+    (m.team1 === team2 && m.team2 === team1)
+  );
+  
+  if (!match?.maps?.length) return { maps: [], s1: 0, s2: 0 };
+  
+  let s1 = 0, s2 = 0;
+  const isNormal = match.team1 === team1;
+  
+  match.maps.forEach(map => {
+    if (isNormal) {
+      if (map.score1 > map.score2) s1++; 
+      else if (map.score2 > map.score1) s2++;
+    } else {
+      if (map.score2 > map.score1) s1++; 
+      else if (map.score1 > map.score2) s2++;
+    }
+  });
+  
+  return { 
+    maps: match.maps.map(m => ({
+      map: m.map,
+      p1frags: isNormal ? m.score1 : m.score2,
+      p2frags: isNormal ? m.score2 : m.score1,
+      winner: isNormal ? (m.score1 > m.score2 ? 1 : m.score2 > m.score1 ? 2 : '') : (m.score2 > m.score1 ? 1 : m.score1 > m.score2 ? 2 : '')
+    })),
+    s1, 
+    s2 
+  };
+}
+
+function formatTeamHelper(teamName, teams, score, isWinner) {
+  if (!teamName) return { name: 'TBD', flag: '', score: '', win: '' };
+  // Clean the team name for wiki output
+  const cleanName = unicodeToAscii(teamName).trim();
+  const info = getTeamInfo(teams, teamName);
+  return {
+    name: cleanName,
+    flag: info.country || 'eu',
+    score: score !== undefined && score !== null ? score : '',
+    win: isWinner ? '1' : ''
+  };
+}
+
+function generateMatchDetailsHelper(team1, team2, schedule) {
+  const result = getMatchResultHelper(team1, team2, schedule);
+  if (!result.maps.length) return '';
+  
+  let details = `{{BracketMatchSummary\n|date=\n|finished=\n|stream=\n`;
+  result.maps.forEach((m, i) => {
+    details += `|map${i + 1}=${(m.map || '').toLowerCase()} |map${i + 1}win=${m.winner} |map${i + 1}p1frags=${m.p1frags || ''} |map${i + 1}p2frags=${m.p2frags || ''}\n`;
+  });
+  details += `}}`;
+  return details;
+}
+
+// Generate 4-team bracket (Semi-Finals → Final)
+function generate4SEBracket(bracket, schedule, teams, division, options) {
+  const getMatchResult = (t1, t2) => getMatchResultHelper(t1, t2, schedule);
+  const formatTeamData = (t, score, isWinner) => formatTeamHelper(t, teams, score, isWinner);
+  const getDetails = (t1, t2) => generateMatchDetailsHelper(t1, t2, schedule);
+  
+  let wiki = `== ${options.title || 'Playoffs'} ==\n`;
+  wiki += `{{4SEBracket\n`;
+  wiki += `|game=quake\n`;
+  wiki += ` \n`;
+  wiki += `|column-width=200\n`;
+  
+  // Semi-final 1
+  const sf1t1 = bracket.winners?.semiFinals?.[0]?.team1 || '';
+  const sf1t2 = bracket.winners?.semiFinals?.[0]?.team2 || '';
+  const sf1result = getMatchResult(sf1t1, sf1t2);
+  const sf1t1info = formatTeamData(sf1t1, sf1result.s1, sf1result.s1 > sf1result.s2);
+  const sf1t2info = formatTeamData(sf1t2, sf1result.s2, sf1result.s2 > sf1result.s1);
+  
+  wiki += `|R1D1=${sf1t1info.name} |R1D1race= |R1D1flag=${sf1t1info.flag} |R1D1score=${sf1t1info.score} |R1D1win=${sf1t1info.win}\n`;
+  wiki += `|R1D2=${sf1t2info.name} |R1D2race= |R1D2flag=${sf1t2info.flag} |R1D2score=${sf1t2info.score} |R1D2win=${sf1t2info.win}\n`;
+  wiki += `|R1G1details=${getDetails(sf1t1, sf1t2)}\n`;
+  
+  // Semi-final 2
+  const sf2t1 = bracket.winners?.semiFinals?.[1]?.team1 || '';
+  const sf2t2 = bracket.winners?.semiFinals?.[1]?.team2 || '';
+  const sf2result = getMatchResult(sf2t1, sf2t2);
+  const sf2t1info = formatTeamData(sf2t1, sf2result.s1, sf2result.s1 > sf2result.s2);
+  const sf2t2info = formatTeamData(sf2t2, sf2result.s2, sf2result.s2 > sf2result.s1);
+  
+  wiki += `|R1D3=${sf2t1info.name} |R1D3race= |R1D3flag=${sf2t1info.flag} |R1D3score=${sf2t1info.score} |R1D3win=${sf2t1info.win}\n`;
+  wiki += `|R1D4=${sf2t2info.name} |R1D4race= |R1D4flag=${sf2t2info.flag} |R1D4score=${sf2t2info.score} |R1D4win=${sf2t2info.win}\n`;
+  wiki += `|R1G2details=${getDetails(sf2t1, sf2t2)}\n`;
+  
+  wiki += `\n \n`;
+  
+  // Final
+  const ft1 = bracket.winners?.final?.team1 || '';
+  const ft2 = bracket.winners?.final?.team2 || '';
+  const fresult = getMatchResult(ft1, ft2);
+  const ft1info = formatTeamData(ft1, fresult.s1, fresult.s1 > fresult.s2);
+  const ft2info = formatTeamData(ft2, fresult.s2, fresult.s2 > fresult.s1);
+  
+  wiki += `|R2W1=${ft1info.name} |R2W1race= |R2W1flag=${ft1info.flag} |R2W1score=${ft1info.score} |R2W1win=${ft1info.win}\n`;
+  wiki += `|R2W2=${ft2info.name} |R2W2race= |R2W2flag=${ft2info.flag} |R2W2score=${ft2info.score} |R2W2win=${ft2info.win}\n`;
+  wiki += `|R2G1details=${getDetails(ft1, ft2)}\n`;
+  
+  wiki += `\n \n`;
+  
+  // 3rd place
+  const thrd1 = bracket.thirdPlace?.team1 || '';
+  const thrd2 = bracket.thirdPlace?.team2 || '';
+  const thrdResult = getMatchResult(thrd1, thrd2);
+  const thrd1info = formatTeamData(thrd1, thrdResult.s1, thrdResult.s1 > thrdResult.s2);
+  const thrd2info = formatTeamData(thrd2, thrdResult.s2, thrdResult.s2 > thrdResult.s1);
+  
+  wiki += `|R2D1=${thrd1info.name} |R2D1race= |R2D1flag=${thrd1info.flag} |R2D1score=${thrd1info.score} |R2D1win=${thrd1info.win}\n`;
+  wiki += `|R2D2=${thrd2info.name} |R2D2race= |R2D2flag=${thrd2info.flag} |R2D2score=${thrd2info.score} |R2D2win=${thrd2info.win}\n`;
+  wiki += `|R2G2details=${getDetails(thrd1, thrd2) || '{{BracketMatchSummary\n|date=\n|finished=\n|stream=\n}}'}\n`;
+  
+  wiki += `}}\n`;
+  
+  return wiki;
+}
+
+// Generate 8-team bracket (Quarter-Finals → Semi-Finals → Final)
+function generate8SEBracket(bracket, schedule, teams, division, options) {
+  const getMatchResult = (t1, t2) => getMatchResultHelper(t1, t2, schedule);
+  const formatTeamData = (t, score, isWinner) => formatTeamHelper(t, teams, score, isWinner);
+  const getDetails = (t1, t2) => generateMatchDetailsHelper(t1, t2, schedule);
+  
+  let wiki = `== ${options.title || 'Playoffs'} ==\n`;
+  wiki += `{{8SEBracket\n`;
+  wiki += `|game=quake\n`;
+  wiki += `|column-width=200\n`;
+  
+  // Quarter Finals (R1 in 8SE template)
+  wiki += ` \n`;
+  for (let i = 0; i < 4; i++) {
+    const qf = bracket.winners?.quarterFinals?.[i];
+    const t1 = qf?.team1 || '';
+    const t2 = qf?.team2 || '';
+    const result = getMatchResult(t1, t2);
+    const t1info = formatTeamData(t1, result.s1, result.s1 > result.s2);
+    const t2info = formatTeamData(t2, result.s2, result.s2 > result.s1);
+    
+    const idx1 = i * 2 + 1;
+    const idx2 = i * 2 + 2;
+    
+    wiki += `|R1D${idx1}=${t1info.name} |R1D${idx1}race= |R1D${idx1}flag=${t1info.flag} |R1D${idx1}score=${t1info.score} |R1D${idx1}win=${t1info.win}\n`;
+    wiki += `|R1D${idx2}=${t2info.name} |R1D${idx2}race= |R1D${idx2}flag=${t2info.flag} |R1D${idx2}score=${t2info.score} |R1D${idx2}win=${t2info.win}\n`;
+    wiki += `|R1G${i + 1}details=${getDetails(t1, t2)}\n`;
+  }
+  
+  // Semi Finals (R2 in 8SE template)
+  wiki += `\n \n`;
+  for (let i = 0; i < 2; i++) {
+    const sf = bracket.winners?.semiFinals?.[i];
+    const t1 = sf?.team1 || '';
+    const t2 = sf?.team2 || '';
+    const result = getMatchResult(t1, t2);
+    const t1info = formatTeamData(t1, result.s1, result.s1 > result.s2);
+    const t2info = formatTeamData(t2, result.s2, result.s2 > result.s1);
+    
+    const idx1 = i * 2 + 1;
+    const idx2 = i * 2 + 2;
+    
+    // CHANGED: R2D -> R2W
+    wiki += `|R2W${idx1}=${t1info.name} |R2W${idx1}race= |R2W${idx1}flag=${t1info.flag} |R2W${idx1}score=${t1info.score} |R2W${idx1}win=${t1info.win}\n`;
+    wiki += `|R2W${idx2}=${t2info.name} |R2W${idx2}race= |R2W${idx2}flag=${t2info.flag} |R2W${idx2}score=${t2info.score} |R2W${idx2}win=${t2info.win}\n`;
+    wiki += `|R2G${i + 1}details=${getDetails(t1, t2)}\n`;
+  }
+  
+  // Final (R3 in 8SE template)
+  wiki += `\n \n`;
+  const ft1 = bracket.winners?.final?.team1 || '';
+  const ft2 = bracket.winners?.final?.team2 || '';
+  const fresult = getMatchResult(ft1, ft2);
+  const ft1info = formatTeamData(ft1, fresult.s1, fresult.s1 > fresult.s2);
+  const ft2info = formatTeamData(ft2, fresult.s2, fresult.s2 > fresult.s1);
+  
+  wiki += `|R3W1=${ft1info.name} |R3W1race= |R3W1flag=${ft1info.flag} |R3W1score=${ft1info.score} |R3W1win=${ft1info.win}\n`;
+  wiki += `|R3W2=${ft2info.name} |R3W2race= |R3W2flag=${ft2info.flag} |R3W2score=${ft2info.score} |R3W2win=${ft2info.win}\n`;
+  wiki += `|R3G1details=${getDetails(ft1, ft2)}\n`;
+  
+  // 3rd place (R3 bronze)
+  wiki += `\n \n`;
+  const thrd1 = bracket.thirdPlace?.team1 || '';
+  const thrd2 = bracket.thirdPlace?.team2 || '';
+  const thrdResult = getMatchResult(thrd1, thrd2);
+  const thrd1info = formatTeamData(thrd1, thrdResult.s1, thrdResult.s1 > thrdResult.s2);
+  const thrd2info = formatTeamData(thrd2, thrdResult.s2, thrdResult.s2 > thrdResult.s1);
+  
+  wiki += `|R3D1=${thrd1info.name} |R3D1race= |R3D1flag=${thrd1info.flag} |R3D1score=${thrd1info.score} |R3D1win=${thrd1info.win}\n`;
+  wiki += `|R3D2=${thrd2info.name} |R3D2race= |R3D2flag=${thrd2info.flag} |R3D2score=${thrd2info.score} |R3D2win=${thrd2info.win}\n`;
+  wiki += `|R3G2details=${getDetails(thrd1, thrd2) || '{{BracketMatchSummary\n|date=\n|finished=\n|stream=\n}}'}\n`;
+  
+  wiki += `}}\n`;
+  
+  return wiki;
+}
+
+// Generate 16-team bracket (R16 → QF → SF → F)
+function generate16SEBracket(bracket, schedule, teams, division, options) {
+  const getMatchResult = (t1, t2) => getMatchResultHelper(t1, t2, schedule);
+  const formatTeamData = (t, score, isWinner) => formatTeamHelper(t, teams, score, isWinner);
+  const getDetails = (t1, t2) => generateMatchDetailsHelper(t1, t2, schedule);
+  
+  let wiki = `== ${options.title || 'Playoffs'} ==\n`;
+  wiki += `{{16SEBracket\n`;
+  wiki += `|game=quake\n`;
+  wiki += `|column-width=200\n`;
+  
+  // Round of 16 (R1 in 16SE template)
+  wiki += ` \n`;
+  for (let i = 0; i < 8; i++) {
+    const r16 = bracket.winners?.round16?.[i];
+    const t1 = r16?.team1 || '';
+    const t2 = r16?.team2 || '';
+    const result = getMatchResult(t1, t2);
+    const t1info = formatTeamData(t1, result.s1, result.s1 > result.s2);
+    const t2info = formatTeamData(t2, result.s2, result.s2 > result.s1);
+    
+    const idx1 = i * 2 + 1;
+    const idx2 = i * 2 + 2;
+    
+    wiki += `|R1D${idx1}=${t1info.name} |R1D${idx1}race= |R1D${idx1}flag=${t1info.flag} |R1D${idx1}score=${t1info.score} |R1D${idx1}win=${t1info.win}\n`;
+    wiki += `|R1D${idx2}=${t2info.name} |R1D${idx2}race= |R1D${idx2}flag=${t2info.flag} |R1D${idx2}score=${t2info.score} |R1D${idx2}win=${t2info.win}\n`;
+    wiki += `|R1G${i + 1}details=${getDetails(t1, t2)}\n`;
+  }
+  
+  // Quarter Finals (R2 in 16SE template)
+  wiki += `\n \n`;
+  for (let i = 0; i < 4; i++) {
+    const qf = bracket.winners?.quarterFinals?.[i];
+    const t1 = qf?.team1 || '';
+    const t2 = qf?.team2 || '';
+    const result = getMatchResult(t1, t2);
+    const t1info = formatTeamData(t1, result.s1, result.s1 > result.s2);
+    const t2info = formatTeamData(t2, result.s2, result.s2 > result.s1);
+    
+    const idx1 = i * 2 + 1;
+    const idx2 = i * 2 + 2;
+    
+    // CHANGED: R2D -> R2W
+    wiki += `|R2W${idx1}=${t1info.name} |R2W${idx1}race= |R2W${idx1}flag=${t1info.flag} |R2W${idx1}score=${t1info.score} |R2W${idx1}win=${t1info.win}\n`;
+    wiki += `|R2W${idx2}=${t2info.name} |R2W${idx2}race= |R2W${idx2}flag=${t2info.flag} |R2W${idx2}score=${t2info.score} |R2W${idx2}win=${t2info.win}\n`;
+    wiki += `|R2G${i + 1}details=${getDetails(t1, t2)}\n`;
+  }
+  
+  // Semi Finals (R3 in 16SE template)
+  wiki += `\n \n`;
+  for (let i = 0; i < 2; i++) {
+    const sf = bracket.winners?.semiFinals?.[i];
+    const t1 = sf?.team1 || '';
+    const t2 = sf?.team2 || '';
+    const result = getMatchResult(t1, t2);
+    const t1info = formatTeamData(t1, result.s1, result.s1 > result.s2);
+    const t2info = formatTeamData(t2, result.s2, result.s2 > result.s1);
+    
+    const idx1 = i * 2 + 1;
+    const idx2 = i * 2 + 2;
+    
+    // CHANGED: R3D -> R3W
+    wiki += `|R3W${idx1}=${t1info.name} |R3W${idx1}race= |R3W${idx1}flag=${t1info.flag} |R3W${idx1}score=${t1info.score} |R3W${idx1}win=${t1info.win}\n`;
+    wiki += `|R3W${idx2}=${t2info.name} |R3W${idx2}race= |R3W${idx2}flag=${t2info.flag} |R3W${idx2}score=${t2info.score} |R3W${idx2}win=${t2info.win}\n`;
+    wiki += `|R3G${i + 1}details=${getDetails(t1, t2)}\n`;
+  }
+  
+  // Final (R4 in 16SE template)
+  wiki += `\n \n`;
+  const ft1 = bracket.winners?.final?.team1 || '';
+  const ft2 = bracket.winners?.final?.team2 || '';
+  const fresult = getMatchResult(ft1, ft2);
+  const ft1info = formatTeamData(ft1, fresult.s1, fresult.s1 > fresult.s2);
+  const ft2info = formatTeamData(ft2, fresult.s2, fresult.s2 > fresult.s1);
+  
+  wiki += `|R4W1=${ft1info.name} |R4W1race= |R4W1flag=${ft1info.flag} |R4W1score=${ft1info.score} |R4W1win=${ft1info.win}\n`;
+  wiki += `|R4W2=${ft2info.name} |R4W2race= |R4W2flag=${ft2info.flag} |R4W2score=${ft2info.score} |R4W2win=${ft2info.win}\n`;
+  wiki += `|R4G1details=${getDetails(ft1, ft2)}\n`;
+  
+  // 3rd place (R4 bronze)
+  wiki += `\n \n`;
+  const thrd1 = bracket.thirdPlace?.team1 || '';
+  const thrd2 = bracket.thirdPlace?.team2 || '';
+  const thrdResult = getMatchResult(thrd1, thrd2);
+  const thrd1info = formatTeamData(thrd1, thrdResult.s1, thrdResult.s1 > thrdResult.s2);
+  const thrd2info = formatTeamData(thrd2, thrdResult.s2, thrdResult.s2 > thrdResult.s1);
+  
+  wiki += `|R4D1=${thrd1info.name} |R4D1race= |R4D1flag=${thrd1info.flag} |R4D1score=${thrd1info.score} |R4D1win=${thrd1info.win}\n`;
+  wiki += `|R4D2=${thrd2info.name} |R4D2race= |R4D2flag=${thrd2info.flag} |R4D2score=${thrd2info.score} |R4D2win=${thrd2info.win}\n`;
+  wiki += `|R4G2details=${getDetails(thrd1, thrd2) || '{{BracketMatchSummary\n|date=\n|finished=\n|stream=\n}}'}\n`;
+  
+  wiki += `}}\n`;
+  
+  return wiki;
+}
+
+// Generate 32-team bracket (R32 → R16 → QF → SF → F)
+function generate32SEBracket(bracket, schedule, teams, division, options) {
+  const getMatchResult = (t1, t2) => getMatchResultHelper(t1, t2, schedule);
+  const formatTeamData = (t, score, isWinner) => formatTeamHelper(t, teams, score, isWinner);
+  const getDetails = (t1, t2) => generateMatchDetailsHelper(t1, t2, schedule);
+  
+  let wiki = `== ${options.title || 'Playoffs'} ==\n`;
+  wiki += `{{32SEBracket\n`;
+  wiki += `|game=quake\n`;
+  wiki += `|column-width=200\n`;
+  
+  // Round of 32 (R1 in 32SE template)
+  wiki += ` \n`;
+  for (let i = 0; i < 16; i++) {
+    const r32 = bracket.winners?.round32?.[i];
+    const t1 = r32?.team1 || '';
+    const t2 = r32?.team2 || '';
+    const result = getMatchResult(t1, t2);
+    const t1info = formatTeamData(t1, result.s1, result.s1 > result.s2);
+    const t2info = formatTeamData(t2, result.s2, result.s2 > result.s1);
+    
+    const idx1 = i * 2 + 1;
+    const idx2 = i * 2 + 2;
+    
+    wiki += `|R1D${idx1}=${t1info.name} |R1D${idx1}race= |R1D${idx1}flag=${t1info.flag} |R1D${idx1}score=${t1info.score} |R1D${idx1}win=${t1info.win}\n`;
+    wiki += `|R1D${idx2}=${t2info.name} |R1D${idx2}race= |R1D${idx2}flag=${t2info.flag} |R1D${idx2}score=${t2info.score} |R1D${idx2}win=${t2info.win}\n`;
+    wiki += `|R1G${i + 1}details=${getDetails(t1, t2)}\n`;
+  }
+  
+  // Round of 16 (R2 in 32SE template)
+  wiki += `\n \n`;
+  for (let i = 0; i < 8; i++) {
+    const r16 = bracket.winners?.round16?.[i];
+    const t1 = r16?.team1 || '';
+    const t2 = r16?.team2 || '';
+    const result = getMatchResult(t1, t2);
+    const t1info = formatTeamData(t1, result.s1, result.s1 > result.s2);
+    const t2info = formatTeamData(t2, result.s2, result.s2 > result.s1);
+    
+    const idx1 = i * 2 + 1;
+    const idx2 = i * 2 + 2;
+    
+    // CHANGED: R2D -> R2W
+    wiki += `|R2W${idx1}=${t1info.name} |R2W${idx1}race= |R2W${idx1}flag=${t1info.flag} |R2W${idx1}score=${t1info.score} |R2W${idx1}win=${t1info.win}\n`;
+    wiki += `|R2W${idx2}=${t2info.name} |R2W${idx2}race= |R2W${idx2}flag=${t2info.flag} |R2W${idx2}score=${t2info.score} |R2W${idx2}win=${t2info.win}\n`;
+    wiki += `|R2G${i + 1}details=${getDetails(t1, t2)}\n`;
+  }
+  
+  // Quarter Finals (R3 in 32SE template)
+  wiki += `\n \n`;
+  for (let i = 0; i < 4; i++) {
+    const qf = bracket.winners?.quarterFinals?.[i];
+    const t1 = qf?.team1 || '';
+    const t2 = qf?.team2 || '';
+    const result = getMatchResult(t1, t2);
+    const t1info = formatTeamData(t1, result.s1, result.s1 > result.s2);
+    const t2info = formatTeamData(t2, result.s2, result.s2 > result.s1);
+    
+    const idx1 = i * 2 + 1;
+    const idx2 = i * 2 + 2;
+    
+    // CHANGED: R3D -> R3W
+    wiki += `|R3W${idx1}=${t1info.name} |R3W${idx1}race= |R3W${idx1}flag=${t1info.flag} |R3W${idx1}score=${t1info.score} |R3W${idx1}win=${t1info.win}\n`;
+    wiki += `|R3W${idx2}=${t2info.name} |R3W${idx2}race= |R3W${idx2}flag=${t2info.flag} |R3W${idx2}score=${t2info.score} |R3W${idx2}win=${t2info.win}\n`;
+    wiki += `|R3G${i + 1}details=${getDetails(t1, t2)}\n`;
+  }
+  
+  // Semi Finals (R4 in 32SE template)
+  wiki += `\n \n`;
+  for (let i = 0; i < 2; i++) {
+    const sf = bracket.winners?.semiFinals?.[i];
+    const t1 = sf?.team1 || '';
+    const t2 = sf?.team2 || '';
+    const result = getMatchResult(t1, t2);
+    const t1info = formatTeamData(t1, result.s1, result.s1 > result.s2);
+    const t2info = formatTeamData(t2, result.s2, result.s2 > result.s1);
+    
+    const idx1 = i * 2 + 1;
+    const idx2 = i * 2 + 2;
+    
+    // CHANGED: R4D -> R4W
+    wiki += `|R4W${idx1}=${t1info.name} |R4W${idx1}race= |R4W${idx1}flag=${t1info.flag} |R4W${idx1}score=${t1info.score} |R4W${idx1}win=${t1info.win}\n`;
+    wiki += `|R4W${idx2}=${t2info.name} |R4W${idx2}race= |R4W${idx2}flag=${t2info.flag} |R4W${idx2}score=${t2info.score} |R4W${idx2}win=${t2info.win}\n`;
+    wiki += `|R4G${i + 1}details=${getDetails(t1, t2)}\n`;
+  }
+  
+  // Final (R5 in 32SE template)
+  wiki += `\n \n`;
+  const ft1 = bracket.winners?.final?.team1 || '';
+  const ft2 = bracket.winners?.final?.team2 || '';
+  const fresult = getMatchResult(ft1, ft2);
+  const ft1info = formatTeamData(ft1, fresult.s1, fresult.s1 > fresult.s2);
+  const ft2info = formatTeamData(ft2, fresult.s2, fresult.s2 > fresult.s1);
+  
+  wiki += `|R5W1=${ft1info.name} |R5W1race= |R5W1flag=${ft1info.flag} |R5W1score=${ft1info.score} |R5W1win=${ft1info.win}\n`;
+  wiki += `|R5W2=${ft2info.name} |R5W2race= |R5W2flag=${ft2info.flag} |R5W2score=${ft2info.score} |R5W2win=${ft2info.win}\n`;
+  wiki += `|R5G1details=${getDetails(ft1, ft2)}\n`;
+  
+  // 3rd place (R5 bronze)
+  wiki += `\n \n`;
+  const thrd1 = bracket.thirdPlace?.team1 || '';
+  const thrd2 = bracket.thirdPlace?.team2 || '';
+  const thrdResult = getMatchResult(thrd1, thrd2);
+  const thrd1info = formatTeamData(thrd1, thrdResult.s1, thrdResult.s1 > thrdResult.s2);
+  const thrd2info = formatTeamData(thrd2, thrdResult.s2, thrdResult.s2 > thrdResult.s1);
+  
+  wiki += `|R5D1=${thrd1info.name} |R5D1race= |R5D1flag=${thrd1info.flag} |R5D1score=${thrd1info.score} |R5D1win=${thrd1info.win}\n`;
+  wiki += `|R5D2=${thrd2info.name} |R5D2race= |R5D2flag=${thrd2info.flag} |R5D2score=${thrd2info.score} |R5D2win=${thrd2info.win}\n`;
+  wiki += `|R5G2details=${getDetails(thrd1, thrd2) || '{{BracketMatchSummary\n|date=\n|finished=\n|stream=\n}}'}\n`;
+  
+  wiki += `}}\n`;
+  
+  return wiki;
+}
+
+// Generate double elimination bracket (basic implementation)
+function generateDoubleElimBracket(bracket, schedule, teams, division, options) {
+  // For now, return a note that double elim is complex
+  // Full implementation would require specific Liquipedia double elim templates
+  let wiki = `== ${options.title || 'Playoffs'} ==\n`;
+  wiki += `\n`;
+  wiki += `\n`;
+  wiki += `\n`;
+  wiki += `\n\n`;
+  
+  // List teams for manual formatting
+  wiki += `=== Winners Bracket ===\n`;
+  if (bracket.winners?.quarterFinals) {
+    wiki += `Quarter Finals:\n`;
+    bracket.winners.quarterFinals.forEach((m, i) => {
+      wiki += `  Match ${i + 1}: ${m.team1 || 'TBD'} vs ${m.team2 || 'TBD'}\n`;
+    });
+  }
+  wiki += `Semi Finals:\n`;
+  bracket.winners?.semiFinals?.forEach((m, i) => {
+    wiki += `  Match ${i + 1}: ${m.team1 || 'TBD'} vs ${m.team2 || 'TBD'}\n`;
+  });
+  wiki += `Final: ${bracket.winners?.final?.team1 || 'TBD'} vs ${bracket.winners?.final?.team2 || 'TBD'}\n\n`;
+  
+  wiki += `=== Losers Bracket ===\n`;
+  wiki += `(Losers bracket structure varies by tournament size)\n\n`;
+  
+  wiki += `=== Grand Final ===\n`;
+  wiki += `${bracket.grandFinal?.team1 || 'TBD'} vs ${bracket.grandFinal?.team2 || 'TBD'}\n`;
+  
+  return wiki;
+}
+
+export default function DivisionWiki({ division, tournamentName }) {
+  const [activeExport, setActiveExport] = useState('standings');
+  const [copied, setCopied] = useState(false);
+  const [options, setOptions] = useState({
+    title: division.name || 'Division',
+    advanceCount: division.advanceCount || 2
+  });
+
+  const teams = division.teams || [];
+  const schedule = division.schedule || [];
+  const rawMaps = division.rawMaps || [];
+  const standings = useMemo(() => calculateStandings(schedule, division), [schedule, division]);
+
+  // Extract original ktxstats data for player stats calculation
+  const ktxstatsData = useMemo(() => {
+    if (!rawMaps || rawMaps.length === 0) return [];
+    return rawMaps
+      .map(m => m.originalData)
+      .filter(d => d && d.players);
+  }, [rawMaps]);
+
+  // Calculate player stats
+  const playersDb = useMemo(() => {
+    if (!ktxstatsData || ktxstatsData.length === 0) return {};
+    return calculateStats(ktxstatsData);
+  }, [ktxstatsData]);
+
+  const wikiContent = useMemo(() => {
+    // DEBUG: Log schedule to see what matches exist
+    console.log('=== WIKI GENERATION DEBUG ===');
+    console.log('Schedule matches:', schedule.length);
+    console.log('Playoff matches:', schedule.filter(m => m.round !== 'group').map(m => ({ 
+      team1: m.team1, 
+      team2: m.team2, 
+      round: m.round,
+      maps: m.maps?.length || 0
+    })));
+    console.log('=============================');
+    
+    switch (activeExport) {
+      case 'standings': 
+        return generateStandingsWiki(standings, teams, division, options);
+      case 'matches': 
+        return generateMatchListWiki(schedule, teams, division, options);
+      case 'bracket': 
+        return generateBracketWiki(division.bracket, schedule, teams, division, options);
+      case 'stats':
+        return generateWikiTable(playersDb);
+      case 'full':
+        return generateStandingsWiki(standings, teams, division, options) + '\n' +
+               generateMatchListWiki(schedule, teams, division, options) + '\n' +
+               generateBracketWiki(division.bracket, schedule, teams, division, { ...options, title: 'Playoffs' });
+      default: 
+        return '';
+    }
+  }, [activeExport, standings, schedule, division.bracket, teams, options, playersDb]);
+
+const handleCopy = async () => {
+    // Check if the modern Clipboard API is available (requires HTTPS)
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      try {
+        await navigator.clipboard.writeText(wikiContent);
+        setCopied(true);
+      } catch (err) {
+        console.warn('Clipboard API failed, trying fallback...', err);
+        fallbackCopy();
+      }
+    } else {
+      // Fallback for non-secure contexts (HTTP/LAN)
+      fallbackCopy();
+    }
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  // Helper function for the "Old School" copy method
+  const fallbackCopy = () => {
+    const textArea = document.createElement("textarea");
+    textArea.value = wikiContent;
+    
+    // Prevent scrolling to bottom
+    textArea.style.top = "0";
+    textArea.style.left = "0";
+    textArea.style.position = "fixed"; 
+
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+
+    try {
+      const successful = document.execCommand('copy');
+      if (successful) setCopied(true);
+    } catch (err) {
+      console.error('Fallback copy failed', err);
+    }
+
+    document.body.removeChild(textArea);
+  };
+
+  const handleDownload = () => {
+    const blob = new Blob([wikiContent], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${division.name.replace(/\s+/g, '_')}_${activeExport}.wiki.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex gap-2 flex-wrap">
+        {['standings', 'matches', 'bracket', 'stats', 'full'].map(type => (
+          <button 
+            key={type} 
+            onClick={() => setActiveExport(type)} 
+            className={`px-4 py-2 rounded font-body font-semibold capitalize ${activeExport === type ? 'bg-qw-accent text-qw-dark' : 'bg-qw-panel border border-qw-border text-qw-muted hover:text-white'}`}
+          >
+            {type === 'full' ? 'Full Page' : type === 'stats' ? 'Player Stats' : type}
+          </button>
+        ))}
+      </div>
+
+      <div className="qw-panel p-4">
+        <div className="grid grid-cols-3 gap-4">
+          <div>
+            <label className="block text-qw-muted text-sm mb-1">Division Title</label>
+            <input 
+              type="text" 
+              value={options.title} 
+              onChange={(e) => setOptions({ ...options, title: e.target.value })} 
+              className="w-full bg-qw-dark border border-qw-border rounded px-3 py-2 text-white text-sm" 
+            />
+          </div>
+          <div>
+            <label className="block text-qw-muted text-sm mb-1">Teams Advancing</label>
+            <select 
+              value={options.advanceCount} 
+              onChange={(e) => setOptions({ ...options, advanceCount: parseInt(e.target.value) })}
+              className="w-full bg-qw-dark border border-qw-border rounded px-3 py-2 text-white text-sm"
+            >
+              {[1, 2, 3, 4, 6, 8].map(n => <option key={n} value={n}>Top {n}</option>)}
+            </select>
+          </div>
+          <div className="flex items-end">
+            <p className="text-xs text-qw-muted">
+              Uses Liquipedia templates: GroupTableStart, MatchMaps, 4SEBracket
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="qw-panel overflow-hidden">
+        <div className="flex items-center justify-between px-4 py-3 bg-qw-dark border-b border-qw-border">
+          <h3 className="font-display text-sm text-qw-accent">WIKI OUTPUT</h3>
+          <div className="flex gap-2">
+            <button 
+              onClick={handleCopy} 
+              className={`px-3 py-1 rounded text-sm ${copied ? 'bg-qw-win text-white' : 'bg-qw-panel border border-qw-border text-qw-muted hover:text-white'}`}
+            >
+              {copied ? '✓ Copied' : '📋 Copy'}
+            </button>
+            <button onClick={handleDownload} className="px-3 py-1 rounded text-sm bg-qw-accent text-qw-dark">
+              ⬇ Download
+            </button>
+          </div>
+        </div>
+        <div className="p-4 max-h-[500px] overflow-auto">
+          <pre className="font-mono text-xs text-qw-text whitespace-pre-wrap">{wikiContent || ''}</pre>
+        </div>
+      </div>
+
+      {/* Help section */}
+      <div className="qw-panel p-4">
+        <h4 className="font-display text-sm text-qw-accent mb-2">TEAM PLAYERS</h4>
+        <p className="text-xs text-qw-muted mb-2">
+          To include player names in wiki output, add them to each team in the Teams tab. 
+          The wiki templates use the format: <code className="bg-qw-dark px-1 rounded">TeamName|player1, player2, player3</code>
+        </p>
+        {teams.length > 0 && (
+          <div className="flex flex-wrap gap-2 text-xs">
+            {teams.slice(0, 4).map(t => (
+              <span key={t.id} className="px-2 py-1 bg-qw-dark rounded">
+                {t.name}: {t.players || <span className="text-qw-muted italic">no players</span>}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
