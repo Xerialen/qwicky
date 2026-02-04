@@ -97,16 +97,18 @@ const processMatch = (matchData, playersDb) => {
 
   matchData.players.forEach(p => {
     const rawName = p.name || "Unknown";
-    const name = unicodeToAscii(rawName).trim(); // Clean Quake encoding
-    
-    // Initialize player if not exists
-    if (!playersDb[name]) {
-      playersDb[name] = getStatsStructure();
+    const cleanedName = unicodeToAscii(rawName).trim(); // Clean Quake encoding
+    const nameKey = cleanedName.toLowerCase(); // Case-insensitive aggregation key
+
+    // Initialize player if not exists; preserve first-seen casing as display name
+    if (!playersDb[nameKey]) {
+      playersDb[nameKey] = getStatsStructure();
+      playersDb[nameKey].displayName = cleanedName;
       const tc = p["top-color"] || 0;
-      playersDb[name].teamColor = QUAKE_COLORS[tc] || "";
+      playersDb[nameKey].teamColor = QUAKE_COLORS[tc] || "";
     }
 
-    const db = playersDb[name];
+    const db = playersDb[nameKey];
     db.games += 1;
 
     // --- OPPORTUNITIES ---
@@ -248,14 +250,14 @@ export const calculateStats = (matchesArray) => {
  * @returns {Array} Array of player stat objects sorted by avg frags
  */
 export const formatStatsForTable = (playersDb) => {
-  const players = Object.entries(playersDb).map(([name, db]) => {
+  const players = Object.entries(playersDb).map(([, db]) => {
     const g = db.games;
     if (g === 0) return null;
-    
+
     const opp = db.opportunities;
 
     return {
-      name,
+      name: db.displayName || '',
       teamColor: db.teamColor,
       games: g,
       
@@ -335,10 +337,11 @@ export const generateWikiTable = (playersDb) => {
     ([, a], [, b]) => safeDiv(b.frags, b.games) - safeDiv(a.frags, a.games)
   );
 
-  sortedPlayers.forEach(([name, db]) => {
+  sortedPlayers.forEach(([, db]) => {
+    const name = db.displayName || '';
     const g = db.games;
     if (g === 0) return;
-    
+
     const opp = db.opportunities;
 
     // 1. General Stats

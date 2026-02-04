@@ -4,7 +4,8 @@ import { calculateStats, generateWikiTable } from '../../utils/statsLogic';
 import { unicodeToAscii } from '../../utils/matchLogic';
 
 function getTeamInfo(teams, teamName) {
-  const team = teams.find(t => t.name === teamName);
+  const lowerName = (teamName || '').toLowerCase();
+  const team = teams.find(t => t.name.toLowerCase() === lowerName);
   return team || { name: teamName, tag: '', country: '', players: '' };
 }
 
@@ -199,16 +200,18 @@ function generateBracketWiki(bracket, schedule, teams, division, options) {
 // Helper functions for bracket generation
 function getMatchResultHelper(team1, team2, schedule) {
   if (!team1 || !team2) return { maps: [], s1: 0, s2: 0 };
-  
-  const match = schedule.find(m => 
-    (m.team1 === team1 && m.team2 === team2) ||
-    (m.team1 === team2 && m.team2 === team1)
+
+  const t1Lower = team1.toLowerCase();
+  const t2Lower = team2.toLowerCase();
+  const match = schedule.find(m =>
+    (m.team1.toLowerCase() === t1Lower && m.team2.toLowerCase() === t2Lower) ||
+    (m.team1.toLowerCase() === t2Lower && m.team2.toLowerCase() === t1Lower)
   );
-  
+
   if (!match?.maps?.length) return { maps: [], s1: 0, s2: 0 };
-  
+
   let s1 = 0, s2 = 0;
-  const isNormal = match.team1 === team1;
+  const isNormal = match.team1.toLowerCase() === t1Lower;
   
   match.maps.forEach(map => {
     // Handle forfeit - team that forfeited loses the map
@@ -275,9 +278,11 @@ function formatTeamHelper(teamName, teams, score, isWinner) {
 
 function generateMatchDetailsHelper(team1, team2, schedule) {
   const result = getMatchResultHelper(team1, team2, schedule);
-  const match = schedule.find(m => 
-    (m.team1 === team1 && m.team2 === team2) ||
-    (m.team1 === team2 && m.team2 === team1)
+  const t1Lower = team1.toLowerCase();
+  const t2Lower = team2.toLowerCase();
+  const match = schedule.find(m =>
+    (m.team1.toLowerCase() === t1Lower && m.team2.toLowerCase() === t2Lower) ||
+    (m.team1.toLowerCase() === t2Lower && m.team2.toLowerCase() === t1Lower)
   );
   
   if (!result.maps.length) return '';

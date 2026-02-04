@@ -6,16 +6,18 @@ function BracketMatch({ match, schedule, onUpdateTeam, label, showLabel = false,
   const result = useMemo(() => {
     if (!match?.team1 || !match?.team2) return null;
     
+    const t1Lower = match.team1.toLowerCase();
+    const t2Lower = match.team2.toLowerCase();
     const scheduled = schedule.find(m =>
-      (m.team1 === match.team1 && m.team2 === match.team2) ||
-      (m.team1 === match.team2 && m.team2 === match.team1)
+      (m.team1.toLowerCase() === t1Lower && m.team2.toLowerCase() === t2Lower) ||
+      (m.team1.toLowerCase() === t2Lower && m.team2.toLowerCase() === t1Lower)
     );
 
     if (!scheduled?.maps?.length) return null;
 
     let s1 = 0, s2 = 0;
     scheduled.maps.forEach(m => {
-      const isNormal = scheduled.team1 === match.team1;
+      const isNormal = scheduled.team1.toLowerCase() === t1Lower;
       if (isNormal) {
         if (m.score1 > m.score2) s1++; else if (m.score2 > m.score1) s2++;
       } else {
