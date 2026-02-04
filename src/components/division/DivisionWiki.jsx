@@ -176,16 +176,21 @@ function generateMatchListWiki(schedule, teams, division, options) {
 
 // Generate Liquipedia bracket format for playoffs
 function generateBracketWiki(bracket, schedule, teams, division, options) {
+  // Check if this is multi-tier format
+  if (division.format === 'multi-tier' && division.playoffTiers) {
+    return generateMultiTierBracketWiki(division.playoffTiers, schedule, teams, division, options);
+  }
+
   if (!bracket?.winners) return '';
-  
+
   const teamCount = bracket.teamCount || 4;
   const isDoubleElim = bracket.format === 'double';
-  
+
   // Route to appropriate generator based on team count
   if (isDoubleElim) {
     return generateDoubleElimBracket(bracket, schedule, teams, division, options);
   }
-  
+
   if (teamCount >= 32) {
     return generate32SEBracket(bracket, schedule, teams, division, options);
   } else if (teamCount >= 16) {
@@ -195,6 +200,341 @@ function generateBracketWiki(bracket, schedule, teams, division, options) {
   } else {
     return generate4SEBracket(bracket, schedule, teams, division, options);
   }
+}
+
+// Generate wiki markup for multi-tier playoffs
+function generateMultiTierBracketWiki(tiers, schedule, teams, division, options) {
+  if (!tiers || tiers.length === 0) {
+    return `== ${options.title || 'Playoffs'} ==\n\n''No playoff tiers configured.''\n`;
+  }
+
+  let wiki = `== ${options.title || 'Playoffs'} ==\n\n`;
+
+  // Sort tiers by priority (Gold first, then Silver, then Bronze, etc.)
+  const tierOrder = { gold: 0, silver: 1, bronze: 2, copper: 3, iron: 4, wood: 5, stone: 6 };
+  const sortedTiers = [...tiers].sort((a, b) => {
+    const orderA = tierOrder[a.id] !== undefined ? tierOrder[a.id] : 999;
+    const orderB = tierOrder[b.id] !== undefined ? tierOrder[b.id] : 999;
+    return orderA - orderB;
+  });
+
+  sortedTiers.forEach(tier => {
+    // Generate subsection header
+    wiki += `=== ${tier.name} (Positions ${tier.positions}) ===\n\n`;
+
+    const tierBracket = tier.bracket || {};
+    const teamCount = tier.teams || 4;
+    const isDoubleElim = tier.type === 'double';
+
+    // Check if bracket has proper structure
+    if (!tierBracket.winners) {
+      wiki += `''Bracket not yet configured.''\n\n`;
+      return;
+    }
+
+    // Generate bracket markup using existing functions
+    const tierOptions = {
+      ...options,
+      title: tier.name, // Use tier name as title
+      skipSectionHeader: true // Flag to skip section header in generators
+    };
+
+    if (isDoubleElim) {
+      wiki += generateTierDoubleElimBracket(tierBracket, schedule, teams, tier, tierOptions);
+    } else {
+      // Single elimination
+      if (teamCount >= 32) {
+        wiki += generateTier32SEBracket(tierBracket, schedule, teams, tier, tierOptions);
+      } else if (teamCount >= 16) {
+        wiki += generateTier16SEBracket(tierBracket, schedule, teams, tier, tierOptions);
+      } else if (teamCount >= 8) {
+        wiki += generateTier8SEBracket(tierBracket, schedule, teams, tier, tierOptions);
+      } else {
+        wiki += generateTier4SEBracket(tierBracket, schedule, teams, tier, tierOptions);
+      }
+    }
+
+    wiki += '\n';
+  });
+
+  return wiki;
+}
+
+// Tier-specific bracket generators (without section headers)
+function generateTier4SEBracket(bracket, schedule, teams, tier, options) {
+  const getMatchResult = (t1, t2) => getMatchResultHelper(t1, t2, schedule);
+  const formatTeamData = (t, score, isWinner) => formatTeamHelper(t, teams, score, isWinner);
+  const getDetails = (t1, t2) => generateMatchDetailsHelper(t1, t2, schedule);
+
+  let wiki = `{{4SEBracket\n`;
+  wiki += `|game=quake\n`;
+  wiki += ` \n`;
+  wiki += `|column-width=200\n`;
+
+  // Semi-final 1
+  const sf1t1 = bracket.winners?.semiFinals?.[0]?.team1 || '';
+  const sf1t2 = bracket.winners?.semiFinals?.[0]?.team2 || '';
+  const sf1result = getMatchResult(sf1t1, sf1t2);
+  const sf1t1info = formatTeamData(sf1t1, sf1result.s1, sf1result.s1 > sf1result.s2);
+  const sf1t2info = formatTeamData(sf1t2, sf1result.s2, sf1result.s2 > sf1result.s1);
+
+  wiki += `|R1D1=${sf1t1info.name} |R1D1race= |R1D1flag=${sf1t1info.flag} |R1D1score=${sf1t1info.score} |R1D1win=${sf1t1info.win}\n`;
+  wiki += `|R1D2=${sf1t2info.name} |R1D2race= |R1D2flag=${sf1t2info.flag} |R1D2score=${sf1t2info.score} |R1D2win=${sf1t2info.win}\n`;
+  wiki += `|R1G1details=${getDetails(sf1t1, sf1t2)}\n`;
+
+  // Semi-final 2
+  const sf2t1 = bracket.winners?.semiFinals?.[1]?.team1 || '';
+  const sf2t2 = bracket.winners?.semiFinals?.[1]?.team2 || '';
+  const sf2result = getMatchResult(sf2t1, sf2t2);
+  const sf2t1info = formatTeamData(sf2t1, sf2result.s1, sf2result.s1 > sf2result.s2);
+  const sf2t2info = formatTeamData(sf2t2, sf2result.s2, sf2result.s2 > sf2result.s1);
+
+  wiki += `|R1D3=${sf2t1info.name} |R1D3race= |R1D3flag=${sf2t1info.flag} |R1D3score=${sf2t1info.score} |R1D3win=${sf2t1info.win}\n`;
+  wiki += `|R1D4=${sf2t2info.name} |R1D4race= |R1D4flag=${sf2t2info.flag} |R1D4score=${sf2t2info.score} |R1D4win=${sf2t2info.win}\n`;
+  wiki += `|R1G2details=${getDetails(sf2t1, sf2t2)}\n`;
+
+  wiki += `\n \n`;
+
+  // Final
+  const ft1 = bracket.winners?.final?.team1 || '';
+  const ft2 = bracket.winners?.final?.team2 || '';
+  const fresult = getMatchResult(ft1, ft2);
+  const ft1info = formatTeamData(ft1, fresult.s1, fresult.s1 > fresult.s2);
+  const ft2info = formatTeamData(ft2, fresult.s2, fresult.s2 > fresult.s1);
+
+  wiki += `|R2W1=${ft1info.name} |R2W1race= |R2W1flag=${ft1info.flag} |R2W1score=${ft1info.score} |R2W1win=${ft1info.win}\n`;
+  wiki += `|R2W2=${ft2info.name} |R2W2race= |R2W2flag=${ft2info.flag} |R2W2score=${ft2info.score} |R2W2win=${ft2info.win}\n`;
+  wiki += `|R2G1details=${getDetails(ft1, ft2)}\n`;
+
+  wiki += `\n \n`;
+
+  // 3rd place (if present)
+  const thrd1 = bracket.thirdPlace?.team1 || '';
+  const thrd2 = bracket.thirdPlace?.team2 || '';
+  if (thrd1 || thrd2) {
+    const thrdResult = getMatchResult(thrd1, thrd2);
+    const thrd1info = formatTeamData(thrd1, thrdResult.s1, thrdResult.s1 > thrdResult.s2);
+    const thrd2info = formatTeamData(thrd2, thrdResult.s2, thrdResult.s2 > thrdResult.s1);
+
+    wiki += `|R2D1=${thrd1info.name} |R2D1race= |R2D1flag=${thrd1info.flag} |R2D1score=${thrd1info.score} |R2D1win=${thrd1info.win}\n`;
+    wiki += `|R2D2=${thrd2info.name} |R2D2race= |R2D2flag=${thrd2info.flag} |R2D2score=${thrd2info.score} |R2D2win=${thrd2info.win}\n`;
+    wiki += `|R2G2details=${getDetails(thrd1, thrd2) || '{{BracketMatchSummary\n|date=\n|finished=\n|stream=\n}}'}\n`;
+  }
+
+  wiki += `}}\n`;
+  return wiki;
+}
+
+function generateTier8SEBracket(bracket, schedule, teams, tier, options) {
+  const getMatchResult = (t1, t2) => getMatchResultHelper(t1, t2, schedule);
+  const formatTeamData = (t, score, isWinner) => formatTeamHelper(t, teams, score, isWinner);
+  const getDetails = (t1, t2) => generateMatchDetailsHelper(t1, t2, schedule);
+
+  let wiki = `{{8SEBracket\n`;
+  wiki += `|game=quake\n`;
+  wiki += `|column-width=200\n`;
+
+  // Quarter Finals
+  wiki += ` \n`;
+  for (let i = 0; i < 4; i++) {
+    const qf = bracket.winners?.quarterFinals?.[i];
+    const t1 = qf?.team1 || '';
+    const t2 = qf?.team2 || '';
+    const result = getMatchResult(t1, t2);
+    const t1info = formatTeamData(t1, result.s1, result.s1 > result.s2);
+    const t2info = formatTeamData(t2, result.s2, result.s2 > result.s1);
+
+    const idx1 = i * 2 + 1;
+    const idx2 = i * 2 + 2;
+
+    wiki += `|R1D${idx1}=${t1info.name} |R1D${idx1}race= |R1D${idx1}flag=${t1info.flag} |R1D${idx1}score=${t1info.score} |R1D${idx1}win=${t1info.win}\n`;
+    wiki += `|R1D${idx2}=${t2info.name} |R1D${idx2}race= |R1D${idx2}flag=${t2info.flag} |R1D${idx2}score=${t2info.score} |R1D${idx2}win=${t2info.win}\n`;
+    wiki += `|R1G${i + 1}details=${getDetails(t1, t2)}\n`;
+  }
+
+  // Semi Finals
+  wiki += `\n \n`;
+  for (let i = 0; i < 2; i++) {
+    const sf = bracket.winners?.semiFinals?.[i];
+    const t1 = sf?.team1 || '';
+    const t2 = sf?.team2 || '';
+    const result = getMatchResult(t1, t2);
+    const t1info = formatTeamData(t1, result.s1, result.s1 > result.s2);
+    const t2info = formatTeamData(t2, result.s2, result.s2 > result.s1);
+
+    const idx1 = i * 2 + 1;
+    const idx2 = i * 2 + 2;
+
+    wiki += `|R2W${idx1}=${t1info.name} |R2W${idx1}race= |R2W${idx1}flag=${t1info.flag} |R2W${idx1}score=${t1info.score} |R2W${idx1}win=${t1info.win}\n`;
+    wiki += `|R2W${idx2}=${t2info.name} |R2W${idx2}race= |R2W${idx2}flag=${t2info.flag} |R2W${idx2}score=${t2info.score} |R2W${idx2}win=${t2info.win}\n`;
+    wiki += `|R2G${i + 1}details=${getDetails(t1, t2)}\n`;
+  }
+
+  // Final
+  wiki += `\n \n`;
+  const ft1 = bracket.winners?.final?.team1 || '';
+  const ft2 = bracket.winners?.final?.team2 || '';
+  const fresult = getMatchResult(ft1, ft2);
+  const ft1info = formatTeamData(ft1, fresult.s1, fresult.s1 > fresult.s2);
+  const ft2info = formatTeamData(ft2, fresult.s2, fresult.s2 > fresult.s1);
+
+  wiki += `|R3W1=${ft1info.name} |R3W1race= |R3W1flag=${ft1info.flag} |R3W1score=${ft1info.score} |R3W1win=${ft1info.win}\n`;
+  wiki += `|R3W2=${ft2info.name} |R3W2race= |R3W2flag=${ft2info.flag} |R3W2score=${ft2info.score} |R3W2win=${ft2info.win}\n`;
+  wiki += `|R3G1details=${getDetails(ft1, ft2)}\n`;
+
+  // 3rd place
+  wiki += `\n \n`;
+  const thrd1 = bracket.thirdPlace?.team1 || '';
+  const thrd2 = bracket.thirdPlace?.team2 || '';
+  if (thrd1 || thrd2) {
+    const thrdResult = getMatchResult(thrd1, thrd2);
+    const thrd1info = formatTeamData(thrd1, thrdResult.s1, thrdResult.s1 > thrdResult.s2);
+    const thrd2info = formatTeamData(thrd2, thrdResult.s2, thrdResult.s2 > thrdResult.s1);
+
+    wiki += `|R3D1=${thrd1info.name} |R3D1race= |R3D1flag=${thrd1info.flag} |R3D1score=${thrd1info.score} |R3D1win=${thrd1info.win}\n`;
+    wiki += `|R3D2=${thrd2info.name} |R3D2race= |R3D2flag=${thrd2info.flag} |R3D2score=${thrd2info.score} |R3D2win=${thrd2info.win}\n`;
+    wiki += `|R3G2details=${getDetails(thrd1, thrd2) || '{{BracketMatchSummary\n|date=\n|finished=\n|stream=\n}}'}\n`;
+  }
+
+  wiki += `}}\n`;
+  return wiki;
+}
+
+function generateTier16SEBracket(bracket, schedule, teams, tier, options) {
+  const getMatchResult = (t1, t2) => getMatchResultHelper(t1, t2, schedule);
+  const formatTeamData = (t, score, isWinner) => formatTeamHelper(t, teams, score, isWinner);
+  const getDetails = (t1, t2) => generateMatchDetailsHelper(t1, t2, schedule);
+
+  let wiki = `{{16SEBracket\n`;
+  wiki += `|game=quake\n`;
+  wiki += `|column-width=200\n`;
+
+  // Round of 16
+  wiki += ` \n`;
+  for (let i = 0; i < 8; i++) {
+    const r16 = bracket.winners?.round16?.[i];
+    const t1 = r16?.team1 || '';
+    const t2 = r16?.team2 || '';
+    const result = getMatchResult(t1, t2);
+    const t1info = formatTeamData(t1, result.s1, result.s1 > result.s2);
+    const t2info = formatTeamData(t2, result.s2, result.s2 > result.s1);
+
+    const idx1 = i * 2 + 1;
+    const idx2 = i * 2 + 2;
+
+    wiki += `|R1D${idx1}=${t1info.name} |R1D${idx1}race= |R1D${idx1}flag=${t1info.flag} |R1D${idx1}score=${t1info.score} |R1D${idx1}win=${t1info.win}\n`;
+    wiki += `|R1D${idx2}=${t2info.name} |R1D${idx2}race= |R1D${idx2}flag=${t2info.flag} |R1D${idx2}score=${t2info.score} |R1D${idx2}win=${t2info.win}\n`;
+    wiki += `|R1G${i + 1}details=${getDetails(t1, t2)}\n`;
+  }
+
+  // Quarter Finals
+  wiki += `\n \n`;
+  for (let i = 0; i < 4; i++) {
+    const qf = bracket.winners?.quarterFinals?.[i];
+    const t1 = qf?.team1 || '';
+    const t2 = qf?.team2 || '';
+    const result = getMatchResult(t1, t2);
+    const t1info = formatTeamData(t1, result.s1, result.s1 > result.s2);
+    const t2info = formatTeamData(t2, result.s2, result.s2 > result.s1);
+
+    const idx1 = i * 2 + 1;
+    const idx2 = i * 2 + 2;
+
+    wiki += `|R2W${idx1}=${t1info.name} |R2W${idx1}race= |R2W${idx1}flag=${t1info.flag} |R2W${idx1}score=${t1info.score} |R2W${idx1}win=${t1info.win}\n`;
+    wiki += `|R2W${idx2}=${t2info.name} |R2W${idx2}race= |R2W${idx2}flag=${t2info.flag} |R2W${idx2}score=${t2info.score} |R2W${idx2}win=${t2info.win}\n`;
+    wiki += `|R2G${i + 1}details=${getDetails(t1, t2)}\n`;
+  }
+
+  // Semi Finals
+  wiki += `\n \n`;
+  for (let i = 0; i < 2; i++) {
+    const sf = bracket.winners?.semiFinals?.[i];
+    const t1 = sf?.team1 || '';
+    const t2 = sf?.team2 || '';
+    const result = getMatchResult(t1, t2);
+    const t1info = formatTeamData(t1, result.s1, result.s1 > result.s2);
+    const t2info = formatTeamData(t2, result.s2, result.s2 > result.s1);
+
+    const idx1 = i * 2 + 1;
+    const idx2 = i * 2 + 2;
+
+    wiki += `|R3W${idx1}=${t1info.name} |R3W${idx1}race= |R3W${idx1}flag=${t1info.flag} |R3W${idx1}score=${t1info.score} |R3W${idx1}win=${t1info.win}\n`;
+    wiki += `|R3W${idx2}=${t2info.name} |R3W${idx2}race= |R3W${idx2}flag=${t2info.flag} |R3W${idx2}score=${t2info.score} |R3W${idx2}win=${t2info.win}\n`;
+    wiki += `|R3G${i + 1}details=${getDetails(t1, t2)}\n`;
+  }
+
+  // Final
+  wiki += `\n \n`;
+  const ft1 = bracket.winners?.final?.team1 || '';
+  const ft2 = bracket.winners?.final?.team2 || '';
+  const fresult = getMatchResult(ft1, ft2);
+  const ft1info = formatTeamData(ft1, fresult.s1, fresult.s1 > fresult.s2);
+  const ft2info = formatTeamData(ft2, fresult.s2, fresult.s2 > fresult.s1);
+
+  wiki += `|R4W1=${ft1info.name} |R4W1race= |R4W1flag=${ft1info.flag} |R4W1score=${ft1info.score} |R4W1win=${ft1info.win}\n`;
+  wiki += `|R4W2=${ft2info.name} |R4W2race= |R4W2flag=${ft2info.flag} |R4W2score=${ft2info.score} |R4W2win=${ft2info.win}\n`;
+  wiki += `|R4G1details=${getDetails(ft1, ft2)}\n`;
+
+  // 3rd place
+  wiki += `\n \n`;
+  const thrd1 = bracket.thirdPlace?.team1 || '';
+  const thrd2 = bracket.thirdPlace?.team2 || '';
+  if (thrd1 || thrd2) {
+    const thrdResult = getMatchResult(thrd1, thrd2);
+    const thrd1info = formatTeamData(thrd1, thrdResult.s1, thrdResult.s1 > thrdResult.s2);
+    const thrd2info = formatTeamData(thrd2, thrdResult.s2, thrdResult.s2 > thrdResult.s1);
+
+    wiki += `|R4D1=${thrd1info.name} |R4D1race= |R4D1flag=${thrd1info.flag} |R4D1score=${thrd1info.score} |R4D1win=${thrd1info.win}\n`;
+    wiki += `|R4D2=${thrd2info.name} |R4D2race= |R4D2flag=${thrd2info.flag} |R4D2score=${thrd2info.score} |R4D2win=${thrd2info.win}\n`;
+    wiki += `|R4G2details=${getDetails(thrd1, thrd2) || '{{BracketMatchSummary\n|date=\n|finished=\n|stream=\n}}'}\n`;
+  }
+
+  wiki += `}}\n`;
+  return wiki;
+}
+
+function generateTier32SEBracket(bracket, schedule, teams, tier, options) {
+  // For 32-team tiers, we use a simplified listing approach
+  // Full 32SE bracket is quite large
+  let wiki = `{{32SEBracket\n`;
+  wiki += `|game=quake\n`;
+  wiki += `|column-width=180\n`;
+  wiki += `<!-- 32-team bracket - configure matches as needed -->\n`;
+  wiki += `}}\n`;
+  return wiki;
+}
+
+function generateTierDoubleElimBracket(bracket, schedule, teams, tier, options) {
+  // For double elim tiers, output a structured list
+  let wiki = `\n`;
+  wiki += `'''Winners Bracket'''\n`;
+
+  if (bracket.winners?.quarterFinals) {
+    wiki += `* Quarter Finals:\n`;
+    bracket.winners.quarterFinals.forEach((m, i) => {
+      wiki += `** Match ${i + 1}: ${m.team1 || 'TBD'} vs ${m.team2 || 'TBD'}\n`;
+    });
+  }
+
+  wiki += `* Semi Finals:\n`;
+  bracket.winners?.semiFinals?.forEach((m, i) => {
+    wiki += `** Match ${i + 1}: ${m.team1 || 'TBD'} vs ${m.team2 || 'TBD'}\n`;
+  });
+
+  wiki += `* Winners Final: ${bracket.winners?.final?.team1 || 'TBD'} vs ${bracket.winners?.final?.team2 || 'TBD'}\n\n`;
+
+  wiki += `'''Losers Bracket'''\n`;
+  wiki += `* (Losers bracket matches configured per tournament)\n\n`;
+
+  wiki += `'''Grand Final'''\n`;
+  wiki += `* ${bracket.grandFinal?.team1 || 'TBD'} vs ${bracket.grandFinal?.team2 || 'TBD'}\n`;
+
+  if (tier.bracketReset !== false) {
+    wiki += `* (Bracket reset available if losers bracket winner wins Grand Final)\n`;
+  }
+
+  wiki += `\n`;
+  return wiki;
 }
 
 // Helper functions for bracket generation
