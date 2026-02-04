@@ -1,139 +1,74 @@
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Orbitron:wght@400;500;600;700;800;900&family=Rajdhani:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@700;800;900&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   BLADE RUNNER / CYBERPUNK THEME
+   MODERN DARK MODE — QWICKY TOURNAMENT ADMIN
    ═══════════════════════════════════════════════════════════════════════════ */
 
 :root {
-  /* Core palette */
-  --cyber-obsidian: #0d0f14;
-  --cyber-charcoal: #14171f;
-  --cyber-steel: #1c2029;
-  --cyber-slate: #252a36;
-  
-  /* Neon accents */
-  --cyber-amber: #FFB100;
-  --cyber-amber-dim: #CC8E00;
-  --cyber-amber-glow: rgba(255, 177, 0, 0.4);
-  --cyber-blue: #00F3FF;
-  --cyber-blue-dim: #00C4CC;
-  --cyber-blue-glow: rgba(0, 243, 255, 0.4);
-  
+  /* Backgrounds */
+  --bg-app:      #121212;
+  --bg-card:     #1E1E2E;
+  --bg-input:    #252535;
+  --bg-elevated: #2A2A3C;
+
   /* Text */
-  --cyber-text: #E8EAF0;
-  --cyber-text-dim: #8891A5;
-  --cyber-text-bright: #FFFFFF;
-  
+  --text-primary:   #E0E0E0;
+  --text-secondary: #A0A0B0;
+  --text-bright:    #FFFFFF;
+
+  /* Accent — Deep Amber / Gold */
+  --accent:    #FFB300;
+  --accent-dim:#E6A200;
+  --accent-on: #121212;   /* text colour rendered ON an accent surface */
+
   /* Status */
-  --cyber-win: #00FF88;
-  --cyber-loss: #FF3366;
-  --cyber-neutral: #FFB100;
+  --status-win:  #00FF88;
+  --status-loss: #FF3366;
+
+  /* Borders */
+  --border:       #2A2A3C;
+  --border-focus: #FFB300;
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   BASE / RESET
+   ═══════════════════════════════════════════════════════════════════════════ */
 
 * {
   box-sizing: border-box;
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   BASE BODY & BACKGROUND
-   ═══════════════════════════════════════════════════════════════════════════ */
-
 body {
   margin: 0;
   padding: 0;
-  background: var(--cyber-obsidian);
+  background: var(--bg-app);
   min-height: 100vh;
-  font-family: 'Rajdhani', sans-serif;
-  color: var(--cyber-text);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  color: var(--text-primary);
   line-height: 1.6;
-  letter-spacing: 0.02em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Animated grid background */
-body::before {
-  content: '';
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: 
-    linear-gradient(90deg, rgba(255, 177, 0, 0.03) 1px, transparent 1px),
-    linear-gradient(rgba(255, 177, 0, 0.03) 1px, transparent 1px);
-  background-size: 50px 50px;
-  pointer-events: none;
-  z-index: 0;
-}
-
-/* Scanlines overlay */
+/* No grid, no scanlines on body */
+body::before,
 body::after {
-  content: '';
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: repeating-linear-gradient(
-    0deg,
-    transparent,
-    transparent 2px,
-    rgba(0, 0, 0, 0.15) 2px,
-    rgba(0, 0, 0, 0.15) 4px
-  );
-  pointer-events: none;
-  z-index: 9998;
+  content: none !important;
+}
+
+/* Kill the cyberpunk overlay <div>s that still live in JSX */
+.noise-overlay,
+.scanline {
+  display: none !important;
 }
 
 #root {
   position: relative;
   z-index: 1;
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   NOISE TEXTURE
-   ═══════════════════════════════════════════════════════════════════════════ */
-
-.noise-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  pointer-events: none;
-  opacity: 0.035;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
-  z-index: 9999;
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   SCANLINE ANIMATION
-   ═══════════════════════════════════════════════════════════════════════════ */
-
-@keyframes scanline-move {
-  0% { transform: translateY(-100%); }
-  100% { transform: translateY(100vh); }
-}
-
-.scanline {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 8px;
-  background: linear-gradient(
-    180deg, 
-    transparent, 
-    rgba(255, 177, 0, 0.08), 
-    rgba(0, 243, 255, 0.05),
-    transparent
-  );
-  pointer-events: none;
-  animation: scanline-move 6s linear infinite;
-  z-index: 9997;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -146,144 +81,101 @@ body::after {
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--cyber-obsidian);
-  border-left: 1px solid var(--cyber-steel);
+  background: var(--bg-app);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--cyber-slate);
-  border: 1px solid var(--cyber-amber-dim);
+  background: var(--bg-elevated);
+  border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--cyber-amber);
-  box-shadow: 0 0 10px var(--cyber-amber-glow);
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   PANEL STYLING
-   ═══════════════════════════════════════════════════════════════════════════ */
-
-.qw-panel {
-  background: 
-    linear-gradient(135deg, rgba(20, 23, 31, 0.95) 0%, rgba(13, 15, 20, 0.98) 100%);
-  border: 1px solid var(--cyber-steel);
-  border-radius: 0; /* Hard edges - cyberpunk style */
-  position: relative;
-  box-shadow: 
-    0 0 1px var(--cyber-amber-dim),
-    inset 0 1px 0 rgba(255, 177, 0, 0.05);
-}
-
-/* Corner accents */
-.qw-panel::before,
-.qw-panel::after {
-  content: '';
-  position: absolute;
-  width: 12px;
-  height: 12px;
-  border: 1px solid var(--cyber-amber);
-  opacity: 0.6;
-}
-
-.qw-panel::before {
-  top: -1px;
-  left: -1px;
-  border-right: none;
-  border-bottom: none;
-}
-
-.qw-panel::after {
-  bottom: -1px;
-  right: -1px;
-  border-left: none;
-  border-top: none;
-}
-
-/* Panel with scanlines */
-.qw-panel-scan {
-  background: 
-    repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 3px,
-      rgba(0, 0, 0, 0.1) 3px,
-      rgba(0, 0, 0, 0.1) 6px
-    ),
-    linear-gradient(135deg, rgba(20, 23, 31, 0.95) 0%, rgba(13, 15, 20, 0.98) 100%);
+  background: var(--accent);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
    TYPOGRAPHY
    ═══════════════════════════════════════════════════════════════════════════ */
 
-h1, h2, h3, h4, h5, h6, .font-display {
-  font-family: 'Orbitron', sans-serif;
-  text-transform: uppercase;
-  letter-spacing: 0.15em;
-  font-weight: 700;
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+  text-transform: none;
 }
 
-.font-mono, code, pre, 
-input[type="number"],
-td, .mono-data {
-  font-family: 'JetBrains Mono', 'Fira Code', monospace;
-  letter-spacing: 0.05em;
+/* .font-logo (Orbitron) is applied only to the QW badge via JSX */
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PANELS / CARDS
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.qw-panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  position: relative;
 }
 
-.font-body {
-  font-family: 'Rajdhani', sans-serif;
+/* Strip the cyberpunk corner-accent pseudo-elements */
+.qw-panel::before,
+.qw-panel::after {
+  content: none !important;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   INPUT STYLING
+   INPUTS
    ═══════════════════════════════════════════════════════════════════════════ */
 
-input[type="text"], 
+input[type="text"],
 input[type="number"],
+input[type="date"],
+input[type="time"],
 textarea,
 select {
-  background: var(--cyber-obsidian);
-  border: 1px solid var(--cyber-steel);
-  color: var(--cyber-text);
-  padding: 0.625rem 1rem;
-  border-radius: 0;
-  font-family: 'JetBrains Mono', monospace;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  color: var(--text-bright);
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
   font-size: 0.875rem;
-  transition: all 0.15s ease;
-  letter-spacing: 0.03em;
+  letter-spacing: normal;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-input[type="text"]:focus, 
+input[type="text"]:focus,
 input[type="number"]:focus,
+input[type="date"]:focus,
+input[type="time"]:focus,
 textarea:focus,
 select:focus {
   outline: none;
-  border-color: var(--cyber-amber);
-  box-shadow: 
-    0 0 0 1px var(--cyber-amber),
-    0 0 20px var(--cyber-amber-glow),
-    inset 0 0 10px rgba(255, 177, 0, 0.1);
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 2px rgba(255, 179, 0, 0.25);
 }
 
 input::placeholder,
 textarea::placeholder {
-  color: var(--cyber-text-dim);
-  opacity: 0.5;
+  color: var(--text-secondary);
+  opacity: 0.7;
 }
 
+/* Select arrow */
 select {
-  cursor: pointer;
   appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23FFB100' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23A0A0B0' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
-  background-position: right 0.75rem center;
-  padding-right: 2.5rem;
+  background-position: right 0.6rem center;
+  padding-right: 2rem;
 }
 
 select option {
-  background: var(--cyber-charcoal);
-  color: var(--cyber-text);
+  background: var(--bg-card);
+  color: var(--text-primary);
 }
 
 /* Checkbox */
@@ -291,16 +183,17 @@ input[type="checkbox"] {
   appearance: none;
   width: 18px;
   height: 18px;
-  border: 1px solid var(--cyber-steel);
-  background: var(--cyber-obsidian);
+  border: 1px solid var(--border);
+  background: var(--bg-input);
+  border-radius: 4px;
   cursor: pointer;
   position: relative;
+  transition: background 0.15s, border-color 0.15s;
 }
 
 input[type="checkbox"]:checked {
-  background: var(--cyber-amber);
-  border-color: var(--cyber-amber);
-  box-shadow: 0 0 10px var(--cyber-amber-glow);
+  background: var(--accent);
+  border-color: var(--accent);
 }
 
 input[type="checkbox"]:checked::after {
@@ -309,9 +202,9 @@ input[type="checkbox"]:checked::after {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  color: var(--cyber-obsidian);
+  color: var(--accent-on);
   font-size: 12px;
-  font-weight: bold;
+  font-weight: 700;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -319,46 +212,33 @@ input[type="checkbox"]:checked::after {
    ═══════════════════════════════════════════════════════════════════════════ */
 
 .qw-btn {
-  background: linear-gradient(180deg, var(--cyber-amber) 0%, var(--cyber-amber-dim) 100%);
-  color: var(--cyber-obsidian);
-  font-family: 'Orbitron', sans-serif;
-  font-weight: 700;
-  font-size: 0.75rem;
-  padding: 0.625rem 1.5rem;
+  background: var(--accent);
+  color: var(--accent-on);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-weight: 600;
+  font-size: 0.85rem;
+  padding: 0.5rem 1.25rem;
   border: none;
-  border-radius: 0;
+  border-radius: 6px;
   cursor: pointer;
-  text-transform: uppercase;
-  letter-spacing: 0.15em;
+  text-transform: none;
+  letter-spacing: normal;
   position: relative;
   overflow: hidden;
-  transition: all 0.2s ease;
-  box-shadow: 
-    0 0 0 1px var(--cyber-amber),
-    0 4px 15px rgba(255, 177, 0, 0.2);
+  transition: background 0.15s ease, transform 0.1s ease;
+  box-shadow: none;
 }
 
+/* Kill the shine-sweep pseudo-element */
 .qw-btn::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
-  transition: left 0.4s ease;
+  content: none !important;
 }
 
 .qw-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 
-    0 0 0 1px var(--cyber-amber),
-    0 0 30px var(--cyber-amber-glow),
-    0 8px 25px rgba(255, 177, 0, 0.3);
-}
-
-.qw-btn:hover::before {
-  left: 100%;
+  background: var(--accent-dim);
+  transform: translateY(-1px);
+  box-shadow: none;
+  animation: none;
 }
 
 .qw-btn:active {
@@ -366,40 +246,25 @@ input[type="checkbox"]:checked::after {
 }
 
 .qw-btn:disabled {
-  background: var(--cyber-steel);
-  color: var(--cyber-text-dim);
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
 }
 
-/* Secondary button */
+/* Secondary / ghost variant */
 .qw-btn-secondary {
   background: transparent;
-  border: 1px solid var(--cyber-steel);
-  color: var(--cyber-text);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
   box-shadow: none;
 }
 
 .qw-btn-secondary:hover {
-  border-color: var(--cyber-blue);
-  color: var(--cyber-blue);
-  box-shadow: 
-    0 0 0 1px var(--cyber-blue),
-    0 0 20px var(--cyber-blue-glow);
-}
-
-/* Glitch effect on hover */
-@keyframes glitch {
-  0%, 100% { transform: translate(0); }
-  20% { transform: translate(-2px, 2px); }
-  40% { transform: translate(-2px, -2px); }
-  60% { transform: translate(2px, 2px); }
-  80% { transform: translate(2px, -2px); }
-}
-
-.qw-btn:hover {
-  animation: glitch 0.3s ease;
+  border-color: var(--accent);
+  color: var(--accent);
+  box-shadow: none;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -409,227 +274,189 @@ input[type="checkbox"]:checked::after {
 table {
   width: 100%;
   border-collapse: collapse;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
 th {
-  font-family: 'Orbitron', sans-serif;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.15em;
+  letter-spacing: 0.04em;
   font-size: 0.7rem;
-  color: var(--cyber-amber);
-  padding: 1rem 0.75rem;
+  color: var(--text-secondary);
+  padding: 0.75rem;
   text-align: left;
-  border-bottom: 2px solid var(--cyber-amber-dim);
-  background: rgba(255, 177, 0, 0.05);
+  border-bottom: 1px solid var(--border);
+  background: rgba(42, 42, 60, 0.6);
 }
 
 td {
-  padding: 0.875rem 0.75rem;
-  border-bottom: 1px solid var(--cyber-steel);
+  padding: 0.65rem 0.75rem;
+  border-bottom: 1px solid rgba(42, 42, 60, 0.5);
   font-size: 0.875rem;
   line-height: 1.5;
 }
 
 tr {
-  transition: all 0.15s ease;
+  transition: background 0.12s ease;
 }
 
 tr:hover {
-  background: rgba(255, 177, 0, 0.08);
-  box-shadow: inset 0 0 20px rgba(255, 177, 0, 0.05);
+  background: rgba(42, 42, 60, 0.4);
+  box-shadow: none;
 }
 
-/* High contrast text in tables */
+/* Clean bold text in table cells — no text-shadow */
 td .font-semibold,
 td .font-bold {
-  color: var(--cyber-text-bright);
-  text-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
+  color: var(--text-bright);
+  text-shadow: none;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
    TABS
+   Active state: solid amber background, dark text.
+   Inactive tabs are styled via inline Tailwind (bg-qw-border / bg-qw-panel)
+   which already resolve correctly from the new palette.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 .tab-active {
-  color: var(--cyber-amber) !important;
-  border-bottom: 2px solid var(--cyber-amber);
-  text-shadow: 0 0 20px var(--cyber-amber-glow);
-  animation: crt-flicker 0.1s ease-in-out;
+  background: var(--accent) !important;
+  color: var(--accent-on) !important;
+  border-bottom-color: transparent !important;
+  text-shadow: none !important;
+  box-shadow: none !important;
+  animation: none !important;
 }
 
-@keyframes crt-flicker {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.8; }
-  75% { opacity: 0.95; }
-}
-
-/* Tab hover */
+/* Kill the old neon-hover on any element whose class contains "tab" */
 [class*="tab"]:not(.tab-active):hover {
-  color: var(--cyber-blue);
-  text-shadow: 0 0 15px var(--cyber-blue-glow);
+  text-shadow: none !important;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   GLOW EFFECTS
-   ═══════════════════════════════════════════════════════════════════════════ */
-
-.glow-amber {
-  box-shadow: 
-    0 0 5px var(--cyber-amber),
-    0 0 20px var(--cyber-amber-glow);
-}
-
-.glow-blue {
-  box-shadow: 
-    0 0 5px var(--cyber-blue),
-    0 0 20px var(--cyber-blue-glow);
-}
-
-.text-glow-amber {
-  text-shadow: 0 0 10px var(--cyber-amber-glow);
-}
-
-.text-glow-blue {
-  text-shadow: 0 0 10px var(--cyber-blue-glow);
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   STATUS COLORS
+   STATUS COLOUR UTILITIES  (used as className in JSX)
    ═══════════════════════════════════════════════════════════════════════════ */
 
 .text-qw-win {
-  color: var(--cyber-win) !important;
-  text-shadow: 0 0 8px rgba(0, 255, 136, 0.5);
+  color: var(--status-win) !important;
+  text-shadow: none;
 }
 
 .text-qw-loss {
-  color: var(--cyber-loss) !important;
-  text-shadow: 0 0 8px rgba(255, 51, 102, 0.5);
+  color: var(--status-loss) !important;
+  text-shadow: none;
 }
 
 .text-qw-accent {
-  color: var(--cyber-amber) !important;
-  text-shadow: 0 0 8px var(--cyber-amber-glow);
+  color: var(--accent) !important;
+  text-shadow: none;
 }
 
+/* Faint status-tinted backgrounds */
 .bg-qw-win\/10 {
-  background: rgba(0, 255, 136, 0.1) !important;
+  background: rgba(0, 255, 136, 0.08) !important;
 }
 
 .bg-qw-win\/20 {
-  background: rgba(0, 255, 136, 0.2) !important;
+  background: rgba(0, 255, 136, 0.15) !important;
 }
 
 .bg-qw-win\/30 {
-  background: rgba(0, 255, 136, 0.3) !important;
+  background: rgba(0, 255, 136, 0.22) !important;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   BRACKET CONNECTORS
+   LEGACY EFFECT CLASSES — all neutralised
    ═══════════════════════════════════════════════════════════════════════════ */
 
-.bracket-line {
-  background: linear-gradient(90deg, transparent 0%, var(--cyber-steel) 20%, var(--cyber-steel) 80%, transparent 100%);
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   ANIMATIONS
-   ═══════════════════════════════════════════════════════════════════════════ */
-
-@keyframes pulse-glow {
-  0%, 100% { 
-    box-shadow: 0 0 5px var(--cyber-amber-glow); 
-  }
-  50% { 
-    box-shadow: 0 0 25px var(--cyber-amber-glow), 0 0 50px rgba(255, 177, 0, 0.2); 
-  }
-}
-
-@keyframes data-stream {
-  0% { background-position: 0% 0%; }
-  100% { background-position: 100% 100%; }
-}
-
+.glow-amber,
+.glow-blue,
+.text-glow-amber,
+.text-glow-blue,
 .animate-pulse-glow {
-  animation: pulse-glow 2s ease-in-out infinite;
+  box-shadow: none !important;
+  text-shadow: none !important;
+  animation: none !important;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   SPECIAL ELEMENTS
+   TERMINAL LABELS — keep layout, strip the ">" prefix
    ═══════════════════════════════════════════════════════════════════════════ */
 
-/* Division header accent */
+.terminal-label {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.terminal-label::before {
+  content: none !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   DIVISION HEADER — keep left accent stripe, strip the "//" prefix
+   ═══════════════════════════════════════════════════════════════════════════ */
+
 .division-header {
-  border-left: 3px solid var(--cyber-amber);
+  border-left: 3px solid var(--accent);
   padding-left: 1rem;
   position: relative;
 }
 
 .division-header::before {
-  content: '//';
-  position: absolute;
-  left: -0.5rem;
-  top: 0;
-  color: var(--cyber-amber);
-  opacity: 0.5;
-  font-family: 'JetBrains Mono', monospace;
-}
-
-/* Terminal-style labels */
-.terminal-label {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.7rem;
-  color: var(--cyber-text-dim);
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-}
-
-.terminal-label::before {
-  content: '>';
-  margin-right: 0.5rem;
-  color: var(--cyber-amber);
-}
-
-/* Ring effect for grand final */
-.ring-2.ring-qw-accent {
-  box-shadow: 
-    0 0 0 2px var(--cyber-amber),
-    0 0 30px var(--cyber-amber-glow),
-    inset 0 0 20px rgba(255, 177, 0, 0.1);
+  content: none !important;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   RESPONSIVE ADJUSTMENTS
+   BRACKET CONNECTORS — subtle, no neon
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.bracket-line {
+  background: var(--border);
+}
+
+/* Grand-final ring — plain 2px ring, no glow */
+.ring-2.ring-qw-accent {
+  box-shadow: 0 0 0 2px var(--accent);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   RESPONSIVE
    ═══════════════════════════════════════════════════════════════════════════ */
 
 @media (max-width: 768px) {
   th, td {
-    padding: 0.625rem 0.5rem;
+    padding: 0.5rem;
     font-size: 0.8rem;
   }
-  
+
   .qw-btn {
-    padding: 0.5rem 1rem;
-    font-size: 0.7rem;
+    padding: 0.45rem 1rem;
+    font-size: 0.8rem;
   }
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   PRINT STYLES
+   PRINT
    ═══════════════════════════════════════════════════════════════════════════ */
 
 @media print {
-  body::before,
-  body::after,
-  .scanline,
-  .noise-overlay {
+  body {
+    background: #fff;
+    color: #1a1a1a;
+  }
+
+  .noise-overlay,
+  .scanline {
     display: none !important;
   }
-  
+
   .qw-panel {
-    border: 1px solid #333;
+    border: 1px solid #ccc;
     box-shadow: none;
+    background: #fff;
   }
 }
