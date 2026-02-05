@@ -90,34 +90,85 @@ function calculateStandings(schedule, division) {
   );
 }
 
+// Helper function to determine which tier a position falls into (for multi-tier playoffs)
+function getTierForPosition(position, playoffTiers) {
+  if (!playoffTiers || playoffTiers.length === 0) return null;
+
+  for (const tier of playoffTiers) {
+    const [start, end] = tier.positions.split('-').map(n => parseInt(n.trim()));
+    if (position >= start && position <= end) {
+      return tier;
+    }
+  }
+  return null;
+}
+
+// Helper function to map tier ID to Liquipedia background color
+function getTierBackgroundColor(tierId, isFirst) {
+  if (isFirst) return 'up'; // First place always gets 'up' (green)
+
+  const tierBgColors = {
+    gold: 'up',       // Green background for gold tier
+    silver: 'stayup', // Light green/teal for silver tier
+    bronze: 'stay',   // Yellow/neutral for bronze tier
+    copper: 'stay',
+    iron: 'staydown',
+    wood: 'staydown',
+    stone: 'down'
+  };
+  return tierBgColors[tierId] || 'stay';
+}
+
 // Generate Liquipedia GroupTableStart format
 function generateStandingsWiki(standings, teams, division, options) {
   const groups = {};
-  standings.forEach(t => { 
-    const g = t.group || 'A'; 
-    if (!groups[g]) groups[g] = []; 
-    groups[g].push(t); 
+  standings.forEach(t => {
+    const g = t.group || 'A';
+    if (!groups[g]) groups[g] = [];
+    groups[g].push(t);
   });
 
   let wiki = '';
 
   Object.entries(groups).sort().forEach(([groupName, gs]) => {
-    const info = options.advanceCount ? `Top ${options.advanceCount} advance to Playoffs.` : '';
-    
+    // Build info message based on format
+    let info = '';
+    if (division.format === 'multi-tier' && division.playoffTiers) {
+      const tierDescriptions = division.playoffTiers.map(tier =>
+        `${tier.positions}: ${tier.name}`
+      ).join(', ');
+      info = `Playoff Tiers: ${tierDescriptions}`;
+    } else {
+      info = options.advanceCount ? `Top ${options.advanceCount} advance to Playoffs.` : '';
+    }
+
     wiki += `{{GroupTableStart|${options.title || division.name} - Group ${groupName}|width=100%|finished=|date=|info=${info}}}\n`;
     wiki += `{{GroupTableColHeader|Team|games=1|maps=1|diff=1}}\n`;
-    
+
     gs.forEach((t, i) => {
       const teamInfo = getTeamInfo(teams, t.name);
       const cleanName = unicodeToAscii(t.name).trim();
       const diff = t.mapsWon - t.mapsLost;
       const diffStr = diff > 0 ? `+${diff}` : `${diff}`;
-      
-      // Determine background based on position and advanceCount
+      const position = i + 1;
+
+      // Determine background based on format
       let bg = 'stay';
-      if (i < (options.advanceCount || 2)) bg = 'up';
-      else if (i < (options.advanceCount || 2) + 2) bg = 'stayup';
-      else if (i >= gs.length - 2) bg = 'staydown';
+
+      if (division.format === 'multi-tier' && division.playoffTiers) {
+        // Multi-tier playoffs: use tier-based coloring
+        const tier = getTierForPosition(position, division.playoffTiers);
+        if (tier) {
+          bg = getTierBackgroundColor(tier.id, i === 0);
+        } else {
+          bg = 'stay'; // Not in any tier
+        }
+      } else {
+        // Standard playoffs: use advanceCount
+        if (i < (options.advanceCount || 2)) bg = 'up';
+        else if (i < (options.advanceCount || 2) + 2) bg = 'stayup';
+        else if (i >= gs.length - 2) bg = 'staydown';
+      }
       
       const players = teamInfo.players || '';
       const flag = teamInfo.country || 'eu';

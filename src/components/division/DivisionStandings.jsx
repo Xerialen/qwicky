@@ -165,10 +165,51 @@ function calculateStandings(schedule, division) {
   return { standings: sortedStandings, headToHead, isPlayAll };
 }
 
+// Helper function to determine which tier a position falls into (for multi-tier playoffs)
+function getTierForPosition(position, playoffTiers) {
+  if (!playoffTiers || playoffTiers.length === 0) return null;
+
+  for (const tier of playoffTiers) {
+    const [start, end] = tier.positions.split('-').map(n => parseInt(n.trim()));
+    if (position >= start && position <= end) {
+      return tier;
+    }
+  }
+  return null;
+}
+
+// Helper function to get tier color class
+function getTierColorClass(tierId) {
+  const tierColors = {
+    gold: 'bg-amber-500/20',
+    silver: 'bg-gray-300/20',
+    bronze: 'bg-orange-700/20',
+    copper: 'bg-orange-900/20',
+    iron: 'bg-gray-500/20',
+    wood: 'bg-amber-900/30',
+    stone: 'bg-gray-600/20'
+  };
+  return tierColors[tierId] || 'bg-qw-win/10';
+}
+
+// Helper function to get tier badge color
+function getTierBadgeColor(tierId) {
+  const tierBadgeColors = {
+    gold: 'bg-amber-500/40 text-amber-200',
+    silver: 'bg-gray-300/40 text-gray-200',
+    bronze: 'bg-orange-700/40 text-orange-200',
+    copper: 'bg-orange-900/40 text-orange-300',
+    iron: 'bg-gray-500/40 text-gray-300',
+    wood: 'bg-amber-900/50 text-amber-300',
+    stone: 'bg-gray-600/40 text-gray-300'
+  };
+  return tierBadgeColors[tierId] || 'bg-qw-win/30 text-qw-win';
+}
+
 export default function DivisionStandings({ division }) {
   const schedule = division.schedule || [];
   const { standings, headToHead, isPlayAll } = useMemo(
-    () => calculateStandings(schedule, division), 
+    () => calculateStandings(schedule, division),
     [schedule, division]
   );
 
@@ -231,12 +272,41 @@ export default function DivisionStandings({ division }) {
                   {groupStandings.map((team, idx) => {
                     const mapDiff = team.mapsWon - team.mapsLost;
                     const fragDiff = team.fragsFor - team.fragsAgainst;
-                    const advances = idx < (division.advanceCount || 2);
+                    const position = idx + 1;
+
+                    // Determine if team advances and which tier (for multi-tier)
+                    let advances = false;
+                    let tier = null;
+                    let rowBgClass = '';
+                    let badgeClass = '';
+
+                    if (division.format === 'multi-tier' && division.playoffTiers) {
+                      tier = getTierForPosition(position, division.playoffTiers);
+                      if (tier) {
+                        advances = true;
+                        rowBgClass = getTierColorClass(tier.id);
+                        badgeClass = getTierBadgeColor(tier.id);
+                      }
+                    } else {
+                      advances = idx < (division.advanceCount || 2);
+                      if (advances) {
+                        rowBgClass = 'bg-qw-win/10';
+                        badgeClass = 'bg-qw-win/30 text-qw-win';
+                      }
+                    }
+
+                    // First place always gets the accent color
+                    if (idx === 0) {
+                      badgeClass = 'bg-qw-accent text-qw-dark';
+                    } else if (!advances) {
+                      badgeClass = 'bg-qw-border text-qw-muted';
+                    }
+
                     return (
-                      <tr key={team.name} className={`border-b border-qw-border/50 ${advances ? 'bg-qw-win/10' : ''} hover:bg-qw-accent/5`}>
+                      <tr key={team.name} className={`border-b border-qw-border/50 ${rowBgClass} hover:bg-qw-accent/5`}>
                         <td className="text-center py-2">
-                          <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-display font-bold ${idx === 0 ? 'bg-qw-accent text-qw-dark' : advances ? 'bg-qw-win/30 text-qw-win' : 'bg-qw-border text-qw-muted'}`}>
-                            {idx + 1}
+                          <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-display font-bold ${badgeClass}`}>
+                            {position}
                           </span>
                         </td>
                         <td className="py-2">
@@ -284,10 +354,24 @@ export default function DivisionStandings({ division }) {
 
       {/* Legend */}
       <div className="flex flex-wrap items-center justify-center gap-4 text-sm">
-        <div className="flex items-center gap-2">
-          <span className="w-4 h-4 rounded bg-qw-win/30"></span>
-          <span className="text-qw-muted">Advances to playoffs</span>
-        </div>
+        {division.format === 'multi-tier' && division.playoffTiers ? (
+          // Show tier-specific legend
+          division.playoffTiers.map(tier => {
+            const colorClass = getTierColorClass(tier.id);
+            return (
+              <div key={tier.id} className="flex items-center gap-2">
+                <span className={`w-4 h-4 rounded ${colorClass}`}></span>
+                <span className="text-qw-muted">{tier.name} ({tier.positions})</span>
+              </div>
+            );
+          })
+        ) : (
+          // Show standard advancement legend
+          <div className="flex items-center gap-2">
+            <span className="w-4 h-4 rounded bg-qw-win/30"></span>
+            <span className="text-qw-muted">Advances to playoffs</span>
+          </div>
+        )}
         {isPlayAll ? (
           <>
             <div className="flex items-center gap-2">
