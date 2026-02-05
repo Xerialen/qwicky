@@ -125,7 +125,7 @@ export default function DivisionSchedule({ division, updateDivision, tournamentS
               bestOf: division.groupStageBestOf,
               date,
               time: '',
-              status: 'scheduled',
+              status: '',
               maps: []
             });
           });
@@ -159,7 +159,7 @@ export default function DivisionSchedule({ division, updateDivision, tournamentS
       bestOf: getDefaultBestOf(newMatch.round),
       date: newMatch.date,
       time: newMatch.time,
-      status: 'scheduled',
+      status: '',
       maps: []
     };
 
@@ -524,7 +524,8 @@ function MatchRow({ match, onUpdate, onRemove, isEditing, setEditing, showRound,
               <option value="grand">Grand Final</option>
               <option value="third">3rd Place</option>
             </select>
-            <select value={match.status} onChange={(e) => onUpdate(match.id, { status: e.target.value })} className="bg-qw-darker border border-qw-border rounded px-2 py-1 text-white text-xs">
+            <select value={match.status || ''} onChange={(e) => onUpdate(match.id, { status: e.target.value })} className="bg-qw-darker border border-qw-border rounded px-2 py-1 text-white text-xs">
+              <option value="">No Status</option>
               <option value="scheduled">Scheduled</option>
               <option value="live">Live</option>
               <option value="completed">Completed</option>

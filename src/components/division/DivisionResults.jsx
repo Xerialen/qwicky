@@ -446,7 +446,7 @@ export default function DivisionResults({ division, updateDivision }) {
     if (window.confirm('Clear all imported results?')) {
       updateDivision({
         rawMaps: [],
-        schedule: schedule.map(m => ({ ...m, maps: [], status: 'scheduled' }))
+        schedule: schedule.map(m => ({ ...m, maps: [], status: '' }))
       });
       setLastImported([]);
     }
