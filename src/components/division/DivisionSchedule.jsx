@@ -1,7 +1,51 @@
 // src/components/division/DivisionSchedule.jsx
 import React, { useState, useMemo } from 'react';
 
-export default function DivisionSchedule({ division, updateDivision }) {
+// Polygon (circle) method: produces N-1 rounds (N even) where every team
+// plays exactly once per round. Odd team counts get a null bye placeholder.
+function buildRoundRobinRounds(teamList) {
+  const n = teamList.length;
+  if (n < 2) return [];
+  const padded = n % 2 !== 0 ? [...teamList, null] : [...teamList];
+  const size = padded.length;
+  const rotating = padded.slice(1);
+  const rounds = [];
+
+  for (let r = 0; r < size - 1; r++) {
+    const roundMatches = [];
+    // Fixed team vs last in rotation
+    if (padded[0] !== null && rotating[rotating.length - 1] !== null) {
+      roundMatches.push([padded[0], rotating[rotating.length - 1]]);
+    }
+    // Mirror pairs from the rest of the rotation
+    for (let i = 0; i < Math.floor((rotating.length - 1) / 2); i++) {
+      const a = rotating[i];
+      const b = rotating[rotating.length - 2 - i];
+      if (a !== null && b !== null) {
+        roundMatches.push([a, b]);
+      }
+    }
+    rounds.push(roundMatches);
+    // Rotate: last element wraps to front
+    const last = rotating.pop();
+    rotating.unshift(last);
+  }
+  return rounds;
+}
+
+// Given a tournament start date and a round index, compute the date
+// for that round based on the division's match pace setting.
+function dateForRound(startDate, roundIndex, pace) {
+  if (!startDate) return '';
+  const daysPerRound = { daily: 1, 'twice-weekly': 4, weekly: 7, biweekly: 14 };
+  const interval = daysPerRound[pace];
+  if (!interval) return '';                          // 'flexible' → no date
+  const d = new Date(startDate + 'T00:00:00');      // force local midnight, avoid tz shift
+  d.setDate(d.getDate() + roundIndex * interval);
+  return d.toISOString().split('T')[0];
+}
+
+export default function DivisionSchedule({ division, updateDivision, tournamentStartDate }) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingMatch, setEditingMatch] = useState(null);
   const [newMatch, setNewMatch] = useState({
@@ -26,49 +70,63 @@ export default function DivisionSchedule({ division, updateDivision }) {
     }
   };
 
-  // Generate group schedule respecting assigned groups
+  // Generate group schedule in round-robin waves: every team plays once
+  // per round before any team plays again. Dates are prepopulated when the
+  // tournament has a start date and the pace is not 'flexible'.
   const generateGroupSchedule = () => {
-    // Group teams by their assigned group
     const teamsByGroup = {};
     groups.forEach(g => teamsByGroup[g] = []);
-    
+
     teams.forEach(team => {
       if (team.group && teamsByGroup[team.group]) {
         teamsByGroup[team.group].push(team);
       }
     });
 
-    // Check if all teams are assigned
     const unassignedCount = teams.filter(t => !t.group).length;
     if (unassignedCount > 0) {
       alert(`${unassignedCount} team(s) are not assigned to groups. Please assign all teams first in the Teams tab.`);
       return;
     }
 
-    const newSchedule = [];
     const meetings = division.groupMeetings || 1;
-    
+    const pace = division.matchPace || 'weekly';
+    const newSchedule = [];
+    let matchId = Date.now();
+
     for (const [groupName, groupTeams] of Object.entries(teamsByGroup)) {
       if (groupTeams.length < 2) continue;
-      
+
+      const rounds = buildRoundRobinRounds(groupTeams);
+
       for (let meeting = 0; meeting < meetings; meeting++) {
-        for (let i = 0; i < groupTeams.length; i++) {
-          for (let j = i + 1; j < groupTeams.length; j++) {
+        const offset = meeting * rounds.length;
+
+        rounds.forEach((roundMatches, roundIdx) => {
+          const globalRound = offset + roundIdx;
+          const date = dateForRound(tournamentStartDate, globalRound, pace);
+
+          roundMatches.forEach(([teamA, teamB]) => {
+            // Swap sides in even-numbered meetings for variety
+            const t1 = meeting % 2 === 0 ? teamA : teamB;
+            const t2 = meeting % 2 === 0 ? teamB : teamA;
+
             newSchedule.push({
-              id: `match-${Date.now()}-${groupName}-${i}-${j}-${meeting}`,
-              team1: groupTeams[i].name,
-              team2: groupTeams[j].name,
+              id: `match-${matchId++}-${groupName}`,
+              team1: t1.name,
+              team2: t2.name,
               group: groupName,
               round: 'group',
+              roundNum: globalRound + 1,
               meeting: meeting + 1,
               bestOf: division.groupStageBestOf,
-              date: '',
+              date,
               time: '',
               status: 'scheduled',
               maps: []
             });
-          }
-        }
+          });
+        });
       }
     }
 
@@ -172,6 +230,9 @@ export default function DivisionSchedule({ division, updateDivision }) {
             Teams: {teams.filter(t => t.group).length}/{teams.length} assigned to groups
             {' • '}
             Format: {division.groupMeetings || 1}× round-robin (Bo{division.groupStageBestOf})
+            {' • '}
+            Pace: {division.matchPace || 'weekly'}
+            {tournamentStartDate && <span> • Dates from: {tournamentStartDate}</span>}
           </span>
         </div>
       )}
@@ -237,19 +298,45 @@ export default function DivisionSchedule({ division, updateDivision }) {
             <div className="space-y-4">
               <h3 className="font-display text-lg text-qw-accent">GROUP STAGE</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {Object.entries(groupedMatches.groups).sort().map(([groupName, matches]) => (
-                  <div key={groupName} className="qw-panel overflow-hidden">
-                    <div className="bg-qw-dark px-4 py-2 border-b border-qw-border flex justify-between">
-                      <h4 className="font-display font-bold text-white">Group {groupName}</h4>
-                      <span className="text-xs text-qw-muted">{matches.length} matches</span>
+                {Object.entries(groupedMatches.groups).sort().map(([groupName, matches]) => {
+                  // Bucket matches by round so we can render wave headers
+                  const byRound = {};
+                  matches.forEach(m => {
+                    const rn = m.roundNum || 1;
+                    if (!byRound[rn]) byRound[rn] = [];
+                    byRound[rn].push(m);
+                  });
+                  const roundNums = Object.keys(byRound).map(Number).sort((a, b) => a - b);
+                  const showRoundHeaders = roundNums.length > 1;
+
+                  return (
+                    <div key={groupName} className="qw-panel overflow-hidden">
+                      <div className="bg-qw-dark px-4 py-2 border-b border-qw-border flex justify-between">
+                        <h4 className="font-display font-bold text-white">Group {groupName}</h4>
+                        <span className="text-xs text-qw-muted">{matches.length} matches</span>
+                      </div>
+                      <div className="max-h-96 overflow-y-auto">
+                        {roundNums.map(rn => (
+                          <React.Fragment key={rn}>
+                            {showRoundHeaders && (
+                              <div className="px-3 py-1 bg-qw-darker border-b border-qw-border/50 flex items-center gap-2">
+                                <span className="text-xs font-mono text-qw-accent">Round {rn}</span>
+                                {byRound[rn][0]?.date && (
+                                  <span className="text-xs font-mono text-qw-muted">— {byRound[rn][0].date}</span>
+                                )}
+                              </div>
+                            )}
+                            <div className="divide-y divide-qw-border">
+                              {byRound[rn].map(match => (
+                                <MatchRow key={match.id} match={match} onUpdate={handleUpdateMatch} onRemove={handleRemoveMatch} isEditing={editingMatch === match.id} setEditing={setEditingMatch} />
+                              ))}
+                            </div>
+                          </React.Fragment>
+                        ))}
+                      </div>
                     </div>
-                    <div className="divide-y divide-qw-border max-h-64 overflow-y-auto">
-                      {matches.map(match => (
-                        <MatchRow key={match.id} match={match} onUpdate={handleUpdateMatch} onRemove={handleRemoveMatch} isEditing={editingMatch === match.id} setEditing={setEditingMatch} />
-                      ))}
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}

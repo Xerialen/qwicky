@@ -479,6 +479,7 @@ function App() {
             updateDivision={(updates) => updateDivision(activeDivision.id, updates)}
             tournamentName={tournament.name}
             tournamentMode={tournament.mode}
+            tournamentStartDate={tournament.startDate}
           />
         );
       default:
