@@ -79,19 +79,12 @@ export default function Header({
           {/* Navigation + Save Controls */}
           <div className="flex items-center gap-3">
             <nav className="flex items-center gap-1">
-            {/* Tournament Info Tab */}
+            {/* Tournament Name (links to Info) */}
             <button
               onClick={() => setActiveTab('info')}
-              className={`
-                px-4 py-2 font-display font-semibold text-xs uppercase
-                transition-all duration-200 rounded
-                ${activeTab === 'info'
-                  ? 'bg-qw-accent text-qw-dark tab-active'
-                  : 'bg-qw-border text-qw-muted hover:text-white'
-                }
-              `}
+              className={`px-3 py-2 text-xs font-mono transition-colors ${activeTab === 'info' ? 'text-qw-accent' : 'text-qw-muted hover:text-white'}`}
             >
-              Info
+              {tournament.name || 'TOURNAMENT'}
             </button>
 
             {/* Divisions Manager Tab */}
@@ -117,19 +110,11 @@ export default function Header({
             {/* Division Selector Dropdown */}
             {divisions.length > 0 && (
               <>
-                <span className="text-qw-muted text-xs font-mono">{tournament.name || 'TOURNAMENT'}</span>
                 <span className="text-qw-border text-xs">›</span>
                 <div className="relative">
                 <button
                   onClick={() => setShowDivisionDropdown(!showDivisionDropdown)}
-                  className={`
-                    px-4 py-2 font-display font-semibold text-xs uppercase
-                    transition-all duration-200 rounded flex items-center gap-2
-                    ${activeTab === 'division'
-                      ? 'bg-qw-accent text-qw-dark tab-active'
-                      : 'bg-qw-border text-qw-muted hover:text-white'
-                    }
-                  `}
+                  className="px-3 py-2 font-display font-semibold text-xs uppercase bg-qw-dark border border-qw-border text-white rounded flex items-center gap-2 hover:border-qw-accent transition-all"
                 >
                   {activeDivisionId
                     ? divisions.find(d => d.id === activeDivisionId)?.name || 'SELECT'
