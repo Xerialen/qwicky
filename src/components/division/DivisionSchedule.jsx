@@ -480,13 +480,13 @@ function MatchRow({ match, onUpdate, onRemove, isEditing, setEditing, showRound,
             )}
           </div>
           {match.status === 'scheduled' && (
-            <span className="text-blue-400 text-xs" title="Scheduled">📅</span>
+            <span className="text-blue-400 text-sm" title="Scheduled">📅</span>
           )}
           {match.status === 'live' && (
-            <span className="text-red-400 text-xs animate-pulse" title="Live">🔴</span>
+            <span className="text-red-400 text-sm animate-pulse" title="Live">🔴</span>
           )}
           {match.status === 'completed' && (
-            <span className="text-green-400 text-xs" title="Completed">✓</span>
+            <span className="text-green-400 text-sm font-bold" title="Completed">✓</span>
           )}
           <span className="text-qw-muted text-xs">
             {match.round === 'group' && division?.groupStageType === 'playall' ? 'Go' : 'Bo'}{match.bestOf}

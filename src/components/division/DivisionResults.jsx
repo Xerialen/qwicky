@@ -499,10 +499,10 @@ export default function DivisionResults({ division, updateDivision }) {
       <div className="flex items-center justify-between">
         <div className="flex gap-2">
           <button onClick={() => setMode('json')} className={`px-4 py-2 rounded font-body font-semibold ${mode === 'json' ? 'bg-qw-accent text-qw-dark' : 'bg-qw-panel border border-qw-border text-qw-muted hover:text-white'}`}>
-            ? JSON Import
+            📄 JSON Import
           </button>
           <button onClick={() => setMode('api')} className={`px-4 py-2 rounded font-body font-semibold ${mode === 'api' ? 'bg-qw-accent text-qw-dark' : 'bg-qw-panel border border-qw-border text-qw-muted hover:text-white'}`}>
-            ? API Fetch
+            🌐 API Fetch
           </button>
         </div>
         {rawMaps.length > 0 && (
