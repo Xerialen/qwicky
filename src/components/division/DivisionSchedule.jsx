@@ -1,5 +1,5 @@
 // src/components/division/DivisionSchedule.jsx
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 
 // Polygon (circle) method: produces N-1 rounds (N even) where every team
 // plays exactly once per round. Odd team counts get a null bye placeholder.
@@ -51,6 +51,9 @@ export default function DivisionSchedule({ division, updateDivision, tournamentS
   const [newMatch, setNewMatch] = useState({
     team1: '', team2: '', date: '', time: '', group: '', round: 'group'
   });
+  const [draggedMatchId, setDraggedMatchId] = useState(null);
+  const [dragOverRound, setDragOverRound] = useState(null);
+  const dragGroupRef = useRef(null);
 
   const teams = division.teams || [];
   const schedule = division.schedule || [];
@@ -175,6 +178,48 @@ export default function DivisionSchedule({ division, updateDivision, tournamentS
     updateDivision({ schedule: schedule.filter(m => m.id !== matchId) });
   };
 
+  const handleDragStart = (e, match) => {
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', match.id);
+    dragGroupRef.current = match.group;
+    requestAnimationFrame(() => setDraggedMatchId(match.id));
+  };
+
+  const handleDragEnd = () => {
+    setDraggedMatchId(null);
+    dragGroupRef.current = null;
+    setDragOverRound(null);
+  };
+
+  const handleRoundDragOver = (e, groupName, roundNum) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (dragGroupRef.current === groupName) {
+      setDragOverRound({ group: groupName, roundNum });
+    }
+  };
+
+  const handleRoundDrop = (e, groupName, roundNum) => {
+    e.preventDefault();
+    setDragOverRound(null);
+    setDraggedMatchId(null);
+    dragGroupRef.current = null;
+
+    const matchId = e.dataTransfer.getData('text/plain');
+    if (!matchId) return;
+
+    const sourceMatch = schedule.find(m => m.id === matchId);
+    if (!sourceMatch || sourceMatch.group !== groupName || sourceMatch.roundNum === roundNum) return;
+
+    const pace = division.matchPace || 'weekly';
+    const newDate = dateForRound(tournamentStartDate, roundNum - 1, pace);
+
+    const updates = { roundNum };
+    if (newDate) updates.date = newDate;
+
+    handleUpdateMatch(matchId, updates);
+  };
+
   const groupedMatches = useMemo(() => {
     const grouped = { groups: {}, playoffs: [] };
     
@@ -233,6 +278,16 @@ export default function DivisionSchedule({ division, updateDivision, tournamentS
             {' • '}
             Pace: {division.matchPace || 'weekly'}
             {tournamentStartDate && <span> • Dates from: {tournamentStartDate}</span>}
+            {schedule.length > 0 && (
+              <span>
+                {' • '}
+                <span className="text-white font-semibold">{schedule.length}</span> matches
+                {' • '}
+                <span className="text-qw-win">{schedule.filter(m => m.status === 'completed').length}</span> played
+                {' • '}
+                {schedule.filter(m => m.status !== 'completed').length} pending
+              </span>
+            )}
           </span>
         </div>
       )}
@@ -297,7 +352,7 @@ export default function DivisionSchedule({ division, updateDivision, tournamentS
           {Object.keys(groupedMatches.groups).length > 0 && (
             <div className="space-y-4">
               <h3 className="font-display text-lg text-qw-accent">GROUP STAGE</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className={`grid gap-4 ${Object.keys(groupedMatches.groups).length > 1 ? 'grid-cols-1 md:grid-cols-2' : ''}`}>
                 {Object.entries(groupedMatches.groups).sort().map(([groupName, matches]) => {
                   // Bucket matches by round so we can render wave headers
                   const byRound = {};
@@ -316,23 +371,43 @@ export default function DivisionSchedule({ division, updateDivision, tournamentS
                         <span className="text-xs text-qw-muted">{matches.length} matches</span>
                       </div>
                       <div className="max-h-96 overflow-y-auto">
-                        {roundNums.map(rn => (
-                          <React.Fragment key={rn}>
-                            {showRoundHeaders && (
-                              <div className="px-3 py-1 bg-qw-darker border-b border-qw-border/50 flex items-center gap-2">
-                                <span className="text-xs font-mono text-qw-accent">Round {rn}</span>
-                                {byRound[rn][0]?.date && (
-                                  <span className="text-xs font-mono text-qw-muted">— {byRound[rn][0].date}</span>
-                                )}
+                        {roundNums.map(rn => {
+                          const isDropTarget = dragOverRound?.group === groupName && dragOverRound?.roundNum === rn;
+                          return (
+                            <div
+                              key={rn}
+                              onDragOver={(e) => handleRoundDragOver(e, groupName, rn)}
+                              onDrop={(e) => handleRoundDrop(e, groupName, rn)}
+                              className={isDropTarget ? 'bg-qw-accent/10 ring-1 ring-inset ring-qw-accent/40' : ''}
+                            >
+                              {showRoundHeaders && (
+                                <div className="px-3 py-1 bg-qw-darker border-b border-qw-border/50 flex items-center gap-2">
+                                  <span className="text-xs font-mono text-qw-accent">Round {rn}</span>
+                                  {byRound[rn][0]?.date && (
+                                    <span className="text-xs font-mono text-qw-muted">— {byRound[rn][0].date}</span>
+                                  )}
+                                  {isDropTarget && <span className="text-xs text-qw-accent/70 ml-auto">↓ drop here</span>}
+                                </div>
+                              )}
+                              <div className="divide-y divide-qw-border">
+                                {byRound[rn].map(match => (
+                                  <MatchRow
+                                    key={match.id}
+                                    match={match}
+                                    onUpdate={handleUpdateMatch}
+                                    onRemove={handleRemoveMatch}
+                                    isEditing={editingMatch === match.id}
+                                    setEditing={setEditingMatch}
+                                    showDragHandle={showRoundHeaders}
+                                    isDragging={draggedMatchId === match.id}
+                                    onDragStart={(e) => handleDragStart(e, match)}
+                                    onDragEnd={handleDragEnd}
+                                  />
+                                ))}
                               </div>
-                            )}
-                            <div className="divide-y divide-qw-border">
-                              {byRound[rn].map(match => (
-                                <MatchRow key={match.id} match={match} onUpdate={handleUpdateMatch} onRemove={handleRemoveMatch} isEditing={editingMatch === match.id} setEditing={setEditingMatch} />
-                              ))}
                             </div>
-                          </React.Fragment>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                   );
@@ -356,27 +431,11 @@ export default function DivisionSchedule({ division, updateDivision, tournamentS
         </>
       )}
 
-      {schedule.length > 0 && (
-        <div className="grid grid-cols-3 gap-4">
-          <div className="qw-panel p-4 text-center">
-            <div className="text-2xl font-display font-bold text-white">{schedule.length}</div>
-            <div className="text-xs text-qw-muted">Total</div>
-          </div>
-          <div className="qw-panel p-4 text-center">
-            <div className="text-2xl font-display font-bold text-qw-win">{schedule.filter(m => m.status === 'completed').length}</div>
-            <div className="text-xs text-qw-muted">Completed</div>
-          </div>
-          <div className="qw-panel p-4 text-center">
-            <div className="text-2xl font-display font-bold text-qw-muted">{schedule.filter(m => m.status === 'scheduled').length}</div>
-            <div className="text-xs text-qw-muted">Pending</div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
 
-function MatchRow({ match, onUpdate, onRemove, isEditing, setEditing, showRound }) {
+function MatchRow({ match, onUpdate, onRemove, isEditing, setEditing, showRound, showDragHandle, isDragging, onDragStart, onDragEnd }) {
   const score = (() => {
     if (!match.maps || match.maps.length === 0) return null;
     let t1 = 0, t2 = 0;
@@ -388,9 +447,15 @@ function MatchRow({ match, onUpdate, onRemove, isEditing, setEditing, showRound 
   })();
 
   return (
-    <div className="p-2 hover:bg-qw-dark/50 transition-colors group text-sm">
+    <div
+      className={`p-2 hover:bg-qw-dark/50 transition-colors group text-sm ${showDragHandle ? 'cursor-grab active:cursor-grabbing' : ''} ${isDragging ? 'opacity-40' : ''}`}
+      draggable={!!showDragHandle}
+      onDragStart={onDragStart}
+      onDragEnd={onDragEnd}
+    >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 flex-1">
+          {showDragHandle && <span className="text-qw-muted/40 select-none text-xs">⠿</span>}
           <div className="w-16 text-xs text-qw-muted font-mono">
             <div>{match.date || 'TBD'}</div>
           </div>
