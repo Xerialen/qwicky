@@ -222,13 +222,19 @@ export default function DivisionResults({ division, updateDivision }) {
             score2
           }];
 
-          const neededWins = Math.ceil(match.bestOf / 2);
-          let t1Wins = 0, t2Wins = 0;
-          match.maps.forEach(mp => {
-            if (mp.score1 > mp.score2) t1Wins++;
-            else if (mp.score2 > mp.score1) t2Wins++;
-          });
-          match.status = (t1Wins >= neededWins || t2Wins >= neededWins) ? 'completed' : 'live';
+          // For Play All (Go) group matches, completed = all maps played. For Best Of, completed = first to majority wins.
+          const isGroupPlayAll = match.round === 'group' && division.groupStageType === 'playall';
+          if (isGroupPlayAll) {
+            match.status = match.maps.length >= match.bestOf ? 'completed' : 'live';
+          } else {
+            const neededWins = Math.ceil(match.bestOf / 2);
+            let t1Wins = 0, t2Wins = 0;
+            match.maps.forEach(mp => {
+              if (mp.score1 > mp.score2) t1Wins++;
+              else if (mp.score2 > mp.score1) t2Wins++;
+            });
+            match.status = (t1Wins >= neededWins || t2Wins >= neededWins) ? 'completed' : 'live';
+          }
           newSchedule[matchIdx] = match;
         }
       }
@@ -351,13 +357,20 @@ export default function DivisionResults({ division, updateDivision }) {
         const score2 = isNormalOrder ? map.scores[res2] : map.scores[res1];
         return { id: map.id, map: map.map, date: map.date, score1, score2 };
       });
-      const neededWins = Math.ceil(m.bestOf / 2);
-      let t1Wins = 0, t2Wins = 0;
-      maps.forEach(mp => {
-        if (mp.score1 > mp.score2) t1Wins++;
-        else if (mp.score2 > mp.score1) t2Wins++;
-      });
-      return { ...m, maps, status: (t1Wins >= neededWins || t2Wins >= neededWins) ? 'completed' : 'live' };
+      const isGroupPlayAll = m.round === 'group' && division.groupStageType === 'playall';
+      let status;
+      if (isGroupPlayAll) {
+        status = maps.length >= m.bestOf ? 'completed' : 'live';
+      } else {
+        const neededWins = Math.ceil(m.bestOf / 2);
+        let t1Wins = 0, t2Wins = 0;
+        maps.forEach(mp => {
+          if (mp.score1 > mp.score2) t1Wins++;
+          else if (mp.score2 > mp.score1) t2Wins++;
+        });
+        status = (t1Wins >= neededWins || t2Wins >= neededWins) ? 'completed' : 'live';
+      }
+      return { ...m, maps, status };
     });
     updateDivision({ schedule: newSchedule });
   };
@@ -433,7 +446,7 @@ export default function DivisionResults({ division, updateDivision }) {
     if (window.confirm('Clear all imported results?')) {
       updateDivision({
         rawMaps: [],
-        schedule: schedule.map(m => ({ ...m, maps: [], status: 'scheduled' }))
+        schedule: schedule.map(m => ({ ...m, maps: [], status: '' }))
       });
       setLastImported([]);
     }
@@ -455,18 +468,22 @@ export default function DivisionResults({ division, updateDivision }) {
         if (m.id === series.scheduledMatch.id) {
           // Remove maps from this series
           const filteredMaps = (m.maps || []).filter(map => !seriesToRemove.has(map.id));
-          const neededWins = Math.ceil(m.bestOf / 2);
-          let t1Wins = 0, t2Wins = 0;
-          filteredMaps.forEach(mp => {
-            if (mp.score1 > mp.score2) t1Wins++;
-            else if (mp.score2 > mp.score1) t2Wins++;
-          });
-          return {
-            ...m,
-            maps: filteredMaps,
-            status: filteredMaps.length === 0 ? 'scheduled' : 
-                    (t1Wins >= neededWins || t2Wins >= neededWins) ? 'completed' : 'live'
-          };
+          const isGroupPlayAll = m.round === 'group' && division.groupStageType === 'playall';
+          let status;
+          if (filteredMaps.length === 0) {
+            status = 'scheduled';
+          } else if (isGroupPlayAll) {
+            status = filteredMaps.length >= m.bestOf ? 'completed' : 'live';
+          } else {
+            const neededWins = Math.ceil(m.bestOf / 2);
+            let t1Wins = 0, t2Wins = 0;
+            filteredMaps.forEach(mp => {
+              if (mp.score1 > mp.score2) t1Wins++;
+              else if (mp.score2 > mp.score1) t2Wins++;
+            });
+            status = (t1Wins >= neededWins || t2Wins >= neededWins) ? 'completed' : 'live';
+          }
+          return { ...m, maps: filteredMaps, status };
         }
         return m;
       });
@@ -482,10 +499,10 @@ export default function DivisionResults({ division, updateDivision }) {
       <div className="flex items-center justify-between">
         <div className="flex gap-2">
           <button onClick={() => setMode('json')} className={`px-4 py-2 rounded font-body font-semibold ${mode === 'json' ? 'bg-qw-accent text-qw-dark' : 'bg-qw-panel border border-qw-border text-qw-muted hover:text-white'}`}>
-            ? JSON Import
+            📄 JSON Import
           </button>
           <button onClick={() => setMode('api')} className={`px-4 py-2 rounded font-body font-semibold ${mode === 'api' ? 'bg-qw-accent text-qw-dark' : 'bg-qw-panel border border-qw-border text-qw-muted hover:text-white'}`}>
-            ? API Fetch
+            🌐 API Fetch
           </button>
         </div>
         {rawMaps.length > 0 && (

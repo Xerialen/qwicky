@@ -213,16 +213,16 @@ export default function DivisionSetup({ division, updateDivision }) {
             <label className="block text-qw-muted text-sm mb-1">Format</label>
             <select value={division.format} onChange={(e) => handleUpdate('format', e.target.value)} className="w-full bg-qw-dark border border-qw-border rounded px-4 py-2 text-white">
               <option value="groups">Groups → Playoffs</option>
+              <option value="multi-tier">Groups → Multi-Tier Playoffs</option>
               <option value="single-elim">Single Elimination Only</option>
               <option value="double-elim">Double Elimination Only</option>
-              <option value="multi-tier">Multi-Tier Playoffs</option>
             </select>
           </div>
         </div>
       </div>
 
       {/* Group Stage Settings */}
-      {division.format === 'groups' && (
+      {(division.format === 'groups' || division.format === 'multi-tier') && (
         <div className="qw-panel p-6">
           <h3 className="font-display text-lg text-qw-accent mb-4">GROUP STAGE</h3>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
@@ -261,9 +261,16 @@ export default function DivisionSetup({ division, updateDivision }) {
             </div>
             <div>
               <label className="block text-qw-muted text-sm mb-1">Advance to Playoffs</label>
-              <select value={division.advanceCount} onChange={(e) => handleUpdate('advanceCount', parseInt(e.target.value))} className="w-full bg-qw-dark border border-qw-border rounded px-3 py-2 text-white">
-                {[1, 2, 3, 4, 5, 6, 8].map(n => <option key={n} value={n}>Top {n}</option>)}
-              </select>
+              {isMultiTier ? (
+                <div className="w-full bg-qw-dark border border-qw-border rounded px-3 py-2 text-qw-muted flex items-center justify-between">
+                  <span>Set per tier</span>
+                  <span className="text-xs text-qw-accent">Locked by format</span>
+                </div>
+              ) : (
+                <select value={division.advanceCount} onChange={(e) => handleUpdate('advanceCount', parseInt(e.target.value))} className="w-full bg-qw-dark border border-qw-border rounded px-3 py-2 text-white">
+                  {[1, 2, 3, 4, 5, 6, 8].map(n => <option key={n} value={n}>Top {n}</option>)}
+                </select>
+              )}
             </div>
             <div>
               <label className="block text-qw-muted text-sm mb-1">Expected Pace</label>
@@ -611,7 +618,7 @@ export default function DivisionSetup({ division, updateDivision }) {
       </div>
 
       {/* Tie-Breakers */}
-      {division.format === 'groups' && (
+      {(division.format === 'groups' || division.format === 'multi-tier') && (
         <div className="qw-panel p-6">
           <h3 className="font-display text-lg text-qw-accent mb-4">TIE-BREAKERS</h3>
           <p className="text-sm text-qw-muted mb-4">When teams have equal points:</p>
@@ -619,29 +626,6 @@ export default function DivisionSetup({ division, updateDivision }) {
         </div>
       )}
 
-      {/* Summary */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-        <div className="qw-panel p-3 text-center">
-          <div className="text-xl font-display font-bold text-qw-accent">{division.teams?.length || 0}</div>
-          <div className="text-xs text-qw-muted">Teams</div>
-        </div>
-        <div className="qw-panel p-3 text-center">
-          <div className="text-xl font-display font-bold text-white">{formatDisplay(division.groupStageType || 'bestof', division.groupStageBestOf)}</div>
-          <div className="text-xs text-qw-muted">Groups</div>
-        </div>
-        <div className="qw-panel p-3 text-center">
-          <div className="text-xl font-display font-bold text-white">{playoffTeams}</div>
-          <div className="text-xs text-qw-muted">Playoff</div>
-        </div>
-        <div className="qw-panel p-3 text-center">
-          <div className="text-lg font-display font-bold text-white">{isDoubleElim ? 'Double' : 'Single'}</div>
-          <div className="text-xs text-qw-muted">Elim</div>
-        </div>
-        <div className="qw-panel p-3 text-center">
-          <div className="text-xl font-display font-bold text-white">{division.numGroups * division.advanceCount}</div>
-          <div className="text-xs text-qw-muted">Advance</div>
-        </div>
-      </div>
     </div>
   );
 }
