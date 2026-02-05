@@ -213,9 +213,9 @@ export default function DivisionSetup({ division, updateDivision }) {
             <label className="block text-qw-muted text-sm mb-1">Format</label>
             <select value={division.format} onChange={(e) => handleUpdate('format', e.target.value)} className="w-full bg-qw-dark border border-qw-border rounded px-4 py-2 text-white">
               <option value="groups">Groups → Playoffs</option>
+              <option value="multi-tier">Groups → Multi-Tier Playoffs</option>
               <option value="single-elim">Single Elimination Only</option>
               <option value="double-elim">Double Elimination Only</option>
-              <option value="multi-tier">Groups → Multi-Tier Playoffs</option>
             </select>
           </div>
         </div>
