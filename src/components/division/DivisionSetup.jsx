@@ -626,29 +626,6 @@ export default function DivisionSetup({ division, updateDivision }) {
         </div>
       )}
 
-      {/* Summary */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-        <div className="qw-panel p-3 text-center">
-          <div className="text-xl font-display font-bold text-qw-accent">{division.teams?.length || 0}</div>
-          <div className="text-xs text-qw-muted">Teams</div>
-        </div>
-        <div className="qw-panel p-3 text-center">
-          <div className="text-xl font-display font-bold text-white">{formatDisplay(division.groupStageType || 'bestof', division.groupStageBestOf)}</div>
-          <div className="text-xs text-qw-muted">Groups</div>
-        </div>
-        <div className="qw-panel p-3 text-center">
-          <div className="text-xl font-display font-bold text-white">{playoffTeams}</div>
-          <div className="text-xs text-qw-muted">Playoff</div>
-        </div>
-        <div className="qw-panel p-3 text-center">
-          <div className="text-lg font-display font-bold text-white">{isDoubleElim ? 'Double' : 'Single'}</div>
-          <div className="text-xs text-qw-muted">Elim</div>
-        </div>
-        <div className="qw-panel p-3 text-center">
-          <div className="text-xl font-display font-bold text-white">{division.numGroups * division.advanceCount}</div>
-          <div className="text-xs text-qw-muted">Advance</div>
-        </div>
-      </div>
     </div>
   );
 }

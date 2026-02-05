@@ -4,7 +4,6 @@ import Header from './components/Header';
 import TournamentInfo from './components/TournamentInfo';
 import DivisionManager from './components/DivisionManager';
 import DivisionView from './components/DivisionView';
-import DataManager from './components/DataManager';
 
 const STORAGE_KEY = 'qw-tournament-data';
 
@@ -499,13 +498,15 @@ function App() {
       <div className="scanline" />
       
       {/* Header */}
-      <Header 
+      <Header
         tournament={tournament}
         divisions={tournament.divisions}
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         activeDivisionId={activeDivisionId}
         setActiveDivisionId={setActiveDivisionId}
+        importTournament={importTournament}
+        resetTournament={resetTournament}
       />
       
       {/* Main Content */}
@@ -513,13 +514,6 @@ function App() {
         {renderContent()}
       </main>
       
-      {/* Data Manager */}
-      <DataManager
-        tournament={tournament}
-        importTournament={importTournament}
-        resetTournament={resetTournament}
-      />
-
       {/* Status Bar */}
       <div className="fixed bottom-0 left-0 right-0 bg-qw-panel border-t border-qw-border py-2 px-4 flex items-center justify-between text-xs font-mono text-qw-muted z-30">
         <div className="flex items-center gap-4">
