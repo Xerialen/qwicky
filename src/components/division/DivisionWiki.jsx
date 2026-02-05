@@ -14,13 +14,30 @@ function calculateStandings(schedule, division) {
   const isPlayAll = (division.groupStageType || 'bestof') === 'playall';
   const pointsWin = division.pointsWin ?? 3;
   const pointsLoss = division.pointsLoss ?? 0;
+
+  // Initialize ALL teams from division.teams first
+  const teams = division.teams || [];
+  teams.forEach(team => {
+    standings[team.name] = {
+      name: team.name,
+      group: team.group || 'A',
+      played: 0,
+      points: 0,
+      mapsWon: 0,
+      mapsLost: 0,
+      matchesWon: 0,
+      matchesLost: 0
+    };
+  });
+
   const groupMatches = schedule.filter(m => m.round === 'group' && m.maps?.length > 0);
 
   groupMatches.forEach(match => {
     const { team1, team2, maps, group } = match;
+    // Ensure teams exist (in case schedule has teams not in teams list)
     [team1, team2].forEach(t => {
-      if (!standings[t]) standings[t] = { 
-        name: t, group: group || 'A', played: 0, points: 0, 
+      if (!standings[t]) standings[t] = {
+        name: t, group: group || 'A', played: 0, points: 0,
         mapsWon: 0, mapsLost: 0, matchesWon: 0, matchesLost: 0
       };
     });

@@ -9,22 +9,40 @@ function calculateStandings(schedule, division) {
 
   const standings = {};
   const headToHead = {}; // Track head-to-head results
+
+  // Initialize ALL teams from division.teams first
+  const teams = division.teams || [];
+  teams.forEach(team => {
+    standings[team.name] = {
+      name: team.name,
+      group: team.group || 'A',
+      played: 0,
+      points: 0,
+      mapsWon: 0,
+      mapsLost: 0,
+      matchesWon: 0,
+      matchesLost: 0,
+      fragsFor: 0,
+      fragsAgainst: 0
+    };
+  });
+
   const groupMatches = schedule.filter(m => m.round === 'group' && m.maps?.length > 0);
 
   groupMatches.forEach(match => {
     const { team1, team2, maps, group } = match;
 
-    // Initialize team stats
+    // Ensure teams exist (in case schedule has teams not in teams list)
     [team1, team2].forEach(team => {
       if (!standings[team]) {
         standings[team] = {
-          name: team, 
-          group: group || 'A', 
-          played: 0, 
+          name: team,
+          group: group || 'A',
+          played: 0,
           points: 0,
-          mapsWon: 0, 
-          mapsLost: 0, 
-          matchesWon: 0, 
+          mapsWon: 0,
+          mapsLost: 0,
+          matchesWon: 0,
           matchesLost: 0,
           fragsFor: 0,
           fragsAgainst: 0
@@ -172,12 +190,13 @@ export default function DivisionStandings({ division }) {
     headToHead: 'H2H'
   };
 
-  if (!hasResults) {
+  // Show empty message only if there are NO teams at all
+  if (standings.length === 0) {
     return (
       <div className="qw-panel p-12 text-center">
         <div className="text-6xl mb-4">🏆</div>
-        <h2 className="font-display text-2xl text-white mb-2">No Results Yet</h2>
-        <p className="text-qw-muted">Import game results to see standings</p>
+        <h2 className="font-display text-2xl text-white mb-2">No Teams Yet</h2>
+        <p className="text-qw-muted">Add teams to the division to see standings</p>
       </div>
     );
   }
