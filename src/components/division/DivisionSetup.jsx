@@ -222,7 +222,7 @@ export default function DivisionSetup({ division, updateDivision }) {
       </div>
 
       {/* Group Stage Settings */}
-      {division.format === 'groups' && (
+      {(division.format === 'groups' || division.format === 'multi-tier') && (
         <div className="qw-panel p-6">
           <h3 className="font-display text-lg text-qw-accent mb-4">GROUP STAGE</h3>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
@@ -611,7 +611,7 @@ export default function DivisionSetup({ division, updateDivision }) {
       </div>
 
       {/* Tie-Breakers */}
-      {division.format === 'groups' && (
+      {(division.format === 'groups' || division.format === 'multi-tier') && (
         <div className="qw-panel p-6">
           <h3 className="font-display text-lg text-qw-accent mb-4">TIE-BREAKERS</h3>
           <p className="text-sm text-qw-muted mb-4">When teams have equal points:</p>
