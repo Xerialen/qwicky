@@ -116,7 +116,10 @@ export default function Header({
 
             {/* Division Selector Dropdown */}
             {divisions.length > 0 && (
-              <div className="relative">
+              <>
+                <span className="text-qw-muted text-xs font-mono">{tournament.name || 'TOURNAMENT'}</span>
+                <span className="text-qw-border text-xs">›</span>
+                <div className="relative">
                 <button
                   onClick={() => setShowDivisionDropdown(!showDivisionDropdown)}
                   className={`
@@ -179,6 +182,7 @@ export default function Header({
                   </>
                 )}
               </div>
+              </>
             )}
             </nav>
 
