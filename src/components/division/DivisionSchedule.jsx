@@ -449,7 +449,7 @@ function MatchRow({ match, onUpdate, onRemove, isEditing, setEditing, showRound,
 
   return (
     <div
-      className={`p-2 hover:bg-qw-dark/50 transition-colors group text-sm ${showDragHandle ? 'cursor-grab active:cursor-grabbing' : ''} ${isDragging ? 'opacity-40' : ''}`}
+      className={`p-2 hover:bg-qw-dark/50 transition-colors group text-sm ${showDragHandle ? 'cursor-grab active:cursor-grabbing' : ''} ${isDragging ? 'opacity-40' : ''} ${match.status === 'scheduled' ? 'bg-blue-950/20' : ''}`}
       draggable={!!showDragHandle}
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
@@ -479,6 +479,15 @@ function MatchRow({ match, onUpdate, onRemove, isEditing, setEditing, showRound,
               <span className="px-1.5 py-0.5 bg-orange-900/30 border border-orange-500/50 text-orange-300 text-xs rounded font-semibold">Map FF</span>
             )}
           </div>
+          {match.status === 'scheduled' && (
+            <span className="text-blue-400 text-xs" title="Scheduled">📅</span>
+          )}
+          {match.status === 'live' && (
+            <span className="text-red-400 text-xs animate-pulse" title="Live">🔴</span>
+          )}
+          {match.status === 'completed' && (
+            <span className="text-green-400 text-xs" title="Completed">✓</span>
+          )}
           <span className="text-qw-muted text-xs">
             {match.round === 'group' && division?.groupStageType === 'playall' ? 'Go' : 'Bo'}{match.bestOf}
           </span>
