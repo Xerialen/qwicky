@@ -402,6 +402,7 @@ export default function DivisionSchedule({ division, updateDivision, tournamentS
                                     isDragging={draggedMatchId === match.id}
                                     onDragStart={(e) => handleDragStart(e, match)}
                                     onDragEnd={handleDragEnd}
+                                    division={division}
                                   />
                                 ))}
                               </div>
@@ -422,7 +423,7 @@ export default function DivisionSchedule({ division, updateDivision, tournamentS
               <div className="qw-panel overflow-hidden">
                 <div className="divide-y divide-qw-border">
                   {groupedMatches.playoffs.map(match => (
-                    <MatchRow key={match.id} match={match} onUpdate={handleUpdateMatch} onRemove={handleRemoveMatch} isEditing={editingMatch === match.id} setEditing={setEditingMatch} showRound />
+                    <MatchRow key={match.id} match={match} onUpdate={handleUpdateMatch} onRemove={handleRemoveMatch} isEditing={editingMatch === match.id} setEditing={setEditingMatch} showRound division={division} />
                   ))}
                 </div>
               </div>
@@ -435,7 +436,7 @@ export default function DivisionSchedule({ division, updateDivision, tournamentS
   );
 }
 
-function MatchRow({ match, onUpdate, onRemove, isEditing, setEditing, showRound, showDragHandle, isDragging, onDragStart, onDragEnd }) {
+function MatchRow({ match, onUpdate, onRemove, isEditing, setEditing, showRound, showDragHandle, isDragging, onDragStart, onDragEnd, division }) {
   const score = (() => {
     if (!match.maps || match.maps.length === 0) return null;
     let t1 = 0, t2 = 0;
@@ -478,7 +479,9 @@ function MatchRow({ match, onUpdate, onRemove, isEditing, setEditing, showRound,
               <span className="px-1.5 py-0.5 bg-orange-900/30 border border-orange-500/50 text-orange-300 text-xs rounded font-semibold">Map FF</span>
             )}
           </div>
-          <span className="text-qw-muted text-xs">Bo{match.bestOf}</span>
+          <span className="text-qw-muted text-xs">
+            {match.round === 'group' && division?.groupStageType === 'playall' ? 'Go' : 'Bo'}{match.bestOf}
+          </span>
         </div>
         <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
           <button onClick={() => setEditing(isEditing ? null : match.id)} className="p-1 text-qw-muted hover:text-white text-xs">✏️</button>
