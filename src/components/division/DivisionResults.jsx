@@ -93,9 +93,11 @@ export default function DivisionResults({ division, updateDivision }) {
 
     return allSeries.map(series => {
       const [t1, t2] = series.resolvedTeams;
+      const t1Lower = t1.toLowerCase();
+      const t2Lower = t2.toLowerCase();
       const scheduledMatch = schedule.find(m =>
-        (m.team1 === t1 && m.team2 === t2) ||
-        (m.team1 === t2 && m.team2 === t1)
+        (m.team1.toLowerCase() === t1Lower && m.team2.toLowerCase() === t2Lower) ||
+        (m.team1.toLowerCase() === t2Lower && m.team2.toLowerCase() === t1Lower)
       );
       return {
         ...series,
@@ -197,16 +199,18 @@ export default function DivisionResults({ division, updateDivision }) {
       const resolved1 = resolveTeamName(team1);
       const resolved2 = resolveTeamName(team2);
       
+      const res1Lower = resolved1.toLowerCase();
+      const res2Lower = resolved2.toLowerCase();
       const matchIdx = newSchedule.findIndex(m =>
-        (m.team1 === resolved1 && m.team2 === resolved2) ||
-        (m.team1 === resolved2 && m.team2 === resolved1)
+        (m.team1.toLowerCase() === res1Lower && m.team2.toLowerCase() === res2Lower) ||
+        (m.team1.toLowerCase() === res2Lower && m.team2.toLowerCase() === res1Lower)
       );
 
       if (matchIdx !== -1) {
         const match = { ...newSchedule[matchIdx] };
         // Check if this specific map is already in the match
         if (!match.maps?.some(mp => mp.id === mapResult.id)) {
-          const isNormalOrder = match.team1 === resolved1;
+          const isNormalOrder = match.team1.toLowerCase() === res1Lower;
           const score1 = isNormalOrder ? mapResult.scores[team1] : mapResult.scores[team2];
           const score2 = isNormalOrder ? mapResult.scores[team2] : mapResult.scores[team1];
 
@@ -337,7 +341,7 @@ export default function DivisionResults({ division, updateDivision }) {
     const match = schedule.find(m => m.id === matchId);
     if (!match) return;
     const [res1, res2] = series.resolvedTeams;
-    const isNormalOrder = match.team1 === res1;
+    const isNormalOrder = match.team1.toLowerCase() === res1.toLowerCase();
     const newSchedule = schedule.map(m => {
       if (m.id !== matchId) return m;
       const maps = series.maps.map(map => {

@@ -1,5 +1,5 @@
 // src/components/division/DivisionSetup.jsx
-import React from 'react';
+import React, { useEffect } from 'react';
 import { createDefaultBracket } from '../../App';
 
 const formatDisplay = (type, count) => {
@@ -77,6 +77,50 @@ export default function DivisionSetup({ division, updateDivision }) {
     updateDivision({ [field]: value });
   };
 
+  // Default tier configuration
+  const createDefaultTiers = () => [
+    {
+      id: 'gold',
+      name: 'Gold Playoffs',
+      positions: '1-4',
+      type: 'single',
+      teams: 4,
+      bracket: createDefaultBracket('single', 4)
+    },
+    {
+      id: 'silver',
+      name: 'Silver Playoffs',
+      positions: '5-8',
+      type: 'single',
+      teams: 4,
+      bracket: createDefaultBracket('single', 4)
+    }
+  ];
+
+  // Sync playoffFormat when division format changes (fixes immediate update issue)
+  useEffect(() => {
+    const divFormat = division.format;
+    const currentPlayoffFormat = division.playoffFormat || 'single';
+
+    // When format is explicitly single or double elimination, sync the playoff format
+    if (divFormat === 'single-elim' && currentPlayoffFormat !== 'single') {
+      updateDivision({
+        playoffFormat: 'single',
+        bracket: createDefaultBracket('single', division.playoffTeams || 4)
+      });
+    } else if (divFormat === 'double-elim' && currentPlayoffFormat !== 'double') {
+      updateDivision({
+        playoffFormat: 'double',
+        bracket: createDefaultBracket('double', division.playoffTeams || 4)
+      });
+    } else if (divFormat === 'multi-tier' && !division.playoffTiers) {
+      // Initialize default tiers for multi-tier format
+      updateDivision({
+        playoffTiers: createDefaultTiers()
+      });
+    }
+  }, [division.format]);
+
   const handlePlayoffFormatChange = (format) => {
     handleUpdate('playoffFormat', format);
     // Recreate bracket when format changes
@@ -86,12 +130,74 @@ export default function DivisionSetup({ division, updateDivision }) {
   const handlePlayoffTeamsChange = (teams) => {
     handleUpdate('playoffTeams', teams);
     // Recreate bracket when team count changes
-    handleUpdate('bracket', createDefaultBracket(division.playoffFormat || 'single', teams));
+    const effectiveFormat = getEffectivePlayoffFormat();
+    handleUpdate('bracket', createDefaultBracket(effectiveFormat, teams));
+  };
+
+  // Determine the effective playoff format based on division format
+  const getEffectivePlayoffFormat = () => {
+    if (division.format === 'single-elim') return 'single';
+    if (division.format === 'double-elim') return 'double';
+    return division.playoffFormat || 'single';
   };
 
   const isPlayAll = (division.groupStageType || 'bestof') === 'playall';
-  const isDoubleElim = (division.playoffFormat || 'single') === 'double';
+  const effectivePlayoffFormat = getEffectivePlayoffFormat();
+  const isDoubleElim = effectivePlayoffFormat === 'double';
   const playoffTeams = division.playoffTeams || 4;
+
+  // Check if format is locked by division format selection
+  const isPlayoffFormatLocked = division.format === 'single-elim' || division.format === 'double-elim';
+  const isMultiTier = division.format === 'multi-tier';
+
+  // Multi-tier helper functions
+  const handleAddTier = () => {
+    const tiers = division.playoffTiers || [];
+    const tierNames = ['Bronze', 'Copper', 'Iron', 'Wood', 'Stone'];
+    const usedNames = tiers.map(t => t.name.split(' ')[0]);
+    const nextName = tierNames.find(n => !usedNames.includes(n)) || `Tier ${tiers.length + 1}`;
+    const lastTier = tiers[tiers.length - 1];
+    const lastEndPos = lastTier ? parseInt(lastTier.positions.split('-')[1]) : 4;
+
+    const newTier = {
+      id: `tier-${Date.now()}`,
+      name: `${nextName} Playoffs`,
+      positions: `${lastEndPos + 1}-${lastEndPos + 4}`,
+      type: 'single',
+      teams: 4,
+      bracket: createDefaultBracket('single', 4)
+    };
+
+    updateDivision({ playoffTiers: [...tiers, newTier] });
+  };
+
+  const handleRemoveTier = (tierId) => {
+    const tiers = division.playoffTiers || [];
+    if (tiers.length <= 1) return; // Keep at least one tier
+    updateDivision({ playoffTiers: tiers.filter(t => t.id !== tierId) });
+  };
+
+  const handleUpdateTier = (tierId, field, value) => {
+    const tiers = division.playoffTiers || [];
+    const updatedTiers = tiers.map(t => {
+      if (t.id !== tierId) return t;
+
+      // If changing type or teams, recreate the bracket
+      if (field === 'type' || field === 'teams') {
+        const newType = field === 'type' ? value : t.type;
+        const newTeams = field === 'teams' ? value : t.teams;
+        return {
+          ...t,
+          [field]: value,
+          bracket: createDefaultBracket(newType, newTeams)
+        };
+      }
+
+      return { ...t, [field]: value };
+    });
+
+    updateDivision({ playoffTiers: updatedTiers });
+  };
 
   return (
     <div className="space-y-6">
@@ -109,6 +215,7 @@ export default function DivisionSetup({ division, updateDivision }) {
               <option value="groups">Groups → Playoffs</option>
               <option value="single-elim">Single Elimination Only</option>
               <option value="double-elim">Double Elimination Only</option>
+              <option value="multi-tier">Multi-Tier Playoffs</option>
             </select>
           </div>
         </div>
@@ -183,122 +290,303 @@ export default function DivisionSetup({ division, updateDivision }) {
         </div>
       )}
 
-      {/* Playoff Settings */}
-      <div className="qw-panel p-6">
-        <h3 className="font-display text-lg text-qw-accent mb-4">PLAYOFFS</h3>
-        
-        {/* Format Selection */}
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6 pb-6 border-b border-qw-border">
-          <div>
-            <label className="block text-qw-muted text-sm mb-1">Elimination Format</label>
-            <select value={division.playoffFormat || 'single'} onChange={(e) => handlePlayoffFormatChange(e.target.value)} className="w-full bg-qw-dark border border-qw-border rounded px-3 py-2 text-white">
-              <option value="single">Single Elimination</option>
-              <option value="double">Double Elimination</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-qw-muted text-sm mb-1">Playoff Teams</label>
-            <select value={playoffTeams} onChange={(e) => handlePlayoffTeamsChange(parseInt(e.target.value))} className="w-full bg-qw-dark border border-qw-border rounded px-3 py-2 text-white">
-              <option value={4}>4 Teams</option>
-              <option value={8}>8 Teams</option>
-              <option value={12}>12 Teams</option>
-              <option value={16}>16 Teams</option>
-              <option value={32}>32 Teams</option>
-            </select>
-          </div>
-          {isDoubleElim && (
-            <div className="flex items-center gap-2">
-              <input type="checkbox" id="bracketReset" checked={division.playoffBracketReset !== false} onChange={(e) => handleUpdate('playoffBracketReset', e.target.checked)} className="accent-qw-accent" />
-              <label htmlFor="bracketReset" className="text-qw-muted text-sm">Allow Bracket Reset</label>
-            </div>
-          )}
-        </div>
+      {/* Playoff Settings - Multi-Tier Format */}
+      {isMultiTier && (
+        <div className="qw-panel p-6">
+          <h3 className="font-display text-lg text-qw-accent mb-4">MULTI-TIER PLAYOFFS</h3>
+          <p className="text-sm text-qw-muted mb-4">Configure multiple independent playoff brackets for different tier ranges (Gold/Silver/Bronze).</p>
 
-        {/* Winners Bracket */}
-        <div className="mb-6">
-          <h4 className="text-sm font-semibold text-white mb-3">{isDoubleElim ? '🏆 Winners Bracket' : 'Bracket Rounds'}</h4>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {playoffTeams >= 32 && (
-              <FormatSelect label="Round of 32" typeValue={division.playoffR32Type || 'bestof'} countValue={division.playoffR32BestOf || 3} onTypeChange={(v) => handleUpdate('playoffR32Type', v)} onCountChange={(v) => handleUpdate('playoffR32BestOf', v)} />
-            )}
-            {playoffTeams >= 16 && (
-              <FormatSelect label="Round of 16" typeValue={division.playoffR16Type || 'bestof'} countValue={division.playoffR16BestOf || 3} onTypeChange={(v) => handleUpdate('playoffR16Type', v)} onCountChange={(v) => handleUpdate('playoffR16BestOf', v)} />
-            )}
-            {playoffTeams >= 8 && (
-              <FormatSelect label="Quarter Finals" typeValue={division.playoffQFType || 'bestof'} countValue={division.playoffQFBestOf || 3} onTypeChange={(v) => handleUpdate('playoffQFType', v)} onCountChange={(v) => handleUpdate('playoffQFBestOf', v)} />
-            )}
-            <FormatSelect label="Semi Finals" typeValue={division.playoffSFType || 'bestof'} countValue={division.playoffSFBestOf || 3} onTypeChange={(v) => handleUpdate('playoffSFType', v)} onCountChange={(v) => handleUpdate('playoffSFBestOf', v)} />
-            <FormatSelect label={isDoubleElim ? "Winners Final" : "Final"} typeValue={division.playoffFinalType || 'bestof'} countValue={division.playoffFinalBestOf || 5} onTypeChange={(v) => handleUpdate('playoffFinalType', v)} onCountChange={(v) => handleUpdate('playoffFinalBestOf', v)} />
-            {!isDoubleElim && (
-              <div>
-                <label className="block text-qw-muted text-sm mb-1">3rd Place Match</label>
-                <div className="flex gap-1">
-                  <select value={division.playoff3rdBestOf === 0 ? 'skip' : (division.playoff3rdType || 'bestof')} onChange={(e) => { if (e.target.value === 'skip') handleUpdate('playoff3rdBestOf', 0); else { handleUpdate('playoff3rdType', e.target.value); if (division.playoff3rdBestOf === 0) handleUpdate('playoff3rdBestOf', 3); } }} className="flex-1 bg-qw-dark border border-qw-border rounded px-1 py-2 text-white text-sm">
-                    <option value="skip">Skip</option>
-                    <option value="bestof">Bo</option>
-                    <option value="playall">Go</option>
-                  </select>
-                  {division.playoff3rdBestOf > 0 && (
-                    <select value={division.playoff3rdBestOf} onChange={(e) => handleUpdate('playoff3rdBestOf', parseInt(e.target.value))} className="w-12 bg-qw-dark border border-qw-border rounded px-1 py-2 text-white text-sm">
-                      {[1, 3, 5].map(n => <option key={n} value={n}>{n}</option>)}
-                    </select>
+          {/* Tier Cards */}
+          <div className="space-y-4">
+            {(division.playoffTiers || []).map((tier, index) => {
+              const tierIsDoubleElim = tier.type === 'double';
+              return (
+                <div key={tier.id} className="bg-qw-dark rounded border border-qw-border p-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg">
+                        {tier.id === 'gold' ? '🥇' : tier.id === 'silver' ? '🥈' : tier.id === 'bronze' ? '🥉' : '🏅'}
+                      </span>
+                      <input
+                        type="text"
+                        value={tier.name}
+                        onChange={(e) => handleUpdateTier(tier.id, 'name', e.target.value)}
+                        className="bg-transparent border-b border-qw-border text-white font-semibold px-1"
+                      />
+                    </div>
+                    {index > 0 && (
+                      <button
+                        onClick={() => handleRemoveTier(tier.id)}
+                        className="text-red-400 hover:text-red-300 text-sm"
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div>
+                      <label className="block text-qw-muted text-xs mb-1">Positions</label>
+                      <input
+                        type="text"
+                        value={tier.positions}
+                        onChange={(e) => handleUpdateTier(tier.id, 'positions', e.target.value)}
+                        placeholder="e.g., 1-4"
+                        className="w-full bg-qw-darker border border-qw-border rounded px-2 py-1.5 text-white text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-qw-muted text-xs mb-1">Bracket Type</label>
+                      <select
+                        value={tier.type}
+                        onChange={(e) => handleUpdateTier(tier.id, 'type', e.target.value)}
+                        className="w-full bg-qw-darker border border-qw-border rounded px-2 py-1.5 text-white text-sm"
+                      >
+                        <option value="single">Single Elimination</option>
+                        <option value="double">Double Elimination</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-qw-muted text-xs mb-1">Teams</label>
+                      <select
+                        value={tier.teams}
+                        onChange={(e) => handleUpdateTier(tier.id, 'teams', parseInt(e.target.value))}
+                        className="w-full bg-qw-darker border border-qw-border rounded px-2 py-1.5 text-white text-sm"
+                      >
+                        <option value={4}>4 Teams</option>
+                        <option value={8}>8 Teams</option>
+                        <option value={16}>16 Teams</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-qw-muted text-xs mb-1">Series Format</label>
+                      <div className="flex gap-1">
+                        <select
+                          value={tier.seriesType || 'bestof'}
+                          onChange={(e) => handleUpdateTier(tier.id, 'seriesType', e.target.value)}
+                          className="flex-1 bg-qw-darker border border-qw-border rounded px-1 py-1.5 text-white text-sm"
+                        >
+                          <option value="bestof">Bo</option>
+                          <option value="playall">Go</option>
+                        </select>
+                        <select
+                          value={tier.seriesCount || 3}
+                          onChange={(e) => handleUpdateTier(tier.id, 'seriesCount', parseInt(e.target.value))}
+                          className="w-12 bg-qw-darker border border-qw-border rounded px-1 py-1.5 text-white text-sm"
+                        >
+                          {[1, 3, 5, 7].map(n => <option key={n} value={n}>{n}</option>)}
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Double Elim specific options */}
+                  {tierIsDoubleElim && (
+                    <div className="mt-4 pt-4 border-t border-qw-border/50">
+                      <div className="grid grid-cols-3 gap-4">
+                        <div>
+                          <label className="block text-qw-muted text-xs mb-1">Losers Bo</label>
+                          <select
+                            value={tier.losersBo || 3}
+                            onChange={(e) => handleUpdateTier(tier.id, 'losersBo', parseInt(e.target.value))}
+                            className="w-full bg-qw-darker border border-qw-border rounded px-2 py-1.5 text-white text-sm"
+                          >
+                            {[1, 3, 5].map(n => <option key={n} value={n}>Bo{n}</option>)}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-qw-muted text-xs mb-1">Grand Final</label>
+                          <select
+                            value={tier.grandFinalBo || 5}
+                            onChange={(e) => handleUpdateTier(tier.id, 'grandFinalBo', parseInt(e.target.value))}
+                            className="w-full bg-qw-darker border border-qw-border rounded px-2 py-1.5 text-white text-sm"
+                          >
+                            {[3, 5, 7].map(n => <option key={n} value={n}>Bo{n}</option>)}
+                          </select>
+                        </div>
+                        <div className="flex items-end">
+                          <label className="flex items-center gap-2 text-qw-muted text-sm">
+                            <input
+                              type="checkbox"
+                              checked={tier.bracketReset !== false}
+                              onChange={(e) => handleUpdateTier(tier.id, 'bracketReset', e.target.checked)}
+                              className="accent-qw-accent"
+                            />
+                            Bracket Reset
+                          </label>
+                        </div>
+                      </div>
+                    </div>
                   )}
+
+                  {/* Tier Summary */}
+                  <div className="mt-3 p-2 bg-qw-darker/50 rounded text-xs text-qw-muted">
+                    {tierIsDoubleElim ? (
+                      <span>
+                        Double Elim: {tier.teams} teams • {formatDisplay(tier.seriesType || 'bestof', tier.seriesCount || 3)} •
+                        GF Bo{tier.grandFinalBo || 5} {tier.bracketReset !== false ? '+ reset' : ''}
+                      </span>
+                    ) : (
+                      <span>
+                        Single Elim: {tier.teams} teams • {formatDisplay(tier.seriesType || 'bestof', tier.seriesCount || 3)}
+                      </span>
+                    )}
+                  </div>
                 </div>
+              );
+            })}
+          </div>
+
+          {/* Add Tier Button */}
+          <button
+            onClick={handleAddTier}
+            className="mt-4 w-full py-2 border-2 border-dashed border-qw-border rounded text-qw-muted hover:text-white hover:border-qw-accent transition-colors"
+          >
+            + Add Another Tier (Bronze/Copper/etc.)
+          </button>
+
+          {/* Multi-Tier Summary */}
+          <div className="mt-4 p-3 bg-qw-dark rounded border border-qw-border">
+            <div className="text-sm text-qw-muted">
+              <span className="text-qw-accent font-semibold">{(division.playoffTiers || []).length} tiers</span>
+              {' → '}
+              {(division.playoffTiers || []).map((t, i) => (
+                <span key={t.id}>
+                  {i > 0 && ' | '}
+                  <span className="text-white">{t.name}</span>
+                  <span className="text-qw-muted"> (Pos {t.positions})</span>
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Playoff Settings - Standard Format */}
+      {!isMultiTier && (
+        <div className="qw-panel p-6">
+          <h3 className="font-display text-lg text-qw-accent mb-4">PLAYOFFS</h3>
+
+          {/* Format Selection */}
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6 pb-6 border-b border-qw-border">
+            <div>
+              <label className="block text-qw-muted text-sm mb-1">Elimination Format</label>
+              {isPlayoffFormatLocked ? (
+                <div className="w-full bg-qw-dark border border-qw-border rounded px-3 py-2 text-qw-muted flex items-center justify-between">
+                  <span>{effectivePlayoffFormat === 'single' ? 'Single Elimination' : 'Double Elimination'}</span>
+                  <span className="text-xs text-qw-accent">Locked by format</span>
+                </div>
+              ) : (
+                <select value={division.playoffFormat || 'single'} onChange={(e) => handlePlayoffFormatChange(e.target.value)} className="w-full bg-qw-dark border border-qw-border rounded px-3 py-2 text-white">
+                  <option value="single">Single Elimination</option>
+                  <option value="double">Double Elimination</option>
+                </select>
+              )}
+            </div>
+            <div>
+              <label className="block text-qw-muted text-sm mb-1">Playoff Teams</label>
+              <select value={playoffTeams} onChange={(e) => handlePlayoffTeamsChange(parseInt(e.target.value))} className="w-full bg-qw-dark border border-qw-border rounded px-3 py-2 text-white">
+                <option value={4}>4 Teams</option>
+                <option value={8}>8 Teams</option>
+                <option value={12}>12 Teams</option>
+                <option value={16}>16 Teams</option>
+                <option value={32}>32 Teams</option>
+              </select>
+            </div>
+            {isDoubleElim && (
+              <div className="flex items-center gap-2">
+                <input type="checkbox" id="bracketReset" checked={division.playoffBracketReset !== false} onChange={(e) => handleUpdate('playoffBracketReset', e.target.checked)} className="accent-qw-accent" />
+                <label htmlFor="bracketReset" className="text-qw-muted text-sm">Allow Bracket Reset</label>
               </div>
             )}
           </div>
-        </div>
 
-        {/* Losers Bracket - only for double elim */}
-        {isDoubleElim && (
+          {/* Winners Bracket */}
           <div className="mb-6">
-            <h4 className="text-sm font-semibold text-white mb-3">💀 Losers Bracket</h4>
+            <h4 className="text-sm font-semibold text-white mb-3">{isDoubleElim ? '🏆 Winners Bracket' : 'Bracket Rounds'}</h4>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <FormatSelect label="Losers Rounds" typeValue={division.playoffLosersType || 'bestof'} countValue={division.playoffLosersBestOf || 3} onTypeChange={(v) => handleUpdate('playoffLosersType', v)} onCountChange={(v) => handleUpdate('playoffLosersBestOf', v)} />
-              <FormatSelect label="Grand Final" typeValue={division.playoffGrandFinalType || 'bestof'} countValue={division.playoffGrandFinalBestOf || 5} onTypeChange={(v) => handleUpdate('playoffGrandFinalType', v)} onCountChange={(v) => handleUpdate('playoffGrandFinalBestOf', v)} />
+              {playoffTeams >= 32 && (
+                <FormatSelect label="Round of 32" typeValue={division.playoffR32Type || 'bestof'} countValue={division.playoffR32BestOf || 3} onTypeChange={(v) => handleUpdate('playoffR32Type', v)} onCountChange={(v) => handleUpdate('playoffR32BestOf', v)} />
+              )}
+              {playoffTeams >= 16 && (
+                <FormatSelect label="Round of 16" typeValue={division.playoffR16Type || 'bestof'} countValue={division.playoffR16BestOf || 3} onTypeChange={(v) => handleUpdate('playoffR16Type', v)} onCountChange={(v) => handleUpdate('playoffR16BestOf', v)} />
+              )}
+              {playoffTeams >= 8 && (
+                <FormatSelect label="Quarter Finals" typeValue={division.playoffQFType || 'bestof'} countValue={division.playoffQFBestOf || 3} onTypeChange={(v) => handleUpdate('playoffQFType', v)} onCountChange={(v) => handleUpdate('playoffQFBestOf', v)} />
+              )}
+              <FormatSelect label="Semi Finals" typeValue={division.playoffSFType || 'bestof'} countValue={division.playoffSFBestOf || 3} onTypeChange={(v) => handleUpdate('playoffSFType', v)} onCountChange={(v) => handleUpdate('playoffSFBestOf', v)} />
+              <FormatSelect label={isDoubleElim ? "Winners Final" : "Final"} typeValue={division.playoffFinalType || 'bestof'} countValue={division.playoffFinalBestOf || 5} onTypeChange={(v) => handleUpdate('playoffFinalType', v)} onCountChange={(v) => handleUpdate('playoffFinalBestOf', v)} />
+              {!isDoubleElim && (
+                <div>
+                  <label className="block text-qw-muted text-sm mb-1">3rd Place Match</label>
+                  <div className="flex gap-1">
+                    <select value={division.playoff3rdBestOf === 0 ? 'skip' : (division.playoff3rdType || 'bestof')} onChange={(e) => { if (e.target.value === 'skip') handleUpdate('playoff3rdBestOf', 0); else { handleUpdate('playoff3rdType', e.target.value); if (division.playoff3rdBestOf === 0) handleUpdate('playoff3rdBestOf', 3); } }} className="flex-1 bg-qw-dark border border-qw-border rounded px-1 py-2 text-white text-sm">
+                      <option value="skip">Skip</option>
+                      <option value="bestof">Bo</option>
+                      <option value="playall">Go</option>
+                    </select>
+                    {division.playoff3rdBestOf > 0 && (
+                      <select value={division.playoff3rdBestOf} onChange={(e) => handleUpdate('playoff3rdBestOf', parseInt(e.target.value))} className="w-12 bg-qw-dark border border-qw-border rounded px-1 py-2 text-white text-sm">
+                        {[1, 3, 5].map(n => <option key={n} value={n}>{n}</option>)}
+                      </select>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
-        )}
 
-        {/* Structure Preview */}
-        <div className="p-3 bg-qw-dark rounded border border-qw-border">
-          <div className="text-sm text-qw-muted">
-            {isDoubleElim ? (
-              <>
-                <div className="mb-1">
-                  <span className="text-qw-accent">Winners:</span>{' '}
+          {/* Losers Bracket - only for double elim */}
+          {isDoubleElim && (
+            <div className="mb-6">
+              <h4 className="text-sm font-semibold text-white mb-3">💀 Losers Bracket</h4>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <FormatSelect label="Losers Rounds" typeValue={division.playoffLosersType || 'bestof'} countValue={division.playoffLosersBestOf || 3} onTypeChange={(v) => handleUpdate('playoffLosersType', v)} onCountChange={(v) => handleUpdate('playoffLosersBestOf', v)} />
+                <FormatSelect label="Grand Final" typeValue={division.playoffGrandFinalType || 'bestof'} countValue={division.playoffGrandFinalBestOf || 5} onTypeChange={(v) => handleUpdate('playoffGrandFinalType', v)} onCountChange={(v) => handleUpdate('playoffGrandFinalBestOf', v)} />
+              </div>
+            </div>
+          )}
+
+          {/* Structure Preview */}
+          <div className="p-3 bg-qw-dark rounded border border-qw-border">
+            <div className="text-sm text-qw-muted">
+              {isDoubleElim ? (
+                <>
+                  <div className="mb-1">
+                    <span className="text-qw-accent">Winners:</span>{' '}
+                    {playoffTeams >= 32 && `R32 (${formatDisplay(division.playoffR32Type || 'bestof', division.playoffR32BestOf || 3)}) → `}
+                    {playoffTeams >= 16 && `R16 (${formatDisplay(division.playoffR16Type || 'bestof', division.playoffR16BestOf || 3)}) → `}
+                    {playoffTeams >= 8 && `QF (${formatDisplay(division.playoffQFType || 'bestof', division.playoffQFBestOf || 3)}) → `}
+                    SF ({formatDisplay(division.playoffSFType || 'bestof', division.playoffSFBestOf || 3)}) →
+                    WF ({formatDisplay(division.playoffFinalType || 'bestof', division.playoffFinalBestOf || 5)})
+                  </div>
+                  <div className="mb-1">
+                    <span className="text-qw-accent">Losers:</span>{' '}
+                    {playoffTeams >= 32 && '6 rounds'}
+                    {playoffTeams >= 16 && playoffTeams < 32 && '4 rounds'}
+                    {playoffTeams >= 8 && playoffTeams < 16 && '3 rounds'}
+                    {playoffTeams < 8 && '2 rounds'} ({formatDisplay(division.playoffLosersType || 'bestof', division.playoffLosersBestOf || 3)})
+                  </div>
+                  <div>
+                    <span className="text-qw-accent">Grand Final:</span>{' '}
+                    {formatDisplay(division.playoffGrandFinalType || 'bestof', division.playoffGrandFinalBestOf || 5)}
+                    {division.playoffBracketReset !== false && ' + potential reset'}
+                  </div>
+                </>
+              ) : (
+                <span className="text-white">
                   {playoffTeams >= 32 && `R32 (${formatDisplay(division.playoffR32Type || 'bestof', division.playoffR32BestOf || 3)}) → `}
                   {playoffTeams >= 16 && `R16 (${formatDisplay(division.playoffR16Type || 'bestof', division.playoffR16BestOf || 3)}) → `}
                   {playoffTeams >= 8 && `QF (${formatDisplay(division.playoffQFType || 'bestof', division.playoffQFBestOf || 3)}) → `}
                   SF ({formatDisplay(division.playoffSFType || 'bestof', division.playoffSFBestOf || 3)}) →
-                  WF ({formatDisplay(division.playoffFinalType || 'bestof', division.playoffFinalBestOf || 5)})
-                </div>
-                <div className="mb-1">
-                  <span className="text-qw-accent">Losers:</span>{' '}
-                  {playoffTeams >= 32 && '6 rounds'}
-                  {playoffTeams >= 16 && playoffTeams < 32 && '4 rounds'}
-                  {playoffTeams >= 8 && playoffTeams < 16 && '3 rounds'}
-                  {playoffTeams < 8 && '2 rounds'} ({formatDisplay(division.playoffLosersType || 'bestof', division.playoffLosersBestOf || 3)})
-                </div>
-                <div>
-                  <span className="text-qw-accent">Grand Final:</span>{' '}
-                  {formatDisplay(division.playoffGrandFinalType || 'bestof', division.playoffGrandFinalBestOf || 5)}
-                  {division.playoffBracketReset !== false && ' + potential reset'}
-                </div>
-              </>
-            ) : (
-              <span className="text-white">
-                {playoffTeams >= 32 && `R32 (${formatDisplay(division.playoffR32Type || 'bestof', division.playoffR32BestOf || 3)}) → `}
-                {playoffTeams >= 16 && `R16 (${formatDisplay(division.playoffR16Type || 'bestof', division.playoffR16BestOf || 3)}) → `}
-                {playoffTeams >= 8 && `QF (${formatDisplay(division.playoffQFType || 'bestof', division.playoffQFBestOf || 3)}) → `}
-                SF ({formatDisplay(division.playoffSFType || 'bestof', division.playoffSFBestOf || 3)}) →
-                Final ({formatDisplay(division.playoffFinalType || 'bestof', division.playoffFinalBestOf || 5)})
-                {division.playoff3rdBestOf > 0 && ` + 3rd (${formatDisplay(division.playoff3rdType || 'bestof', division.playoff3rdBestOf)})`}
-              </span>
-            )}
+                  Final ({formatDisplay(division.playoffFinalType || 'bestof', division.playoffFinalBestOf || 5)})
+                  {division.playoff3rdBestOf > 0 && ` + 3rd (${formatDisplay(division.playoff3rdType || 'bestof', division.playoff3rdBestOf)})`}
+                </span>
+              )}
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Points System */}
       <div className="qw-panel p-6">
