@@ -370,7 +370,7 @@ export default function DivisionSchedule({ division, updateDivision, tournamentS
                         <h4 className="font-display font-bold text-white">Group {groupName}</h4>
                         <span className="text-xs text-qw-muted">{matches.length} matches</span>
                       </div>
-                      <div className="max-h-96 overflow-y-auto">
+                      <div className="max-h-[70vh] overflow-y-auto">
                         {roundNums.map(rn => {
                           const isDropTarget = dragOverRound?.group === groupName && dragOverRound?.roundNum === rn;
                           return (
@@ -524,6 +524,20 @@ function MatchRow({ match, onUpdate, onRemove, isEditing, setEditing, showRound,
               <option value={7}>Bo7</option>
             </select>
           </div>
+          {match.round === 'group' && (
+            <div className="grid grid-cols-1">
+              <label className="text-xs text-qw-muted mb-1">Group Stage Round:</label>
+              <select
+                value={match.roundNum || 1}
+                onChange={(e) => onUpdate(match.id, { roundNum: parseInt(e.target.value) })}
+                className="bg-qw-darker border border-qw-border rounded px-2 py-1 text-white text-xs"
+              >
+                {Array.from({ length: 20 }, (_, i) => i + 1).map(n => (
+                  <option key={n} value={n}>Round {n}</option>
+                ))}
+              </select>
+            </div>
+          )}
           <div className="grid grid-cols-1">
             <select 
               value={match.forfeit || 'none'} 
