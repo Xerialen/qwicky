@@ -50,19 +50,27 @@ export function parseMatch(gameId, jsonData) {
     // Initialize team scores
     cleanTeams.forEach(t => teamScores[t] = 0);
     
+    // Build a case-insensitive lookup from lowercased key → canonical team name
+    const teamKeyMap = {};
+    cleanTeams.forEach(t => { teamKeyMap[t.toLowerCase()] = t; });
+
     // Sum up frags per team from individual players
     jsonData.players.forEach(player => {
       const playerTeam = unicodeToAscii(player.team || '').trim();
       const playerName = unicodeToAscii(player.name || '').trim();
       const playerFrags = player.stats?.frags || 0;
-      
-      // For team matches: match by team name
-      if (teamScores.hasOwnProperty(playerTeam)) {
-        teamScores[playerTeam] += playerFrags;
+
+      // For team matches: match by team name (case-insensitive)
+      const resolvedTeam = teamKeyMap[playerTeam.toLowerCase()];
+      if (resolvedTeam !== undefined) {
+        teamScores[resolvedTeam] += playerFrags;
       }
-      // For 1on1 matches: match by player name (player IS the team)
-      else if (teamScores.hasOwnProperty(playerName)) {
-        teamScores[playerName] = playerFrags;
+      // For 1on1 matches: match by player name (case-insensitive)
+      else {
+        const resolvedPlayer = teamKeyMap[playerName.toLowerCase()];
+        if (resolvedPlayer !== undefined) {
+          teamScores[resolvedPlayer] = playerFrags;
+        }
       }
     });
   }
@@ -194,15 +202,26 @@ export function findBracketMatch(team1, team2, seriesSummary) {
   // Create the matchup key (sorted alphabetically)
   const sortedTeams = [team1, team2].sort((a, b) => a.localeCompare(b));
   const matchupKey = sortedTeams.join("vs");
-  
-  if (seriesSummary[matchupKey]) {
-    const s = seriesSummary[matchupKey];
+
+  // Try exact key first, then fall back to case-insensitive search
+  const lowerMatchupKey = matchupKey.toLowerCase();
+  const resolvedKey = seriesSummary[matchupKey]
+    ? matchupKey
+    : Object.keys(seriesSummary).find(k => k.toLowerCase() === lowerMatchupKey);
+
+  if (resolvedKey && seriesSummary[resolvedKey]) {
+    const s = seriesSummary[resolvedKey];
+    // Look up map wins case-insensitively against the stored team keys
+    const t1Lower = team1.toLowerCase();
+    const t2Lower = team2.toLowerCase();
+    const storedT1 = Object.keys(s.mapWins).find(k => k.toLowerCase() === t1Lower);
+    const storedT2 = Object.keys(s.mapWins).find(k => k.toLowerCase() === t2Lower);
     return {
-      team1Score: s.mapWins[team1] || 0,
-      team2Score: s.mapWins[team2] || 0,
+      team1Score: (storedT1 && s.mapWins[storedT1]) || 0,
+      team2Score: (storedT2 && s.mapWins[storedT2]) || 0,
       maps: s.maps
     };
   }
-  
+
   return null;
 }
