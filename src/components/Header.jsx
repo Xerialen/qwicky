@@ -82,7 +82,14 @@ export default function Header({
             {/* Tournament Name (links to Info) */}
             <button
               onClick={() => setActiveTab('info')}
-              className={`px-3 py-2 text-xs font-mono transition-colors ${activeTab === 'info' ? 'text-qw-accent' : 'text-qw-muted hover:text-white'}`}
+              className={`
+                px-4 py-2 font-display font-semibold text-xs uppercase
+                transition-all duration-200 rounded
+                ${activeTab === 'info'
+                  ? 'bg-qw-accent text-qw-dark tab-active'
+                  : 'bg-qw-border text-qw-muted hover:text-white'
+                }
+              `}
             >
               {tournament.name || 'TOURNAMENT'}
             </button>
@@ -99,7 +106,7 @@ export default function Header({
                 }
               `}
             >
-              Divisions
+              Division Mgr.
               {divisions.length > 0 && (
                 <span className={`ml-1.5 px-1.5 py-0.5 rounded text-xs font-mono ${activeTab === 'divisions' ? 'bg-qw-dark/40 text-qw-dark' : 'bg-qw-accent/20 text-qw-accent'}`}>
                   {divisions.length}
