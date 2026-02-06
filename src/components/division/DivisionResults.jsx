@@ -241,23 +241,27 @@ export default function DivisionResults({ division, updateDivision }) {
         // Move match to the correct round based on the game's actual date
         if (match.round === 'group' && match.group && mapResult.date) {
           const gameDate = mapResult.date.split(' ')[0];
-          if (gameDate && match.date && match.date !== gameDate) {
+          if (gameDate) {
             const roundDates = {};
             newSchedule.forEach(m => {
               if (m.group === match.group && m.roundNum && m.date && !roundDates[m.roundNum]) {
                 roundDates[m.roundNum] = m.date;
               }
             });
-            const gameTime = new Date(gameDate + 'T00:00:00').getTime();
-            let bestRound = match.roundNum;
-            let bestDist = Math.abs(new Date(match.date + 'T00:00:00').getTime() - gameTime);
-            for (const [rn, dateStr] of Object.entries(roundDates)) {
-              const dist = Math.abs(new Date(dateStr + 'T00:00:00').getTime() - gameTime);
-              if (dist < bestDist) { bestDist = dist; bestRound = Number(rn); }
-            }
-            if (bestRound !== match.roundNum) {
-              match.roundNum = bestRound;
-              match.date = roundDates[bestRound];
+            if (Object.keys(roundDates).length > 0) {
+              const gameTime = new Date(gameDate + 'T00:00:00').getTime();
+              let bestRound = match.roundNum;
+              let bestDist = match.date
+                ? Math.abs(new Date(match.date + 'T00:00:00').getTime() - gameTime)
+                : Infinity;
+              for (const [rn, dateStr] of Object.entries(roundDates)) {
+                const dist = Math.abs(new Date(dateStr + 'T00:00:00').getTime() - gameTime);
+                if (dist < bestDist) { bestDist = dist; bestRound = Number(rn); }
+              }
+              if (bestRound !== match.roundNum) {
+                match.roundNum = bestRound;
+                match.date = roundDates[bestRound];
+              }
             }
           }
         }
