@@ -198,16 +198,70 @@ export default function DivisionResults({ division, updateDivision }) {
       const [team1, team2] = mapResult.teams;
       const resolved1 = resolveTeamName(team1);
       const resolved2 = resolveTeamName(team2);
-      
+
       const res1Lower = resolved1.toLowerCase();
       const res2Lower = resolved2.toLowerCase();
-      const matchIdx = newSchedule.findIndex(m =>
-        (m.team1.toLowerCase() === res1Lower && m.team2.toLowerCase() === res2Lower) ||
-        (m.team1.toLowerCase() === res2Lower && m.team2.toLowerCase() === res1Lower)
-      );
+
+      // Find all candidate schedule entries for this team pair
+      const candidateIndices = [];
+      newSchedule.forEach((m, idx) => {
+        if ((m.team1.toLowerCase() === res1Lower && m.team2.toLowerCase() === res2Lower) ||
+            (m.team1.toLowerCase() === res2Lower && m.team2.toLowerCase() === res1Lower)) {
+          candidateIndices.push(idx);
+        }
+      });
+
+      let matchIdx = -1;
+      if (candidateIndices.length === 1) {
+        matchIdx = candidateIndices[0];
+      } else if (candidateIndices.length > 1) {
+        // Multiple meetings (double round-robin): pick by date proximity,
+        // preferring matches that don't have results yet
+        const gameDate = mapResult.date?.split(' ')[0];
+        const gameTime = gameDate ? new Date(gameDate + 'T00:00:00').getTime() : null;
+        const emptyOnes = candidateIndices.filter(i => !newSchedule[i].maps?.length);
+        const pool = emptyOnes.length > 0 ? emptyOnes : candidateIndices;
+
+        if (gameTime) {
+          let bestDist = Infinity;
+          pool.forEach(idx => {
+            const m = newSchedule[idx];
+            if (m.date) {
+              const dist = Math.abs(new Date(m.date + 'T00:00:00').getTime() - gameTime);
+              if (dist < bestDist) { bestDist = dist; matchIdx = idx; }
+            }
+          });
+        }
+        if (matchIdx === -1) matchIdx = pool[0];
+      }
 
       if (matchIdx !== -1) {
         const match = { ...newSchedule[matchIdx] };
+
+        // Move match to the correct round based on the game's actual date
+        if (match.round === 'group' && match.group && mapResult.date) {
+          const gameDate = mapResult.date.split(' ')[0];
+          if (gameDate && match.date && match.date !== gameDate) {
+            const roundDates = {};
+            newSchedule.forEach(m => {
+              if (m.group === match.group && m.roundNum && m.date && !roundDates[m.roundNum]) {
+                roundDates[m.roundNum] = m.date;
+              }
+            });
+            const gameTime = new Date(gameDate + 'T00:00:00').getTime();
+            let bestRound = match.roundNum;
+            let bestDist = Math.abs(new Date(match.date + 'T00:00:00').getTime() - gameTime);
+            for (const [rn, dateStr] of Object.entries(roundDates)) {
+              const dist = Math.abs(new Date(dateStr + 'T00:00:00').getTime() - gameTime);
+              if (dist < bestDist) { bestDist = dist; bestRound = Number(rn); }
+            }
+            if (bestRound !== match.roundNum) {
+              match.roundNum = bestRound;
+              match.date = roundDates[bestRound];
+            }
+          }
+        }
+
         // Check if this specific map is already in the match
         if (!match.maps?.some(mp => mp.id === mapResult.id)) {
           const isNormalOrder = match.team1.toLowerCase() === res1Lower;
@@ -235,8 +289,8 @@ export default function DivisionResults({ division, updateDivision }) {
             });
             match.status = (t1Wins >= neededWins || t2Wins >= neededWins) ? 'completed' : 'live';
           }
-          newSchedule[matchIdx] = match;
         }
+        newSchedule[matchIdx] = match;
       }
     });
 
