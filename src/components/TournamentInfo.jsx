@@ -1,7 +1,19 @@
 // src/components/TournamentInfo.jsx
-import React from 'react';
+import React, { useState } from 'react';
 
 export default function TournamentInfo({ tournament, updateTournament }) {
+  const [copiedField, setCopiedField] = useState(null);
+
+  const tournamentSlug = (tournament.name || 'my-tournament')
+    .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+
+  const botInviteUrl = 'https://discord.com/oauth2/authorize?client_id=1469479991929733140&permissions=83968&integration_type=0&scope=bot+applications.commands';
+
+  const copyToClipboard = (text, field) => {
+    navigator.clipboard.writeText(text);
+    setCopiedField(field);
+    setTimeout(() => setCopiedField(null), 2000);
+  };
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -114,6 +126,64 @@ export default function TournamentInfo({ tournament, updateTournament }) {
             })}
           </div>
         )}
+      </div>
+
+      {/* Discord Integration */}
+      <div className="qw-panel p-6">
+        <h3 className="font-display text-lg text-qw-accent mb-4">DISCORD INTEGRATION</h3>
+        <p className="text-qw-muted text-sm mb-4">
+          Connect a Discord channel so players can submit match results by posting hub URLs.
+        </p>
+
+        <div className="space-y-4">
+          {/* Tournament ID */}
+          <div className="p-4 bg-qw-dark rounded border border-qw-border">
+            <label className="block text-qw-muted text-sm mb-1">Tournament ID (use this with /register)</label>
+            <div className="flex items-center gap-2">
+              <code className="flex-1 bg-qw-darker px-4 py-2 rounded font-mono text-white text-sm">
+                {tournamentSlug}
+              </code>
+              <button
+                onClick={() => copyToClipboard(tournamentSlug, 'slug')}
+                className="px-3 py-2 rounded bg-qw-accent text-qw-dark text-sm font-semibold hover:bg-qw-accent/80"
+              >
+                {copiedField === 'slug' ? 'Copied!' : 'Copy'}
+              </button>
+            </div>
+          </div>
+
+          {/* Register command */}
+          <div className="p-4 bg-qw-dark rounded border border-qw-border">
+            <label className="block text-qw-muted text-sm mb-1">Register command (paste in Discord)</label>
+            <div className="flex items-center gap-2">
+              <code className="flex-1 bg-qw-darker px-4 py-2 rounded font-mono text-white text-sm">
+                /register tournament-id:{tournamentSlug}
+              </code>
+              <button
+                onClick={() => copyToClipboard(`/register tournament-id:${tournamentSlug}`, 'cmd')}
+                className="px-3 py-2 rounded bg-qw-accent text-qw-dark text-sm font-semibold hover:bg-qw-accent/80"
+              >
+                {copiedField === 'cmd' ? 'Copied!' : 'Copy'}
+              </button>
+            </div>
+          </div>
+
+          {/* Bot invite */}
+          <div className="p-4 bg-qw-dark rounded border border-qw-border">
+            <label className="block text-qw-muted text-sm mb-2">Setup steps</label>
+            <ol className="text-sm text-qw-muted space-y-2 list-decimal list-inside">
+              <li>
+                <a href={botInviteUrl} target="_blank" rel="noopener noreferrer" className="text-qw-accent hover:underline">
+                  Invite QWICKY Bot to your Discord server
+                </a>
+              </li>
+              <li>Go to the channel where players will post results</li>
+              <li>Type the register command above</li>
+              <li>Players can now post hub.quakeworld.nu links and the bot will track them</li>
+              <li>Review submissions in the <span className="text-qw-accent">Results</span> tab of each division</li>
+            </ol>
+          </div>
+        </div>
       </div>
 
       {/* Instructions */}

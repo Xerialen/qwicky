@@ -2,18 +2,72 @@
 import React, { useState, useRef, useMemo, useCallback } from 'react';
 import { parseMatch } from '../../utils/matchLogic';
 
-export default function DivisionResults({ division, updateDivision }) {
+export default function DivisionResults({ division, updateDivision, tournamentId }) {
   const [mode, setMode] = useState('api');
   // API Fetch states
   const [apiInput, setApiInput] = useState('');
   const [apiStatus, setApiStatus] = useState(null);
-  
+
   // JSON states
   const [jsonInput, setJsonInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [lastImported, setLastImported] = useState([]);
   const fileInputRef = useRef(null);
+
+  // Discord submission states
+  const [submissions, setSubmissions] = useState([]);
+  const [submissionsLoading, setSubmissionsLoading] = useState(false);
+  const [submissionsError, setSubmissionsError] = useState(null);
+
+  const fetchSubmissions = async () => {
+    if (!tournamentId) return;
+    setSubmissionsLoading(true);
+    setSubmissionsError(null);
+    try {
+      const res = await fetch(`/api/submissions/${encodeURIComponent(tournamentId)}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to fetch');
+      setSubmissions(data.submissions || []);
+    } catch (err) {
+      setSubmissionsError(err.message);
+    }
+    setSubmissionsLoading(false);
+  };
+
+  const handleApprove = async (submission) => {
+    try {
+      const res = await fetch(`/api/submissions/${submission.id}/approve`, { method: 'POST' });
+      if (!res.ok) throw new Error('Failed to approve');
+
+      // Process the game data through the existing import pipeline
+      const gameData = submission.game_data;
+      if (gameData) {
+        const parsed = parseMatch(submission.game_id, gameData);
+        if (parsed) addMapsInBatch([parsed]);
+      }
+
+      setSubmissions(prev => prev.filter(s => s.id !== submission.id));
+    } catch (err) {
+      setSubmissionsError(err.message);
+    }
+  };
+
+  const handleReject = async (submission) => {
+    try {
+      const res = await fetch(`/api/submissions/${submission.id}/reject`, { method: 'POST' });
+      if (!res.ok) throw new Error('Failed to reject');
+      setSubmissions(prev => prev.filter(s => s.id !== submission.id));
+    } catch (err) {
+      setSubmissionsError(err.message);
+    }
+  };
+
+  const handleBulkApprove = async () => {
+    for (const sub of submissions) {
+      await handleApprove(sub);
+    }
+  };
 
   const teams = division.teams || [];
   const schedule = division.schedule || [];
@@ -562,6 +616,9 @@ export default function DivisionResults({ division, updateDivision }) {
           <button onClick={() => setMode('json')} className={`px-4 py-2 rounded font-body font-semibold ${mode === 'json' ? 'bg-qw-accent text-qw-dark' : 'bg-qw-panel border border-qw-border text-qw-muted hover:text-white'}`}>
             📄 JSON Import
           </button>
+          <button onClick={() => { setMode('discord'); fetchSubmissions(); }} className={`px-4 py-2 rounded font-body font-semibold ${mode === 'discord' ? 'bg-qw-accent text-qw-dark' : 'bg-qw-panel border border-qw-border text-qw-muted hover:text-white'}`}>
+            🤖 Discord
+          </button>
         </div>
         {rawMaps.length > 0 && (
           <button onClick={handleClearResults} className="text-sm text-red-400 hover:text-red-300">Clear All</button>
@@ -578,7 +635,87 @@ export default function DivisionResults({ division, updateDivision }) {
         </div>
       )}
 
-      {mode === 'json' ? (
+      {mode === 'discord' ? (
+        <div className="qw-panel p-6 space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="font-display text-lg text-qw-accent">DISCORD SUBMISSIONS</h3>
+            <div className="flex gap-2">
+              {submissions.length > 1 && (
+                <button onClick={handleBulkApprove} className="px-3 py-1 rounded bg-qw-win text-qw-dark text-sm font-semibold">
+                  Approve All ({submissions.length})
+                </button>
+              )}
+              <button onClick={fetchSubmissions} disabled={submissionsLoading} className="px-3 py-1 rounded border border-qw-border text-qw-muted text-sm hover:text-white disabled:opacity-50">
+                {submissionsLoading ? 'Loading...' : 'Refresh'}
+              </button>
+            </div>
+          </div>
+
+          {!tournamentId && (
+            <div className="p-4 bg-qw-dark rounded border border-qw-border text-qw-muted text-sm">
+              Set a tournament name in the Info tab to enable Discord submissions.
+            </div>
+          )}
+
+          {submissionsError && (
+            <div className="p-3 bg-red-900/30 border border-red-500/50 rounded text-red-300 text-sm">{submissionsError}</div>
+          )}
+
+          {submissions.length === 0 && !submissionsLoading && tournamentId && (
+            <div className="text-center py-8 text-qw-muted">
+              <div className="text-4xl mb-2">🤖</div>
+              <p>No pending submissions</p>
+              <p className="text-xs mt-1">Hub URLs posted in registered Discord channels will appear here.</p>
+            </div>
+          )}
+
+          {submissions.length > 0 && (
+            <div className="space-y-2">
+              {submissions.map(sub => {
+                const gameData = sub.game_data || {};
+                const teams = gameData.teams || [];
+                const t1 = teams[0] || {};
+                const t2 = teams[1] || {};
+
+                return (
+                  <div key={sub.id} className="p-4 bg-qw-dark rounded border border-qw-border">
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-3 flex-wrap">
+                          <span className="font-body font-semibold text-white">{t1.name || '?'}</span>
+                          <span className="px-2 py-1 bg-qw-darker rounded font-mono text-sm">
+                            <span className={(t1.frags || 0) > (t2.frags || 0) ? 'text-qw-win font-bold' : 'text-white'}>{t1.frags ?? '?'}</span>
+                            <span className="text-qw-muted mx-1">-</span>
+                            <span className={(t2.frags || 0) > (t1.frags || 0) ? 'text-qw-win font-bold' : 'text-white'}>{t2.frags ?? '?'}</span>
+                          </span>
+                          <span className="font-body font-semibold text-white">{t2.name || '?'}</span>
+                          <span className="text-qw-muted text-xs bg-qw-darker px-2 py-0.5 rounded">{gameData.map || '?'}</span>
+                          <span className="text-qw-muted text-xs bg-qw-darker px-2 py-0.5 rounded">{gameData.mode || '?'}</span>
+                        </div>
+                        <div className="text-xs text-qw-muted mt-1">
+                          Submitted by <span className="text-qw-accent">{sub.submitted_by_name}</span>
+                          {' '}&middot;{' '}
+                          {new Date(sub.created_at).toLocaleString()}
+                          {' '}&middot;{' '}
+                          Game #{sub.game_id}
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button onClick={() => handleApprove(sub)} className="px-3 py-1.5 rounded bg-qw-win text-qw-dark text-sm font-semibold hover:bg-qw-win/80">
+                          Approve
+                        </button>
+                        <button onClick={() => handleReject(sub)} className="px-3 py-1.5 rounded border border-red-500/50 text-red-400 text-sm hover:bg-red-900/30">
+                          Reject
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      ) : mode === 'json' ? (
         <div className="qw-panel p-6 space-y-4">
           <h3 className="font-display text-lg text-qw-accent">IMPORT JSON FILES</h3>
           <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept=".json" multiple className="hidden" />
