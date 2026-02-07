@@ -4,14 +4,17 @@ This document provides guidance for AI assistants working with the Qwicky codeba
 
 ## Project Overview
 
-Qwicky is a React-based Single Page Application for managing competitive QuakeWorld esports tournaments. It supports multi-division tournament management with features including team management, scheduling (with drag-and-drop round reordering), standings calculation, single/double-elimination and multi-tier playoff brackets, and MediaWiki export.
+Qwicky is a React-based Single Page Application for managing competitive QuakeWorld esports tournaments. It supports multi-division tournament management with features including team management, scheduling (with drag-and-drop round reordering), standings calculation, single/double-elimination and multi-tier playoff brackets, Discord bot integration for match submission, and MediaWiki export.
 
 **Tech Stack:**
 - React 18.2 with Vite 5.0
 - Tailwind CSS 3.4 with a modern dark-mode theme (Deep Amber/Gold accent)
 - Axios for HTTP requests
 - Vercel serverless functions for API layer
-- localStorage for data persistence
+- Supabase for Discord submission storage (`match_submissions`, `tournament_channels` tables)
+- localStorage for tournament data persistence
+
+**Companion project:** The Discord bot lives in a separate repo at `qwicky-discord-bot/` (see Discord Integration section below).
 
 ## Quick Start
 
@@ -47,7 +50,7 @@ qwicky/
 │   │       ├── DivisionSetup.jsx      # Format, group, playoff & tier config
 │   │       ├── DivisionTeams.jsx      # Team management & group assignment
 │   │       ├── DivisionSchedule.jsx   # Match scheduling + drag-and-drop
-│   │       ├── DivisionResults.jsx    # Result import (API/JSON)
+│   │       ├── DivisionResults.jsx    # Result import (Discord/API/JSON)
 │   │       ├── DivisionStandings.jsx  # Group stage standings
 │   │       ├── DivisionBracket.jsx    # Playoff bracket UI (single/double/multi-tier)
 │   │       ├── DivisionStats.jsx      # Player statistics
@@ -62,8 +65,12 @@ qwicky/
 │   └── hooks/
 │       └── useLocalStorage.js     # localStorage persistence hook
 ├── api/                           # Vercel serverless functions
-│   ├── game/[gameId].mjs          # Fetch game stats
-│   └── health.mjs                 # Health check endpoint
+│   ├── game/[gameId].mjs          # Fetch game stats from hub + ktxstats
+│   ├── health.mjs                 # Health check endpoint
+│   ├── submissions/[tournamentId].mjs  # GET pending/approved Discord submissions
+│   └── submission/[submissionId]/
+│       ├── approve.mjs            # POST approve a submission
+│       └── reject.mjs             # POST reject a submission
 ├── vite.config.js                 # Vite configuration (has Swedish comments)
 ├── tailwind.config.js             # Tailwind theme customization
 └── vercel.json                    # Vercel deployment config
@@ -273,7 +280,7 @@ App.jsx (state provider — exports createDefaultDivision, createDefaultBracket)
 |------|-------|---------|
 | `App.jsx` | ~546 | Root component, tournament/division state, bracket factories (`createDefaultBracket`) |
 | `DivisionWiki.jsx` | ~1261 | MediaWiki export (most complex component) |
-| `DivisionResults.jsx` | ~674 | Result import from API/JSON, series grouping |
+| `DivisionResults.jsx` | ~920 | Result import (Discord/API/JSON), series grouping, submission approval |
 | `DivisionBracket.jsx` | ~690 | Playoff bracket UI — single, double, multi-tier |
 | `DivisionSetup.jsx` | ~647 | Format, group-stage, playoff, tier configuration |
 | `DivisionSchedule.jsx` | ~626 | Match scheduling, round-robin generation, drag-and-drop |
@@ -296,26 +303,42 @@ Response: { status: 'ok', timestamp: '...' }
 **Game Data:**
 ```
 GET /api/game/[gameId]
-Response: Game stats from Supabase/QuakeStats
+Response: { status: 'success', data: <ktxstats JSON> }
 ```
+Fetches game record from QuakeWorld Hub Supabase (`v1_games`), extracts `demo_sha256`, then fetches the actual ktxstats JSON from `d.quake.world`.
+
+**Discord Submissions:**
+```
+GET /api/submissions/[tournamentId]?status=pending|approved|all
+Response: { submissions: [...] }
+
+POST /api/submission/[submissionId]/approve
+Response: { submission: {...} }
+
+POST /api/submission/[submissionId]/reject
+Response: { submission: {...} }
+```
+Reads/updates `match_submissions` table in the QWICKY Supabase instance.
 
 ### External Services
-- **Supabase**: Database (`v1_games` table)
-- **QuakeStats**: Demo stats (`https://d.quake.world/`)
-- **API Proxy**: Via shortener URL in `.env`
+- **QuakeWorld Hub Supabase** (`ncsphkjfominimxztjip.supabase.co`): Game metadata (`v1_games` table)
+- **QuakeStats** (`d.quake.world`): ktxstats JSON demo stats
+- **QWICKY Supabase** (`ypszoognrteuevcsfwqr.supabase.co`): Discord submissions (`match_submissions`, `tournament_channels` tables)
 
-### Expected Game API Response
+### ktxstats JSON Format (used by both API proxy and Discord bot)
 ```json
 {
   "teams": ["Team A", "Team B"],
-  "date": "2024-01-15 20:00",
+  "date": "2026-01-15 20:00:00 +0000",
   "map": "dm3",
-  "mode": "4on4",
-  "team_stats": {
-    "Team A": { "frags": 150 },
-    "Team B": { "frags": 120 }
-  }
+  "mode": "team",
+  "duration": 600,
+  "players": [
+    { "name": "player1", "team": "Team A", "stats": { "frags": 40 } }
+  ]
 }
+```
+Note: `team_stats` is present in some formats but NOT in ktxstats team games. Scores are calculated by summing `player.stats.frags` (or `player.frags` for older hub-row format) per team. The `parseMatch` function in `matchLogic.js` handles both.
 ```
 
 ## Development Workflow
@@ -372,6 +395,63 @@ docker-compose up
 - Schedule generation (polygon round-robin) and drag-and-drop logic both live in `DivisionSchedule.jsx`.
 - Drag uses HTML5 native DnD. A `useRef` (`dragGroupRef`) holds the source group to avoid stale closures; `requestAnimationFrame` delays the opacity state update so the browser doesn't cancel the drag. Only same-group, different-round drops are accepted; the match's `roundNum` and `date` are updated on drop.
 
+## Discord Integration
+
+### Overview
+
+QWICKY has a companion Discord bot (`qwicky-discord-bot`) that lets tournament players submit match results by posting QuakeWorld Hub URLs in registered Discord channels. Submissions appear in QWICKY's Results tab under the "Discord" sub-tab for admin review.
+
+### Data Flow
+
+```
+Player posts hub URL in Discord channel
+  → Bot extracts game ID from URL
+  → Bot fetches ktxstats JSON from QuakeWorld Hub (via demo_sha256)
+  → Bot stores submission in Supabase (match_submissions table)
+  → Bot replies with embed showing teams, scores, map
+  → Admin opens QWICKY → Results → Discord tab
+  → Admin clicks Approve / Approve All
+  → parseMatch processes ktxstats JSON → addMapsInBatch links to schedule
+  → Series detection groups maps by matchup + 2-hour timestamp gap
+```
+
+### Key Implementation Details
+
+**DivisionResults.jsx — Discord mode:**
+- `fetchSubmissions(includeApproved)` — fetches from `/api/submissions/[tournamentId]` with `?status=pending|all`
+- `handleApprove(submission)` — parses game data FIRST, then marks as approved in DB (prevents data loss if parsing fails)
+- `handleBulkApprove()` — collects all parsed maps into an array, approves each in DB, then calls `addMapsInBatch` ONCE with the full batch (required for series detection and to avoid stale closure issues)
+- `handleReprocess(submission)` — re-imports an already-approved submission without touching the DB
+- `handleBulkReprocess()` — same batching pattern for bulk re-import of approved submissions
+- "Show Approved" checkbox — toggles fetching approved submissions (for recovery)
+- "Reprocess All" button — bulk re-imports approved submissions that weren't properly processed
+
+**parseMatch (matchLogic.js) — format handling:**
+- Normalizes `teams` array: handles both string format `["Team A"]` and object format `[{name: "Team A", frags: 150}]`
+- Player frags: reads `player.stats?.frags ?? player.frags ?? 0` (ktxstats vs hub-row format)
+- Scores: uses `team_stats` if available, otherwise sums from `players` array
+
+**Submission display — score calculation:**
+- Hub-row format: reads `teams[0].frags` directly
+- ktxstats with `team_stats`: reads `team_stats[teamName].frags`
+- ktxstats without `team_stats`: sums `player.stats.frags` from players array per team
+
+### Supabase Tables (QWICKY instance)
+
+**`tournament_channels`** — Maps Discord channels to tournaments
+- `discord_channel_id` (unique), `discord_guild_id`, `tournament_id`, `division_id`, `registered_by`
+
+**`match_submissions`** — Stores submitted match results
+- `tournament_id`, `game_id` (unique per tournament), `game_data` (JSONB — ktxstats JSON)
+- `status`: `pending` → `approved` or `rejected`
+- `submitted_by_discord_id`, `submitted_by_name`, `hub_url`
+
+### Environment Variables (Vercel — for submission endpoints)
+| Variable | Purpose |
+|----------|---------|
+| `QWICKY_SUPABASE_URL` | QWICKY Supabase instance URL |
+| `QWICKY_SUPABASE_SERVICE_KEY` | Service key for match_submissions access |
+
 ## Gotchas & Notes
 
 1. **Swedish comments** appear in `vite.config.js` (e.g., `// Så du kan nå den från nätverket`).
@@ -385,6 +465,9 @@ docker-compose up
 9. **Division fields are flat** — do NOT nest group/playoff settings inside a `format` sub-object. Everything (numGroups, playoffQFBestOf, tieBreakers, …) sits directly on the division.
 10. **Match status values** are `"scheduled"`, `"live"`, `"completed"` — not `"pending"` or `"played"`.
 11. **Header is static** — always shows "QWICKY / tournament admin tools - by Xerial", not the tournament name.
+12. **Bulk operations must batch maps** — `handleBulkApprove` and `handleBulkReprocess` must collect all parsed maps FIRST, then call `addMapsInBatch` ONCE. Calling it in a loop causes stale closure reads of `rawMaps` (last write wins) and breaks series detection.
+13. **ktxstats has no `team_stats` for team games** — scores must be calculated from the `players` array. Only some formats (e.g., simple JSON exports) include `team_stats`.
+14. **Discord bot is a separate project** — lives at `../qwicky-discord-bot/`. Changes to submission handling may require updates in both repos.
 
 ## Environment Variables
 
