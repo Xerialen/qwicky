@@ -61,7 +61,7 @@ export function parseMatch(gameId, jsonData) {
     jsonData.players.forEach(player => {
       const playerTeam = unicodeToAscii(player.team || '').trim();
       const playerName = unicodeToAscii(player.name || '').trim();
-      const playerFrags = player.stats?.frags || 0;
+      const playerFrags = player.stats?.frags ?? player.frags ?? 0;
 
       // For team matches: match by team name (case-insensitive)
       const resolvedTeam = teamKeyMap[playerTeam.toLowerCase()];
