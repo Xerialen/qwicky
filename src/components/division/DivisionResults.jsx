@@ -1,19 +1,154 @@
 // src/components/division/DivisionResults.jsx
-import React, { useState, useRef, useMemo, useCallback } from 'react';
+import React, { useState, useRef, useMemo, useCallback, useEffect } from 'react';
 import { parseMatch } from '../../utils/matchLogic';
 
-export default function DivisionResults({ division, updateDivision }) {
-  const [mode, setMode] = useState('api');
+export default function DivisionResults({ division, updateDivision, tournamentId }) {
+  const [mode, setMode] = useState('discord');
   // API Fetch states
   const [apiInput, setApiInput] = useState('');
   const [apiStatus, setApiStatus] = useState(null);
-  
+
   // JSON states
   const [jsonInput, setJsonInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [lastImported, setLastImported] = useState([]);
   const fileInputRef = useRef(null);
+
+  // Discord submission states
+  const [submissions, setSubmissions] = useState([]);
+  const [submissionsLoading, setSubmissionsLoading] = useState(false);
+  const [submissionsError, setSubmissionsError] = useState(null);
+  const [showApproved, setShowApproved] = useState(false);
+
+  const fetchSubmissions = async (includeApproved) => {
+    if (!tournamentId) return;
+    setSubmissionsLoading(true);
+    setSubmissionsError(null);
+    try {
+      const status = includeApproved ? 'all' : 'pending';
+      const res = await fetch(`/api/submissions/${encodeURIComponent(tournamentId)}?status=${status}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to fetch');
+      setSubmissions(data.submissions || []);
+    } catch (err) {
+      setSubmissionsError(err.message);
+    }
+    setSubmissionsLoading(false);
+  };
+
+  useEffect(() => { fetchSubmissions(showApproved); }, [tournamentId]);
+
+  const handleApprove = async (submission) => {
+    try {
+      // Process game data FIRST, before marking as approved in DB
+      // This way if parsing fails, the submission stays pending
+      const gameData = submission.game_data;
+      let parsed = null;
+      if (gameData) {
+        parsed = parseMatch(submission.game_id, gameData);
+      }
+
+      const res = await fetch(`/api/submission/${submission.id}/approve`, { method: 'POST' });
+      if (!res.ok) throw new Error('Failed to approve');
+
+      if (parsed) addMapsInBatch([parsed]);
+
+      setSubmissions(prev => prev.filter(s => s.id !== submission.id));
+    } catch (err) {
+      setSubmissionsError(err.message);
+    }
+  };
+
+  const handleReject = async (submission) => {
+    try {
+      const res = await fetch(`/api/submission/${submission.id}/reject`, { method: 'POST' });
+      if (!res.ok) throw new Error('Failed to reject');
+      setSubmissions(prev => prev.filter(s => s.id !== submission.id));
+    } catch (err) {
+      setSubmissionsError(err.message);
+    }
+  };
+
+  const handleReprocess = (submission) => {
+    try {
+      const gameData = submission.game_data;
+      if (gameData) {
+        const parsed = parseMatch(submission.game_id, gameData);
+        if (parsed) {
+          const added = addMapsInBatch([parsed]);
+          if (added.length > 0) {
+            setSubmissions(prev => prev.filter(s => s.id !== submission.id));
+          } else {
+            setSubmissionsError('Already imported (duplicate detected)');
+          }
+        }
+      }
+    } catch (err) {
+      setSubmissionsError(err.message);
+    }
+  };
+
+  const handleBulkReprocess = () => {
+    try {
+      const approved = submissions.filter(s => s.status === 'approved');
+      const allParsed = [];
+      for (const sub of approved) {
+        const gameData = sub.game_data;
+        if (gameData) {
+          const parsed = parseMatch(sub.game_id, gameData);
+          if (parsed) allParsed.push(parsed);
+        }
+      }
+      if (allParsed.length > 0) {
+        const added = addMapsInBatch(allParsed);
+        if (added.length > 0) {
+          const addedIds = new Set(added.map(m => m.id));
+          const reprocessedSubIds = new Set(
+            approved.filter(s => addedIds.has(s.game_id)).map(s => s.id)
+          );
+          setSubmissions(prev => prev.filter(s => !reprocessedSubIds.has(s.id)));
+        } else {
+          setSubmissionsError('All already imported (duplicates detected)');
+        }
+      }
+    } catch (err) {
+      setSubmissionsError(err.message);
+    }
+  };
+
+  const handleBulkApprove = async () => {
+    const pending = submissions.filter(s => s.status === 'pending');
+    const allParsed = [];
+    const approvedSubIds = [];
+
+    // First: parse all game data and approve in DB
+    for (const sub of pending) {
+      try {
+        const gameData = sub.game_data;
+        if (gameData) {
+          const parsed = parseMatch(sub.game_id, gameData);
+          if (parsed) allParsed.push(parsed);
+        }
+
+        const res = await fetch(`/api/submission/${sub.id}/approve`, { method: 'POST' });
+        if (!res.ok) throw new Error(`Failed to approve ${sub.id}`);
+        approvedSubIds.push(sub.id);
+      } catch (err) {
+        setSubmissionsError(err.message);
+      }
+    }
+
+    // Then: add all maps in a single batch so series detection works
+    if (allParsed.length > 0) {
+      addMapsInBatch(allParsed);
+    }
+
+    if (approvedSubIds.length > 0) {
+      const approvedSet = new Set(approvedSubIds);
+      setSubmissions(prev => prev.filter(s => !approvedSet.has(s.id)));
+    }
+  };
 
   const teams = division.teams || [];
   const schedule = division.schedule || [];
@@ -556,6 +691,9 @@ export default function DivisionResults({ division, updateDivision }) {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex gap-2">
+          <button onClick={() => { setMode('discord'); fetchSubmissions(showApproved); }} className={`px-4 py-2 rounded font-body font-semibold ${mode === 'discord' ? 'bg-qw-accent text-qw-dark' : 'bg-qw-panel border border-qw-border text-qw-muted hover:text-white'}`}>
+            🤖 Discord
+          </button>
           <button onClick={() => setMode('api')} className={`px-4 py-2 rounded font-body font-semibold ${mode === 'api' ? 'bg-qw-accent text-qw-dark' : 'bg-qw-panel border border-qw-border text-qw-muted hover:text-white'}`}>
             🌐 API Fetch
           </button>
@@ -568,17 +706,123 @@ export default function DivisionResults({ division, updateDivision }) {
         )}
       </div>
 
-      {teams.length > 0 && (
-        <div className="p-3 bg-qw-dark rounded border border-qw-border text-xs">
-          <span className="text-qw-accent font-semibold">Team tag mapping:</span>
-          <span className="text-qw-muted ml-2">
-            {teams.slice(0, 5).map(t => `${t.tag} ? ${t.name}`).join(' | ')}
-            {teams.length > 5 && ` (+${teams.length - 5} more)`}
-          </span>
-        </div>
-      )}
+      {mode === 'discord' ? (
+        <div className="qw-panel p-6 space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="font-display text-lg text-qw-accent">DISCORD SUBMISSIONS</h3>
+            <div className="flex gap-2 items-center">
+              {submissions.filter(s => s.status === 'pending').length > 1 && (
+                <button onClick={handleBulkApprove} className="px-3 py-1 rounded bg-qw-win text-qw-dark text-sm font-semibold">
+                  Approve All ({submissions.filter(s => s.status === 'pending').length})
+                </button>
+              )}
+              {submissions.filter(s => s.status === 'approved').length > 1 && (
+                <button onClick={handleBulkReprocess} className="px-3 py-1 rounded bg-qw-accent text-qw-dark text-sm font-semibold">
+                  Reprocess All ({submissions.filter(s => s.status === 'approved').length})
+                </button>
+              )}
+              <label className="flex items-center gap-1.5 text-xs text-qw-muted cursor-pointer">
+                <input type="checkbox" checked={showApproved} onChange={(e) => { setShowApproved(e.target.checked); fetchSubmissions(e.target.checked); }} className="accent-qw-accent" />
+                Show Approved
+              </label>
+              <button onClick={() => fetchSubmissions(showApproved)} disabled={submissionsLoading} className="px-3 py-1 rounded border border-qw-border text-qw-muted text-sm hover:text-white disabled:opacity-50">
+                {submissionsLoading ? 'Loading...' : 'Refresh'}
+              </button>
+            </div>
+          </div>
 
-      {mode === 'json' ? (
+          {!tournamentId && (
+            <div className="p-4 bg-qw-dark rounded border border-qw-border text-qw-muted text-sm">
+              Set a tournament name in the Info tab to enable Discord submissions.
+            </div>
+          )}
+
+          {submissionsError && (
+            <div className="p-3 bg-red-900/30 border border-red-500/50 rounded text-red-300 text-sm">{submissionsError}</div>
+          )}
+
+          {submissions.length === 0 && !submissionsLoading && tournamentId && (
+            <div className="text-center py-8 text-qw-muted">
+              <div className="text-4xl mb-2">🤖</div>
+              <p>No pending submissions</p>
+              <p className="text-xs mt-1">Hub URLs posted in registered Discord channels will appear here.</p>
+            </div>
+          )}
+
+          {submissions.length > 0 && (
+            <div className="space-y-2">
+              {submissions.map(sub => {
+                const gameData = sub.game_data || {};
+                const teams = gameData.teams || [];
+                // Handle both formats: hub objects [{name, frags}] or ktxstats strings ["team"]
+                const t1Name = typeof teams[0] === 'object' ? teams[0]?.name : teams[0] || '?';
+                const t2Name = typeof teams[1] === 'object' ? teams[1]?.name : teams[1] || '?';
+                // Calculate frags: from hub objects, team_stats, or sum from players array
+                let t1Frags, t2Frags;
+                if (typeof teams[0] === 'object') {
+                  t1Frags = teams[0]?.frags;
+                  t2Frags = teams[1]?.frags;
+                } else if (gameData.team_stats) {
+                  t1Frags = gameData.team_stats[t1Name]?.frags;
+                  t2Frags = gameData.team_stats[t2Name]?.frags;
+                } else if (gameData.players) {
+                  t1Frags = 0; t2Frags = 0;
+                  gameData.players.forEach(p => {
+                    if (p.team === teams[0]) t1Frags += (p.stats?.frags || 0);
+                    else if (p.team === teams[1]) t2Frags += (p.stats?.frags || 0);
+                  });
+                }
+
+                return (
+                  <div key={sub.id} className="p-4 bg-qw-dark rounded border border-qw-border">
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-3 flex-wrap">
+                          <span className="font-body font-semibold text-white">{t1Name}</span>
+                          <span className="px-2 py-1 bg-qw-darker rounded font-mono text-sm">
+                            <span className={(t1Frags || 0) > (t2Frags || 0) ? 'text-qw-win font-bold' : 'text-white'}>{t1Frags ?? '?'}</span>
+                            <span className="text-qw-muted mx-1">-</span>
+                            <span className={(t2Frags || 0) > (t1Frags || 0) ? 'text-qw-win font-bold' : 'text-white'}>{t2Frags ?? '?'}</span>
+                          </span>
+                          <span className="font-body font-semibold text-white">{t2Name}</span>
+                          <span className="text-qw-muted text-xs bg-qw-darker px-2 py-0.5 rounded">{gameData.map || '?'}</span>
+                          <span className="text-qw-muted text-xs bg-qw-darker px-2 py-0.5 rounded">{gameData.mode || '?'}</span>
+                        </div>
+                        <div className="text-xs text-qw-muted mt-1">
+                          Submitted by <span className="text-qw-accent">{sub.submitted_by_name}</span>
+                          {' '}&middot;{' '}
+                          {new Date(sub.created_at).toLocaleString()}
+                          {' '}&middot;{' '}
+                          Game #{sub.game_id}
+                        </div>
+                      </div>
+                      <div className="flex gap-2 items-center">
+                        {sub.status === 'approved' ? (
+                          <>
+                            <span className="text-qw-win text-xs font-semibold">Approved</span>
+                            <button onClick={() => handleReprocess(sub)} className="px-3 py-1.5 rounded bg-qw-accent text-qw-dark text-sm font-semibold hover:bg-qw-accent/80">
+                              Reprocess
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button onClick={() => handleApprove(sub)} className="px-3 py-1.5 rounded bg-qw-win text-qw-dark text-sm font-semibold hover:bg-qw-win/80">
+                              Approve
+                            </button>
+                            <button onClick={() => handleReject(sub)} className="px-3 py-1.5 rounded border border-red-500/50 text-red-400 text-sm hover:bg-red-900/30">
+                              Reject
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      ) : mode === 'json' ? (
         <div className="qw-panel p-6 space-y-4">
           <h3 className="font-display text-lg text-qw-accent">IMPORT JSON FILES</h3>
           <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept=".json" multiple className="hidden" />

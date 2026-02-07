@@ -479,6 +479,7 @@ function App() {
             tournamentName={tournament.name}
             tournamentMode={tournament.mode}
             tournamentStartDate={tournament.startDate}
+            tournamentId={(tournament.name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}
           />
         );
       default:

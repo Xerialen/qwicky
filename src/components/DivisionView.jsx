@@ -9,7 +9,7 @@ import DivisionBracket from './division/DivisionBracket';
 import DivisionWiki from './division/DivisionWiki';
 import DivisionStats from './division/DivisionStats';
 
-export default function DivisionView({ division, updateDivision, tournamentName, tournamentMode, tournamentStartDate }) {
+export default function DivisionView({ division, updateDivision, tournamentName, tournamentMode, tournamentStartDate, tournamentId }) {
   const [activeSubTab, setActiveSubTab] = useState('setup');
 
   const subTabs = [
@@ -32,7 +32,7 @@ export default function DivisionView({ division, updateDivision, tournamentName,
       case 'schedule':
         return <DivisionSchedule division={division} updateDivision={updateDivision} tournamentStartDate={tournamentStartDate} />;
       case 'results':
-        return <DivisionResults division={division} updateDivision={updateDivision} />;
+        return <DivisionResults division={division} updateDivision={updateDivision} tournamentId={tournamentId} />;
       case 'standings':
         return <DivisionStandings division={division} />;
       case 'bracket':
