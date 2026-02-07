@@ -1,10 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabase = createClient(
-  process.env.QWICKY_SUPABASE_URL,
-  process.env.QWICKY_SUPABASE_SERVICE_KEY
-);
-
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -14,6 +9,7 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   const { submissionId } = req.query;
+  const supabase = createClient(process.env.QWICKY_SUPABASE_URL, process.env.QWICKY_SUPABASE_SERVICE_KEY);
 
   try {
     const { data, error } = await supabase
@@ -29,6 +25,6 @@ export default async function handler(req, res) {
     return res.json({ submission: data });
   } catch (err) {
     console.error('Error approving submission:', err);
-    return res.status(500).json({ error: 'Failed to approve submission' });
+    return res.status(500).json({ error: 'Failed to approve submission', details: err.message });
   }
 }

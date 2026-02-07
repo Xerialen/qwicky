@@ -1,10 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabase = createClient(
-  process.env.QWICKY_SUPABASE_URL,
-  process.env.QWICKY_SUPABASE_SERVICE_KEY
-);
-
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
@@ -16,7 +11,16 @@ export default async function handler(req, res) {
   const { tournamentId } = req.query;
   const status = req.query.status || 'pending';
 
+  const url = process.env.QWICKY_SUPABASE_URL;
+  const key = process.env.QWICKY_SUPABASE_SERVICE_KEY;
+
+  if (!url || !key) {
+    return res.status(500).json({ error: 'Missing QWICKY_SUPABASE_URL or QWICKY_SUPABASE_SERVICE_KEY env vars' });
+  }
+
   try {
+    const supabase = createClient(url, key);
+
     let query = supabase
       .from('match_submissions')
       .select('*')
@@ -33,6 +37,6 @@ export default async function handler(req, res) {
     return res.json({ submissions: data });
   } catch (err) {
     console.error('Error fetching submissions:', err);
-    return res.status(500).json({ error: 'Failed to fetch submissions' });
+    return res.status(500).json({ error: 'Failed to fetch submissions', details: err.message });
   }
 }
