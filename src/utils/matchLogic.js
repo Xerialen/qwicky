@@ -20,7 +20,10 @@ export function unicodeToAscii(name) {
 // 2. Parse the JSON from proxy - handles both formats
 export function parseMatch(gameId, jsonData) {
   let rawTeams = jsonData.teams || [];
-  
+
+  // Normalize teams: handle both string format ["Team A"] and object format [{name: "Team A", frags: 150}]
+  rawTeams = rawTeams.map(t => typeof t === 'object' && t !== null ? (t.name || '') : String(t || ''));
+
   // Handle 1on1 matches: no teams array, extract from players
   if (rawTeams.length === 0 && jsonData.players && Array.isArray(jsonData.players)) {
     // For 1on1, use player names as "team" names

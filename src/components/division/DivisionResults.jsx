@@ -19,13 +19,15 @@ export default function DivisionResults({ division, updateDivision, tournamentId
   const [submissions, setSubmissions] = useState([]);
   const [submissionsLoading, setSubmissionsLoading] = useState(false);
   const [submissionsError, setSubmissionsError] = useState(null);
+  const [showApproved, setShowApproved] = useState(false);
 
-  const fetchSubmissions = async () => {
+  const fetchSubmissions = async (includeApproved) => {
     if (!tournamentId) return;
     setSubmissionsLoading(true);
     setSubmissionsError(null);
     try {
-      const res = await fetch(`/api/submissions/${encodeURIComponent(tournamentId)}`);
+      const status = includeApproved ? 'all' : 'pending';
+      const res = await fetch(`/api/submissions/${encodeURIComponent(tournamentId)}?status=${status}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to fetch');
       setSubmissions(data.submissions || []);
@@ -35,19 +37,22 @@ export default function DivisionResults({ division, updateDivision, tournamentId
     setSubmissionsLoading(false);
   };
 
-  useEffect(() => { fetchSubmissions(); }, [tournamentId]);
+  useEffect(() => { fetchSubmissions(showApproved); }, [tournamentId]);
 
   const handleApprove = async (submission) => {
     try {
+      // Process game data FIRST, before marking as approved in DB
+      // This way if parsing fails, the submission stays pending
+      const gameData = submission.game_data;
+      let parsed = null;
+      if (gameData) {
+        parsed = parseMatch(submission.game_id, gameData);
+      }
+
       const res = await fetch(`/api/submission/${submission.id}/approve`, { method: 'POST' });
       if (!res.ok) throw new Error('Failed to approve');
 
-      // Process the game data through the existing import pipeline
-      const gameData = submission.game_data;
-      if (gameData) {
-        const parsed = parseMatch(submission.game_id, gameData);
-        if (parsed) addMapsInBatch([parsed]);
-      }
+      if (parsed) addMapsInBatch([parsed]);
 
       setSubmissions(prev => prev.filter(s => s.id !== submission.id));
     } catch (err) {
@@ -65,8 +70,28 @@ export default function DivisionResults({ division, updateDivision, tournamentId
     }
   };
 
+  const handleReprocess = (submission) => {
+    try {
+      const gameData = submission.game_data;
+      if (gameData) {
+        const parsed = parseMatch(submission.game_id, gameData);
+        if (parsed) {
+          const added = addMapsInBatch([parsed]);
+          if (added.length > 0) {
+            setSubmissions(prev => prev.filter(s => s.id !== submission.id));
+          } else {
+            setSubmissionsError('Already imported (duplicate detected)');
+          }
+        }
+      }
+    } catch (err) {
+      setSubmissionsError(err.message);
+    }
+  };
+
   const handleBulkApprove = async () => {
-    for (const sub of submissions) {
+    const pending = submissions.filter(s => s.status === 'pending');
+    for (const sub of pending) {
       await handleApprove(sub);
     }
   };
@@ -612,7 +637,7 @@ export default function DivisionResults({ division, updateDivision, tournamentId
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex gap-2">
-          <button onClick={() => { setMode('discord'); fetchSubmissions(); }} className={`px-4 py-2 rounded font-body font-semibold ${mode === 'discord' ? 'bg-qw-accent text-qw-dark' : 'bg-qw-panel border border-qw-border text-qw-muted hover:text-white'}`}>
+          <button onClick={() => { setMode('discord'); fetchSubmissions(showApproved); }} className={`px-4 py-2 rounded font-body font-semibold ${mode === 'discord' ? 'bg-qw-accent text-qw-dark' : 'bg-qw-panel border border-qw-border text-qw-muted hover:text-white'}`}>
             🤖 Discord
           </button>
           <button onClick={() => setMode('api')} className={`px-4 py-2 rounded font-body font-semibold ${mode === 'api' ? 'bg-qw-accent text-qw-dark' : 'bg-qw-panel border border-qw-border text-qw-muted hover:text-white'}`}>
@@ -631,13 +656,17 @@ export default function DivisionResults({ division, updateDivision, tournamentId
         <div className="qw-panel p-6 space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="font-display text-lg text-qw-accent">DISCORD SUBMISSIONS</h3>
-            <div className="flex gap-2">
-              {submissions.length > 1 && (
+            <div className="flex gap-2 items-center">
+              {submissions.filter(s => s.status === 'pending').length > 1 && (
                 <button onClick={handleBulkApprove} className="px-3 py-1 rounded bg-qw-win text-qw-dark text-sm font-semibold">
-                  Approve All ({submissions.length})
+                  Approve All ({submissions.filter(s => s.status === 'pending').length})
                 </button>
               )}
-              <button onClick={fetchSubmissions} disabled={submissionsLoading} className="px-3 py-1 rounded border border-qw-border text-qw-muted text-sm hover:text-white disabled:opacity-50">
+              <label className="flex items-center gap-1.5 text-xs text-qw-muted cursor-pointer">
+                <input type="checkbox" checked={showApproved} onChange={(e) => { setShowApproved(e.target.checked); fetchSubmissions(e.target.checked); }} className="accent-qw-accent" />
+                Show Approved
+              </label>
+              <button onClick={() => fetchSubmissions(showApproved)} disabled={submissionsLoading} className="px-3 py-1 rounded border border-qw-border text-qw-muted text-sm hover:text-white disabled:opacity-50">
                 {submissionsLoading ? 'Loading...' : 'Refresh'}
               </button>
             </div>
@@ -692,13 +721,24 @@ export default function DivisionResults({ division, updateDivision, tournamentId
                           Game #{sub.game_id}
                         </div>
                       </div>
-                      <div className="flex gap-2">
-                        <button onClick={() => handleApprove(sub)} className="px-3 py-1.5 rounded bg-qw-win text-qw-dark text-sm font-semibold hover:bg-qw-win/80">
-                          Approve
-                        </button>
-                        <button onClick={() => handleReject(sub)} className="px-3 py-1.5 rounded border border-red-500/50 text-red-400 text-sm hover:bg-red-900/30">
-                          Reject
-                        </button>
+                      <div className="flex gap-2 items-center">
+                        {sub.status === 'approved' ? (
+                          <>
+                            <span className="text-qw-win text-xs font-semibold">Approved</span>
+                            <button onClick={() => handleReprocess(sub)} className="px-3 py-1.5 rounded bg-qw-accent text-qw-dark text-sm font-semibold hover:bg-qw-accent/80">
+                              Reprocess
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button onClick={() => handleApprove(sub)} className="px-3 py-1.5 rounded bg-qw-win text-qw-dark text-sm font-semibold hover:bg-qw-win/80">
+                              Approve
+                            </button>
+                            <button onClick={() => handleReject(sub)} className="px-3 py-1.5 rounded border border-red-500/50 text-red-400 text-sm hover:bg-red-900/30">
+                              Reject
+                            </button>
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>
