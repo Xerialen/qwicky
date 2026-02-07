@@ -754,11 +754,24 @@ export default function DivisionResults({ division, updateDivision, tournamentId
               {submissions.map(sub => {
                 const gameData = sub.game_data || {};
                 const teams = gameData.teams || [];
-                // Handle both formats: ktxstats strings ["Team A"] or hub objects [{name: "Team A", frags: 150}]
+                // Handle both formats: hub objects [{name, frags}] or ktxstats strings ["team"]
                 const t1Name = typeof teams[0] === 'object' ? teams[0]?.name : teams[0] || '?';
                 const t2Name = typeof teams[1] === 'object' ? teams[1]?.name : teams[1] || '?';
-                const t1Frags = typeof teams[0] === 'object' ? teams[0]?.frags : gameData.team_stats?.[t1Name]?.frags;
-                const t2Frags = typeof teams[1] === 'object' ? teams[1]?.frags : gameData.team_stats?.[t2Name]?.frags;
+                // Calculate frags: from hub objects, team_stats, or sum from players array
+                let t1Frags, t2Frags;
+                if (typeof teams[0] === 'object') {
+                  t1Frags = teams[0]?.frags;
+                  t2Frags = teams[1]?.frags;
+                } else if (gameData.team_stats) {
+                  t1Frags = gameData.team_stats[t1Name]?.frags;
+                  t2Frags = gameData.team_stats[t2Name]?.frags;
+                } else if (gameData.players) {
+                  t1Frags = 0; t2Frags = 0;
+                  gameData.players.forEach(p => {
+                    if (p.team === teams[0]) t1Frags += (p.stats?.frags || 0);
+                    else if (p.team === teams[1]) t2Frags += (p.stats?.frags || 0);
+                  });
+                }
 
                 return (
                   <div key={sub.id} className="p-4 bg-qw-dark rounded border border-qw-border">
