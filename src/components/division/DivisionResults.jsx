@@ -625,16 +625,6 @@ export default function DivisionResults({ division, updateDivision, tournamentId
         )}
       </div>
 
-      {teams.length > 0 && (
-        <div className="p-3 bg-qw-dark rounded border border-qw-border text-xs">
-          <span className="text-qw-accent font-semibold">Team tag mapping:</span>
-          <span className="text-qw-muted ml-2">
-            {teams.slice(0, 5).map(t => `${t.tag} ? ${t.name}`).join(' | ')}
-            {teams.length > 5 && ` (+${teams.length - 5} more)`}
-          </span>
-        </div>
-      )}
-
       {mode === 'discord' ? (
         <div className="qw-panel p-6 space-y-4">
           <div className="flex items-center justify-between">
