@@ -89,10 +89,64 @@ export default function DivisionResults({ division, updateDivision, tournamentId
     }
   };
 
+  const handleBulkReprocess = () => {
+    try {
+      const approved = submissions.filter(s => s.status === 'approved');
+      const allParsed = [];
+      for (const sub of approved) {
+        const gameData = sub.game_data;
+        if (gameData) {
+          const parsed = parseMatch(sub.game_id, gameData);
+          if (parsed) allParsed.push(parsed);
+        }
+      }
+      if (allParsed.length > 0) {
+        const added = addMapsInBatch(allParsed);
+        if (added.length > 0) {
+          const addedIds = new Set(added.map(m => m.id));
+          const reprocessedSubIds = new Set(
+            approved.filter(s => addedIds.has(s.game_id)).map(s => s.id)
+          );
+          setSubmissions(prev => prev.filter(s => !reprocessedSubIds.has(s.id)));
+        } else {
+          setSubmissionsError('All already imported (duplicates detected)');
+        }
+      }
+    } catch (err) {
+      setSubmissionsError(err.message);
+    }
+  };
+
   const handleBulkApprove = async () => {
     const pending = submissions.filter(s => s.status === 'pending');
+    const allParsed = [];
+    const approvedSubIds = [];
+
+    // First: parse all game data and approve in DB
     for (const sub of pending) {
-      await handleApprove(sub);
+      try {
+        const gameData = sub.game_data;
+        if (gameData) {
+          const parsed = parseMatch(sub.game_id, gameData);
+          if (parsed) allParsed.push(parsed);
+        }
+
+        const res = await fetch(`/api/submission/${sub.id}/approve`, { method: 'POST' });
+        if (!res.ok) throw new Error(`Failed to approve ${sub.id}`);
+        approvedSubIds.push(sub.id);
+      } catch (err) {
+        setSubmissionsError(err.message);
+      }
+    }
+
+    // Then: add all maps in a single batch so series detection works
+    if (allParsed.length > 0) {
+      addMapsInBatch(allParsed);
+    }
+
+    if (approvedSubIds.length > 0) {
+      const approvedSet = new Set(approvedSubIds);
+      setSubmissions(prev => prev.filter(s => !approvedSet.has(s.id)));
     }
   };
 
@@ -660,6 +714,11 @@ export default function DivisionResults({ division, updateDivision, tournamentId
               {submissions.filter(s => s.status === 'pending').length > 1 && (
                 <button onClick={handleBulkApprove} className="px-3 py-1 rounded bg-qw-win text-qw-dark text-sm font-semibold">
                   Approve All ({submissions.filter(s => s.status === 'pending').length})
+                </button>
+              )}
+              {submissions.filter(s => s.status === 'approved').length > 1 && (
+                <button onClick={handleBulkReprocess} className="px-3 py-1 rounded bg-qw-accent text-qw-dark text-sm font-semibold">
+                  Reprocess All ({submissions.filter(s => s.status === 'approved').length})
                 </button>
               )}
               <label className="flex items-center gap-1.5 text-xs text-qw-muted cursor-pointer">
