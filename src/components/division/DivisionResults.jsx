@@ -1,9 +1,9 @@
 // src/components/division/DivisionResults.jsx
-import React, { useState, useRef, useMemo, useCallback } from 'react';
+import React, { useState, useRef, useMemo, useCallback, useEffect } from 'react';
 import { parseMatch } from '../../utils/matchLogic';
 
 export default function DivisionResults({ division, updateDivision, tournamentId }) {
-  const [mode, setMode] = useState('api');
+  const [mode, setMode] = useState('discord');
   // API Fetch states
   const [apiInput, setApiInput] = useState('');
   const [apiStatus, setApiStatus] = useState(null);
@@ -34,6 +34,8 @@ export default function DivisionResults({ division, updateDivision, tournamentId
     }
     setSubmissionsLoading(false);
   };
+
+  useEffect(() => { fetchSubmissions(); }, [tournamentId]);
 
   const handleApprove = async (submission) => {
     try {
