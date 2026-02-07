@@ -37,7 +37,7 @@ export default function DivisionResults({ division, updateDivision, tournamentId
 
   const handleApprove = async (submission) => {
     try {
-      const res = await fetch(`/api/submissions/${submission.id}/approve`, { method: 'POST' });
+      const res = await fetch(`/api/submission/${submission.id}/approve`, { method: 'POST' });
       if (!res.ok) throw new Error('Failed to approve');
 
       // Process the game data through the existing import pipeline
@@ -55,7 +55,7 @@ export default function DivisionResults({ division, updateDivision, tournamentId
 
   const handleReject = async (submission) => {
     try {
-      const res = await fetch(`/api/submissions/${submission.id}/reject`, { method: 'POST' });
+      const res = await fetch(`/api/submission/${submission.id}/reject`, { method: 'POST' });
       if (!res.ok) throw new Error('Failed to reject');
       setSubmissions(prev => prev.filter(s => s.id !== submission.id));
     } catch (err) {
