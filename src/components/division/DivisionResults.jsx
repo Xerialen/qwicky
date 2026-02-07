@@ -754,21 +754,24 @@ export default function DivisionResults({ division, updateDivision, tournamentId
               {submissions.map(sub => {
                 const gameData = sub.game_data || {};
                 const teams = gameData.teams || [];
-                const t1 = teams[0] || {};
-                const t2 = teams[1] || {};
+                // Handle both formats: ktxstats strings ["Team A"] or hub objects [{name: "Team A", frags: 150}]
+                const t1Name = typeof teams[0] === 'object' ? teams[0]?.name : teams[0] || '?';
+                const t2Name = typeof teams[1] === 'object' ? teams[1]?.name : teams[1] || '?';
+                const t1Frags = typeof teams[0] === 'object' ? teams[0]?.frags : gameData.team_stats?.[t1Name]?.frags;
+                const t2Frags = typeof teams[1] === 'object' ? teams[1]?.frags : gameData.team_stats?.[t2Name]?.frags;
 
                 return (
                   <div key={sub.id} className="p-4 bg-qw-dark rounded border border-qw-border">
                     <div className="flex items-center justify-between flex-wrap gap-2">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-3 flex-wrap">
-                          <span className="font-body font-semibold text-white">{t1.name || '?'}</span>
+                          <span className="font-body font-semibold text-white">{t1Name}</span>
                           <span className="px-2 py-1 bg-qw-darker rounded font-mono text-sm">
-                            <span className={(t1.frags || 0) > (t2.frags || 0) ? 'text-qw-win font-bold' : 'text-white'}>{t1.frags ?? '?'}</span>
+                            <span className={(t1Frags || 0) > (t2Frags || 0) ? 'text-qw-win font-bold' : 'text-white'}>{t1Frags ?? '?'}</span>
                             <span className="text-qw-muted mx-1">-</span>
-                            <span className={(t2.frags || 0) > (t1.frags || 0) ? 'text-qw-win font-bold' : 'text-white'}>{t2.frags ?? '?'}</span>
+                            <span className={(t2Frags || 0) > (t1Frags || 0) ? 'text-qw-win font-bold' : 'text-white'}>{t2Frags ?? '?'}</span>
                           </span>
-                          <span className="font-body font-semibold text-white">{t2.name || '?'}</span>
+                          <span className="font-body font-semibold text-white">{t2Name}</span>
                           <span className="text-qw-muted text-xs bg-qw-darker px-2 py-0.5 rounded">{gameData.map || '?'}</span>
                           <span className="text-qw-muted text-xs bg-qw-darker px-2 py-0.5 rounded">{gameData.mode || '?'}</span>
                         </div>
