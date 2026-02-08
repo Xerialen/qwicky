@@ -492,6 +492,7 @@ export default function DivisionSchedule({ division, updateDivision, tournamentS
                                     onDragStart={(e) => handleDragStart(e, match)}
                                     onDragEnd={handleDragEnd}
                                     division={division}
+                                    renderRoundOptions={renderRoundOptions}
                                   />
                                 ))}
                               </div>
@@ -512,7 +513,7 @@ export default function DivisionSchedule({ division, updateDivision, tournamentS
               <div className="qw-panel overflow-hidden">
                 <div className="divide-y divide-qw-border">
                   {groupedMatches.playoffs.map(match => (
-                    <MatchRow key={match.id} match={match} onUpdate={handleUpdateMatch} onRemove={handleRemoveMatch} isEditing={editingMatch === match.id} setEditing={setEditingMatch} showRound division={division} />
+                    <MatchRow key={match.id} match={match} onUpdate={handleUpdateMatch} onRemove={handleRemoveMatch} isEditing={editingMatch === match.id} setEditing={setEditingMatch} showRound division={division} renderRoundOptions={renderRoundOptions} />
                   ))}
                 </div>
               </div>
@@ -525,7 +526,7 @@ export default function DivisionSchedule({ division, updateDivision, tournamentS
   );
 }
 
-function MatchRow({ match, onUpdate, onRemove, isEditing, setEditing, showRound, showDragHandle, isDragging, onDragStart, onDragEnd, division }) {
+function MatchRow({ match, onUpdate, onRemove, isEditing, setEditing, showRound, showDragHandle, isDragging, onDragStart, onDragEnd, division, renderRoundOptions }) {
   const score = (() => {
     if (!match.maps || match.maps.length === 0) return null;
     let t1 = 0, t2 = 0;
