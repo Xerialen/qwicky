@@ -49,6 +49,7 @@ qwicky/
 │   │   └── division/              # Per-division components
 │   │       ├── DivisionSetup.jsx      # Format, group, playoff & tier config
 │   │       ├── DivisionTeams.jsx      # Team management & group assignment
+│   │       ├── TeamImportPreview.jsx  # Team import preview & validation UI
 │   │       ├── DivisionSchedule.jsx   # Match scheduling + drag-and-drop
 │   │       ├── DivisionResults.jsx    # Result import (Discord/API/JSON)
 │   │       ├── DivisionStandings.jsx  # Group stage standings
@@ -57,6 +58,7 @@ qwicky/
 │   │       └── DivisionWiki.jsx       # MediaWiki export
 │   ├── utils/
 │   │   ├── matchLogic.js          # Match parsing, standings calculation (API import path)
+│   │   ├── teamImport.js          # Team import parsing, validation, format support
 │   │   ├── wikiExport.js          # MediaWiki markup generation
 │   │   └── statsLogic.js          # QuakeWorld-specific stats
 │   ├── services/
@@ -282,10 +284,12 @@ App.jsx (state provider — exports createDefaultDivision, createDefaultBracket)
 | `DivisionWiki.jsx` | ~1261 | MediaWiki export (most complex component) |
 | `DivisionResults.jsx` | ~920 | Result import (Discord/API/JSON), series grouping, submission approval |
 | `DivisionBracket.jsx` | ~690 | Playoff bracket UI — single, double, multi-tier |
+| `DivisionSchedule.jsx` | ~750 | Match scheduling, multi-tier round selection, drag-and-drop |
 | `DivisionSetup.jsx` | ~647 | Format, group-stage, playoff, tier configuration |
-| `DivisionSchedule.jsx` | ~626 | Match scheduling, round-robin generation, drag-and-drop |
-| `DivisionTeams.jsx` | ~344 | Team CRUD and group assignment |
+| `DivisionTeams.jsx` | ~640 | Team CRUD, group assignment, enhanced import UI |
 | `DivisionStandings.jsx` | ~301 | Group-stage standings with configurable tie-breakers |
+| `TeamImportPreview.jsx` | ~209 | Team import preview with validation & conflict resolution |
+| `teamImport.js` | ~282 | Team parsing (CSV/natural/simple), validation, duplicate detection |
 | `matchLogic.js` | ~227 | Parsing & standings calc used by the API import path |
 | `dataTransformer.js` | ~328 | API response → internal format transformation |
 | `statsLogic.js` | ~412 | QuakeWorld stats calculations |
@@ -395,6 +399,53 @@ docker-compose up
 - Schedule generation (polygon round-robin) and drag-and-drop logic both live in `DivisionSchedule.jsx`.
 - Drag uses HTML5 native DnD. A `useRef` (`dragGroupRef`) holds the source group to avoid stale closures; `requestAnimationFrame` delays the opacity state update so the browser doesn't cancel the drag. Only same-group, different-round drops are accepted; the match's `roundNum` and `date` are updated on drop.
 
+### Multi-Tier Round Selection in Schedule
+- The round dropdown in Schedule (for adding/editing matches) dynamically adapts to division format.
+- For **multi-tier** format: reads `division.playoffTiers` and generates options like "Gold SF", "Silver Final", "Bronze QF" per tier.
+- For **single/double-elim**: shows standard Winner's/Loser's bracket rounds (R32, R16, QF, SF, Final, Grand Final).
+- Implementation: `renderRoundOptions()` helper in `DivisionSchedule.jsx` generates optgroups; passed to `MatchRow` as prop.
+
+## Team Import System
+
+### Overview (`teamImport.js`)
+
+QWICKY supports importing teams from multiple text formats with validation, duplicate detection, and preview before import.
+
+**Supported formats:**
+1. **CSV**: `"Team Name, TAG, country, Group, players"`
+2. **Natural with flags**: `"Team Name [TAG] 🇸🇪 - player1, player2"` or `"Team (TAG) Country: players"`
+3. **Simple**: `"Team Name"` (auto-generates tag)
+
+**Key functions:**
+- `parseTeamsFromBulkText(text)` — auto-detects format, returns team array
+- `parseTeamsFromCSV(csvText)` — CSV parser with header detection
+- `parseTeamsFromJSON(jsonData)` — handles array, division object, or full tournament object
+- `validateTeams(teams, existingTeams, availableGroups)` — validation with errors/warnings
+- `detectDuplicates(newTeams, existingTeams)` — conflict detection
+- `extractCountryFromFlag(flag)` — converts flag emoji (🇸🇪) to country code (`se`) using Regional Indicator Symbol decoding
+
+**Flag emoji handling:**
+- Regional Indicator Symbols (Unicode U+1F1E6 to U+1F1FF) represent A-Z
+- Each flag emoji is two symbols (e.g., 🇸🇪 = U+1F1F8 + U+1F1EA for SE)
+- Regex pattern: `[\u{1F1E6}-\u{1F1FF}]{2}` with `u` flag
+
+### UI Flow (`DivisionTeams.jsx` + `TeamImportPreview.jsx`)
+
+1. User pastes text into bulk add textarea
+2. `parseTeamsFromBulkText()` parses and auto-detects format
+3. `validateTeams()` checks for errors (missing name, invalid group)
+4. `detectDuplicates()` compares against existing teams
+5. `TeamImportPreview` renders table with:
+   - Color-coded status (valid, error, warning, conflict)
+   - Error/warning messages per team
+   - Conflict resolution options (skip duplicates, replace, import both)
+6. User clicks "Import" → validated teams added to division
+
+**Validation types:**
+- **Errors**: Missing team name, invalid group assignment
+- **Warnings**: Missing tag (auto-generated), invalid country code length
+- **Conflicts**: Duplicate name or tag vs existing teams
+
 ## Discord Integration
 
 ### Overview
@@ -454,20 +505,23 @@ Player posts hub URL in Discord channel
 
 ## Gotchas & Notes
 
-1. **Swedish comments** appear in `vite.config.js` (e.g., `// Så du kan nå den från nätverket`).
-2. **localStorage persistence** — tournament data saved automatically via `useLocalStorage` hook.
-3. **Team matching is case-insensitive** throughout: standings lookup, bracket result resolution, and API import all normalise to lowercase before comparing.
-4. **Series detection** uses a 2-hour timestamp gap threshold (`SERIES_GAP_MS` in `DivisionResults.jsx`) to split consecutive maps of the same matchup into separate series.
-5. **Backup / copy files** exist and can be ignored: `DivisionSchedule (copy 1).jsx`, `DivisionWiki (copy 1).jsx`.
-6. **No TypeScript** — project uses plain JavaScript.
-7. **No unit tests** — manual testing required.
-8. **Legacy cyberpunk remnants** — some JSX still references classes like `.noise-overlay`, `.glow-amber`, `.terminal-label::before`. All are neutralised in `index.css` and produce no visual effect; safe to ignore unless doing a cleanup pass.
-9. **Division fields are flat** — do NOT nest group/playoff settings inside a `format` sub-object. Everything (numGroups, playoffQFBestOf, tieBreakers, …) sits directly on the division.
-10. **Match status values** are `"scheduled"`, `"live"`, `"completed"` — not `"pending"` or `"played"`.
-11. **Header is static** — always shows "QWICKY / tournament admin tools - by Xerial", not the tournament name.
-12. **Bulk operations must batch maps** — `handleBulkApprove` and `handleBulkReprocess` must collect all parsed maps FIRST, then call `addMapsInBatch` ONCE. Calling it in a loop causes stale closure reads of `rawMaps` (last write wins) and breaks series detection.
-13. **ktxstats has no `team_stats` for team games** — scores must be calculated from the `players` array. Only some formats (e.g., simple JSON exports) include `team_stats`.
-14. **Discord bot is a separate project** — lives at `../qwicky-discord-bot/`. Changes to submission handling may require updates in both repos.
+1. **ES Modules everywhere** — `package.json` has `"type": "module"`, so all `.js` files are treated as ES modules. Use `.cjs` extension for CommonJS files (e.g., `postcss.config.cjs`). API functions use `.mjs` extension.
+2. **Swedish comments** appear in `vite.config.js` (e.g., `// Så du kan nå den från nätverket`).
+3. **localStorage persistence** — tournament data saved automatically via `useLocalStorage` hook.
+4. **Team matching is case-insensitive** throughout: standings lookup, bracket result resolution, and API import all normalise to lowercase before comparing.
+5. **Series detection** uses a 2-hour timestamp gap threshold (`SERIES_GAP_MS` in `DivisionResults.jsx`) to split consecutive maps of the same matchup into separate series.
+6. **Multi-tier round selection** — Schedule round dropdown dynamically generates options based on `division.format` and `playoffTiers`. The `renderRoundOptions()` function must be passed as a prop to the `MatchRow` component.
+7. **Flag emoji parsing** — Uses Unicode Regional Indicator Symbols (U+1F1E6–U+1F1FF) with regex pattern `[\u{1F1E6}-\u{1F1FF}]{2}` + `u` flag. Do NOT use character class ranges like `[🇦-🇿]` (invalid).
+8. **Backup / copy files** exist and can be ignored: `DivisionSchedule (copy 1).jsx`, `DivisionWiki (copy 1).jsx`.
+9. **No TypeScript** — project uses plain JavaScript.
+10. **No unit tests** — manual testing required.
+11. **Legacy cyberpunk remnants** — some JSX still references classes like `.noise-overlay`, `.glow-amber`, `.terminal-label::before`. All are neutralised in `index.css` and produce no visual effect; safe to ignore unless doing a cleanup pass.
+12. **Division fields are flat** — do NOT nest group/playoff settings inside a `format` sub-object. Everything (numGroups, playoffQFBestOf, tieBreakers, …) sits directly on the division.
+13. **Match status values** are `"scheduled"`, `"live"`, `"completed"` — not `"pending"` or `"played"`.
+14. **Header is static** — always shows "QWICKY / tournament admin tools - by Xerial", not the tournament name.
+15. **Bulk operations must batch maps** — `handleBulkApprove` and `handleBulkReprocess` must collect all parsed maps FIRST, then call `addMapsInBatch` ONCE. Calling it in a loop causes stale closure reads of `rawMaps` (last write wins) and breaks series detection.
+16. **ktxstats has no `team_stats` for team games** — scores must be calculated from the `players` array. Only some formats (e.g., simple JSON exports) include `team_stats`.
+17. **Discord bot is a separate project** — lives at `../qwicky-discord-bot/`. Changes to submission handling may require updates in both repos.
 
 ## Environment Variables
 

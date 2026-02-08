@@ -61,7 +61,9 @@ Qwicky is a React single-page application for managing competitive QuakeWorld es
 | Layer | Technology |
 |-------|-----------|
 | Frontend | React 18.2, Vite 5.0, Tailwind CSS 3.4 |
-| API | Vercel Serverless Functions (Node.js, ES modules) |
+| Module System | ES Modules (`package.json` has `"type": "module"`) |
+| Build Config | PostCSS (`.cjs` format for CommonJS compatibility) |
+| API | Vercel Serverless Functions (Node.js, ES modules `.mjs`) |
 | Discord bot | Node.js, discord.js v14 (separate repo: `qwicky-discord-bot`) |
 | QWICKY Supabase | Discord submissions (`match_submissions`, `tournament_channels`) |
 | QW Hub Supabase | Game metadata (`v1_games`) |
@@ -115,9 +117,18 @@ A `docker-compose.yml` is provided for containerized local development:
 ```bash
 npm install
 npm run dev        # Vite dev server on port 5175
+npm run build      # Production build to dist/
+npm run preview    # Preview production build
 ```
 
 The Vite dev server proxies `/api/*` requests to `http://localhost:3001`, so if you need the API functions locally you'll need a local backend on that port (or use `vercel dev`).
+
+### Build Configuration Notes
+
+- **ES Modules**: `package.json` includes `"type": "module"`, treating all `.js` files as ES modules
+- **PostCSS Config**: Uses `.cjs` extension (`postcss.config.cjs`) to maintain CommonJS compatibility
+- **Vite Config**: Pure ES module (`vite.config.js`) - no CJS warnings
+- **API Functions**: Use `.mjs` extension in the `api/` directory for Vercel serverless functions
 
 ## Discord Bot (`qwicky-discord-bot`)
 

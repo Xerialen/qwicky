@@ -6,12 +6,17 @@ A React-based tournament administration application with full support for multip
 
 - **Multi-Division Support**: Create multiple divisions (e.g., Div 1, Div 2, Pro, Amateur)
 - **Per-Division Settings**: Each division has its own format, teams, and rules
-- **Flexible Formats**: Group stage Bo1/3/5/7, separate playoff formats (QF/SF/Final)
-- **Team Management**: Add teams individually or bulk import
+- **Flexible Formats**: Group stage, Single/Double-Elimination, Multi-Tier Playoffs
+- **Enhanced Team Import**: Multiple format support (CSV, natural format with flags 🇸🇪, simple text)
+  - Validation and duplicate detection
+  - Preview before import with conflict resolution
 - **Schedule Generation**: Auto-generate group stage or add matches manually
-- **Results Import**: Fetch from API or import JSON files
-- **Auto Standings**: Calculated automatically from results
-- **Playoff Brackets**: Visual bracket with auto-updating scores
+  - Multi-tier support: dynamic round selection per playoff tier
+  - Drag-and-drop round reordering
+- **Discord Integration**: Submit match results via Discord bot
+- **Results Import**: Fetch from API, Discord submissions, or JSON files
+- **Auto Standings**: Calculated automatically with configurable tie-breakers
+- **Playoff Brackets**: Visual bracket with auto-updating scores (single/double/multi-tier)
 - **Wiki Export**: Generate MediaWiki markup for each division
 - **Save/Load**: Full tournament backup and restore
 
@@ -72,7 +77,10 @@ src/
 │       ├── DivisionBracket.jsx    # Playoff bracket
 │       └── DivisionWiki.jsx       # Wiki export
 ├── utils/
-│   └── matchLogic.js          # Parsing utilities
+│   ├── matchLogic.js          # Match parsing & standings
+│   ├── teamImport.js          # Team import with validation
+│   ├── wikiExport.js          # MediaWiki generation
+│   └── statsLogic.js          # QuakeWorld stats
 └── hooks/
     └── useLocalStorage.js
 ```
@@ -113,10 +121,40 @@ Returning:
 }
 ```
 
+## Team Import Formats
+
+The enhanced team import system supports multiple input formats:
+
+**CSV Format:**
+```
+Team Name, TAG, country, Group, players
+Slackers, SLK, se, A, ParadokS Zero grisling Phrenic
+```
+
+**Natural Format (with flag emojis):**
+```
+Slackers [SLK] 🇸🇪 - ParadokS, Zero, grisling, Phrenic
+Hell Xpress (hx) 🇸🇪: Splash, ok98, Shaka, mm
+```
+
+**Simple Format:**
+```
+Team Name
+```
+
+Features:
+- Automatic tag generation from team name
+- Flag emoji to country code conversion (🇸🇪 → se)
+- Validation with error/warning reporting
+- Duplicate detection (within import and against existing teams)
+- Preview with conflict resolution options
+
 ## Tech Stack
 
-- React 18 + Vite
-- Tailwind CSS
+- React 18 + Vite 5
+- Tailwind CSS 3.4
+- ES Modules (package.json `"type": "module"`)
+- PostCSS + Autoprefixer
 - localStorage persistence
 
 ## License
