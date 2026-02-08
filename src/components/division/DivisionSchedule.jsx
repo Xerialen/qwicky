@@ -235,13 +235,102 @@ export default function DivisionSchedule({ division, updateDivision, tournamentS
     return grouped;
   }, [schedule]);
 
-  const rounds = [
-    { id: 'group', label: 'Group Stage' },
-    ...(division.playoffQFBestOf > 0 ? [{ id: 'quarter', label: 'Quarter Final' }] : []),
-    ...(division.playoffSFBestOf > 0 ? [{ id: 'semi', label: 'Semi Final' }] : []),
-    { id: 'final', label: 'Grand Final' },
-    ...(division.playoff3rdBestOf > 0 ? [{ id: 'third', label: '3rd Place' }] : []),
-  ];
+  // Build rounds list dynamically based on format
+  const rounds = useMemo(() => {
+    const list = [];
+
+    // Group stage (for formats that use groups)
+    if (division.format === 'groups' || division.format === 'multi-tier') {
+      list.push({ id: 'group', label: 'Group Stage' });
+    }
+
+    // Multi-tier playoffs
+    if (division.format === 'multi-tier' && division.playoffTiers) {
+      division.playoffTiers.forEach(tier => {
+        const tierName = tier.name.replace(' Playoffs', ''); // "Gold Playoffs" → "Gold"
+        const tierTeams = tier.teams || 4;
+
+        // Add rounds based on tier bracket size
+        if (tierTeams >= 32) list.push({ id: `${tier.id}-r32`, label: `${tierName} R32` });
+        if (tierTeams >= 16) list.push({ id: `${tier.id}-r16`, label: `${tierName} R16` });
+        if (tierTeams >= 8) list.push({ id: `${tier.id}-quarter`, label: `${tierName} QF` });
+        if (tierTeams >= 4) {
+          list.push({ id: `${tier.id}-semi`, label: `${tierName} SF` });
+          list.push({ id: `${tier.id}-final`, label: `${tierName} Final` });
+        }
+        if (tier.bracket?.thirdPlace) {
+          list.push({ id: `${tier.id}-third`, label: `${tierName} 3rd Place` });
+        }
+      });
+    }
+    // Standard playoffs (single/double-elim or groups with playoffs)
+    else {
+      if (division.playoffQFBestOf > 0) list.push({ id: 'quarter', label: 'Quarter Final' });
+      if (division.playoffSFBestOf > 0) list.push({ id: 'semi', label: 'Semi Final' });
+      list.push({ id: 'final', label: 'Grand Final' });
+      if (division.playoff3rdBestOf > 0) list.push({ id: 'third', label: '3rd Place' });
+    }
+
+    return list;
+  }, [division.format, division.playoffTiers, division.playoffQFBestOf, division.playoffSFBestOf, division.playoff3rdBestOf]);
+
+  // Helper to render round options with optgroups for edit form
+  const renderRoundOptions = () => {
+    const hasGroupStage = division.format === 'groups' || division.format === 'multi-tier';
+    const isMultiTier = division.format === 'multi-tier';
+
+    return (
+      <>
+        {hasGroupStage && <option value="group">Group Stage</option>}
+
+        {isMultiTier && division.playoffTiers ? (
+          // Multi-tier playoffs: one optgroup per tier
+          division.playoffTiers.map(tier => {
+            const tierName = tier.name.replace(' Playoffs', '');
+            const tierTeams = tier.teams || 4;
+
+            return (
+              <optgroup key={tier.id} label={tier.name}>
+                {tierTeams >= 32 && <option value={`${tier.id}-r32`}>{tierName} R32</option>}
+                {tierTeams >= 16 && <option value={`${tier.id}-r16`}>{tierName} R16</option>}
+                {tierTeams >= 8 && <option value={`${tier.id}-quarter`}>{tierName} QF</option>}
+                {tierTeams >= 4 && (
+                  <>
+                    <option value={`${tier.id}-semi`}>{tierName} SF</option>
+                    <option value={`${tier.id}-final`}>{tierName} Final</option>
+                  </>
+                )}
+                {tier.bracket?.thirdPlace && <option value={`${tier.id}-third`}>{tierName} 3rd</option>}
+              </optgroup>
+            );
+          })
+        ) : (
+          // Standard single/double-elim brackets
+          <>
+            <optgroup label="Winner's Bracket">
+              <option value="r32">Round of 32</option>
+              <option value="r16">Round of 16</option>
+              <option value="quarter">Quarter-Finals</option>
+              <option value="semi">Semi-Finals</option>
+              <option value="final">Final</option>
+            </optgroup>
+            <optgroup label="Loser's Bracket">
+              <option value="lr1">LR1</option>
+              <option value="lr2">LR2</option>
+              <option value="lr3">LR3</option>
+              <option value="lr4">LR4</option>
+              <option value="lr5">LR5</option>
+              <option value="lr6">LR6</option>
+              <option value="lsemi">L Semi-Finals</option>
+              <option value="lfinal">L Final</option>
+            </optgroup>
+            <option value="grand">Grand Final</option>
+            <option value="third">3rd Place</option>
+          </>
+        )}
+      </>
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -503,26 +592,7 @@ function MatchRow({ match, onUpdate, onRemove, isEditing, setEditing, showRound,
             <input type="date" value={match.date} onChange={(e) => onUpdate(match.id, { date: e.target.value })} className="bg-qw-darker border border-qw-border rounded px-2 py-1 text-white text-xs" />
             <input type="time" value={match.time} onChange={(e) => onUpdate(match.id, { time: e.target.value })} className="bg-qw-darker border border-qw-border rounded px-2 py-1 text-white text-xs" />
             <select value={match.round || 'group'} onChange={(e) => onUpdate(match.id, { round: e.target.value })} className="bg-qw-darker border border-qw-border rounded px-2 py-1 text-white text-xs">
-              <option value="group">Group</option>
-              <optgroup label="Winner's Bracket">
-                <option value="r32">Round of 32</option>
-                <option value="r16">Round of 16</option>
-                <option value="quarter">Quarter-Finals</option>
-                <option value="semi">Semi-Finals</option>
-                <option value="final">Final</option>
-              </optgroup>
-              <optgroup label="Loser's Bracket">
-                <option value="lr1">LR1</option>
-                <option value="lr2">LR2</option>
-                <option value="lr3">LR3</option>
-                <option value="lr4">LR4</option>
-                <option value="lr5">LR5</option>
-                <option value="lr6">LR6</option>
-                <option value="lsemi">L Semi-Finals</option>
-                <option value="lfinal">L Final</option>
-              </optgroup>
-              <option value="grand">Grand Final</option>
-              <option value="third">3rd Place</option>
+              {renderRoundOptions()}
             </select>
             <select value={match.status || ''} onChange={(e) => onUpdate(match.id, { status: e.target.value })} className="bg-qw-darker border border-qw-border rounded px-2 py-1 text-white text-xs">
               <option value="">No Status</option>

@@ -33,7 +33,8 @@ function parseSingleTeamLine(line, index = 0) {
   }
 
   // Try natural format: "Team Name [TAG] 🇸🇪 - players" or "Team Name (TAG) Country: players"
-  const naturalMatch = trimmed.match(/^([^[\(]+)[\[\(]([^\]\)]+)[\]\)]?\s*([🇦-🇿]{2})?\s*[-:–]?\s*(.*)$/);
+  // Match flag emoji (two Regional Indicator Symbols: U+1F1E6 to U+1F1FF)
+  const naturalMatch = trimmed.match(/^([^[\(]+)[\[\(]([^\]\)]+)[\]\)]?\s*([\u{1F1E6}-\u{1F1FF}]{2})?\s*[-:–]?\s*(.*)$/u);
   if (naturalMatch) {
     const [, name, tag, flag, players] = naturalMatch;
     return {
