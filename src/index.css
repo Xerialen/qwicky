@@ -460,3 +460,13 @@ td .font-bold {
     background: #fff;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   DRAG AND DROP
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.drop-target-active {
+  outline: 2px dashed #FFB300;
+  outline-offset: -2px;
+  background-color: rgba(255, 179, 0, 0.05);
+}

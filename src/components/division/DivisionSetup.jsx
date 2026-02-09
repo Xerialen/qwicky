@@ -199,32 +199,73 @@ export default function DivisionSetup({ division, updateDivision }) {
     updateDivision({ playoffTiers: updatedTiers });
   };
 
+  const FORMAT_OPTIONS = [
+    {
+      value: 'groups',
+      label: 'Group Stage + Playoffs',
+      desc: 'Round-robin groups → elimination bracket',
+      icon: '🏆'
+    },
+    {
+      value: 'single-elim',
+      label: 'Single Elimination',
+      desc: 'One loss and you\'re out',
+      icon: '⚡'
+    },
+    {
+      value: 'double-elim',
+      label: 'Double Elimination',
+      desc: 'Winners & losers brackets',
+      icon: '🔄'
+    },
+    {
+      value: 'multi-tier',
+      label: 'Multi-Tier Playoffs',
+      desc: 'Gold/Silver/Bronze brackets from group standings',
+      icon: '🥇'
+    }
+  ];
+
   return (
     <div className="space-y-6">
       {/* Division Info */}
       <div className="qw-panel p-6">
         <h3 className="font-display text-lg text-qw-accent mb-4">DIVISION INFO</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-4">
           <div>
             <label className="block text-qw-muted text-sm mb-1">Division Name</label>
             <input type="text" value={division.name} onChange={(e) => handleUpdate('name', e.target.value)} className="w-full bg-qw-dark border border-qw-border rounded px-4 py-2 text-white" />
           </div>
           <div>
-            <label className="block text-qw-muted text-sm mb-1">Format</label>
-            <select value={division.format} onChange={(e) => handleUpdate('format', e.target.value)} className="w-full bg-qw-dark border border-qw-border rounded px-4 py-2 text-white">
-              <option value="groups">Groups → Playoffs</option>
-              <option value="multi-tier">Groups → Multi-Tier Playoffs</option>
-              <option value="single-elim">Single Elimination Only</option>
-              <option value="double-elim">Double Elimination Only</option>
-            </select>
+            <label className="block text-qw-muted text-sm mb-2">Tournament Format</label>
+            <div className="grid grid-cols-2 gap-3">
+              {FORMAT_OPTIONS.map(opt => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => handleUpdate('format', opt.value)}
+                  className={`text-left p-3 rounded-lg border-2 transition-all duration-200 ${
+                    division.format === opt.value
+                      ? 'border-qw-accent bg-qw-accent/10 text-white'
+                      : 'border-zinc-700 bg-zinc-800/50 text-zinc-400 hover:border-zinc-500'
+                  }`}
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-lg">{opt.icon}</span>
+                    <span className="font-medium text-sm">{opt.label}</span>
+                  </div>
+                  <p className="text-xs text-zinc-500">{opt.desc}</p>
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Group Stage Settings */}
+      {/* Group Stage Settings - Only show for formats with group stage */}
       {(division.format === 'groups' || division.format === 'multi-tier') && (
         <div className="qw-panel p-6">
-          <h3 className="font-display text-lg text-qw-accent mb-4">GROUP STAGE</h3>
+          <h3 className="font-display text-lg text-qw-accent mb-4">GROUP STAGE SETTINGS</h3>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-qw-muted text-sm mb-1">Number of Groups</label>
@@ -297,10 +338,10 @@ export default function DivisionSetup({ division, updateDivision }) {
         </div>
       )}
 
-      {/* Playoff Settings - Multi-Tier Format */}
+      {/* Multi-Tier Playoff Configuration - Only for multi-tier format */}
       {isMultiTier && (
         <div className="qw-panel p-6">
-          <h3 className="font-display text-lg text-qw-accent mb-4">MULTI-TIER PLAYOFFS</h3>
+          <h3 className="font-display text-lg text-qw-accent mb-4">TIER CONFIGURATION</h3>
           <p className="text-sm text-qw-muted mb-4">Configure multiple independent playoff brackets for different tier ranges (Gold/Silver/Bronze).</p>
 
           {/* Tier Cards */}
@@ -469,10 +510,10 @@ export default function DivisionSetup({ division, updateDivision }) {
         </div>
       )}
 
-      {/* Playoff Settings - Standard Format */}
+      {/* Playoff Settings - For single-elim, double-elim, and groups format */}
       {!isMultiTier && (
         <div className="qw-panel p-6">
-          <h3 className="font-display text-lg text-qw-accent mb-4">PLAYOFFS</h3>
+          <h3 className="font-display text-lg text-qw-accent mb-4">PLAYOFF SETTINGS</h3>
 
           {/* Format Selection */}
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6 pb-6 border-b border-qw-border">
@@ -617,10 +658,10 @@ export default function DivisionSetup({ division, updateDivision }) {
         </div>
       </div>
 
-      {/* Tie-Breakers */}
+      {/* Tie-Breakers - Only for formats with group stage */}
       {(division.format === 'groups' || division.format === 'multi-tier') && (
         <div className="qw-panel p-6">
-          <h3 className="font-display text-lg text-qw-accent mb-4">TIE-BREAKERS</h3>
+          <h3 className="font-display text-lg text-qw-accent mb-4">TIE-BREAKER PRIORITY</h3>
           <p className="text-sm text-qw-muted mb-4">When teams have equal points:</p>
           <TieBreakerConfig value={division.tieBreakers} onChange={(newOrder) => handleUpdate('tieBreakers', newOrder)} />
         </div>

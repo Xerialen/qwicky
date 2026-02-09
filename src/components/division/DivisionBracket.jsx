@@ -1,6 +1,7 @@
 // src/components/division/DivisionBracket.jsx
 import React, { useMemo } from 'react';
 import { createDefaultBracket } from '../../App';
+import EmptyState from '../EmptyState';
 
 function BracketMatch({ match, schedule, onUpdateTeam, label, showLabel = false, isFinal = false, isGrandFinal = false }) {
   const result = useMemo(() => {
@@ -446,6 +447,28 @@ export default function DivisionBracket({ division, updateDivision }) {
   const isMultiTier = division.format === 'multi-tier';
   const isDoubleElim = bracket.format === 'double' || (division.playoffFormat === 'double');
   const teamCount = bracket.teamCount || division.playoffTeams || 4;
+
+  // Show empty state if no teams exist
+  if (!division.teams || division.teams.length === 0) {
+    return (
+      <EmptyState
+        icon="🎯"
+        title="No teams yet"
+        description="Add teams to the division first. The bracket will populate automatically based on group standings or seeding."
+      />
+    );
+  }
+
+  // Show empty state if bracket hasn't been created yet
+  if (!bracket || Object.keys(bracket).length === 0) {
+    return (
+      <EmptyState
+        icon="🎯"
+        title="Bracket not configured"
+        description="Configure playoff settings in Setup tab. The bracket structure will generate automatically."
+      />
+    );
+  }
 
   const handleUpdateTeam = (matchId, slot, value) => {
     const newBracket = JSON.parse(JSON.stringify(bracket)); // Deep clone

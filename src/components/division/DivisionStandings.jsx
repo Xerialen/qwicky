@@ -1,5 +1,6 @@
 // src/components/division/DivisionStandings.jsx
 import React, { useMemo } from 'react';
+import EmptyState from '../EmptyState';
 
 function calculateStandings(schedule, division) {
   const pointsWin = division.pointsWin ?? 3;
@@ -231,14 +232,25 @@ export default function DivisionStandings({ division }) {
     headToHead: 'H2H'
   };
 
-  // Show empty message only if there are NO teams at all
+  // Show empty state if no teams exist
   if (standings.length === 0) {
     return (
-      <div className="qw-panel p-12 text-center">
-        <div className="text-6xl mb-4">🏆</div>
-        <h2 className="font-display text-2xl text-white mb-2">No Teams Yet</h2>
-        <p className="text-qw-muted">Add teams to the division to see standings</p>
-      </div>
+      <EmptyState
+        icon="🏆"
+        title="No teams yet"
+        description="Add teams to the division first, then generate a schedule. Standings will calculate automatically as results are imported."
+      />
+    );
+  }
+
+  // Show empty state if no schedule exists
+  if (schedule.length === 0) {
+    return (
+      <EmptyState
+        icon="📊"
+        title="No matches scheduled yet"
+        description="Generate a schedule first, then import results. Standings will calculate automatically."
+      />
     );
   }
 

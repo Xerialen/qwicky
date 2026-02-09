@@ -1,5 +1,6 @@
 // src/components/DivisionManager.jsx
 import React, { useState } from 'react';
+import DangerButton from './DangerButton';
 
 export default function DivisionManager({ 
   divisions, 
@@ -27,10 +28,8 @@ export default function DivisionManager({
     setActiveTab('division');
   };
 
-  const handleRemoveDivision = (divId, divName) => {
-    if (window.confirm(`Delete "${divName}"? This will remove all teams, schedule, and results for this division.`)) {
-      removeDivision(divId);
-    }
+  const handleRemoveDivision = (divId) => {
+    removeDivision(divId);
   };
 
   const suggestedNames = [
@@ -206,12 +205,11 @@ export default function DivisionManager({
                     >
                       <span>📋</span> Duplicate Settings
                     </button>
-                    <button
-                      onClick={() => handleRemoveDivision(div.id, div.name)}
-                      className="text-sm text-red-400 hover:text-red-300 flex items-center gap-1"
-                    >
-                      <span>🗑️</span> Delete
-                    </button>
+                    <DangerButton
+                      label={`Delete ${div.name}`}
+                      confirmLabel="Click to confirm deletion"
+                      onConfirm={() => handleRemoveDivision(div.id)}
+                    />
                   </div>
                 </div>
               </div>
