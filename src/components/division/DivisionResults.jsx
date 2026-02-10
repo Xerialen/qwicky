@@ -3,7 +3,7 @@ import React, { useState, useRef, useMemo, useCallback, useEffect } from 'react'
 import { parseMatch } from '../../utils/matchLogic';
 import DivisionStats from './DivisionStats';
 
-export default function DivisionResults({ division, updateDivision, tournamentId }) {
+export default function DivisionResults({ division, updateDivision, tournamentId, tournament }) {
   const [mode, setMode] = useState('discord');
   const [showStats, setShowStats] = useState(false);
   // API Fetch states
@@ -22,6 +22,34 @@ export default function DivisionResults({ division, updateDivision, tournamentId
   const [submissionsLoading, setSubmissionsLoading] = useState(false);
   const [submissionsError, setSubmissionsError] = useState(null);
   const [showApproved, setShowApproved] = useState(false);
+  const [filterByDivision, setFilterByDivision] = useState(true);
+
+  // Helper function to detect which division(s) a submission belongs to
+  const detectSubmissionDivision = useCallback((submission) => {
+    if (!submission?.game_data?.teams || !tournament?.divisions) return null;
+
+    const gameTeams = submission.game_data.teams.map(t =>
+      typeof t === 'object' ? t.name : t
+    ).filter(Boolean);
+
+    if (gameTeams.length === 0) return null;
+
+    // Check each division to see if it contains these teams
+    const matchingDivisions = [];
+    tournament.divisions.forEach(div => {
+      const divTeamNames = (div.teams || []).map(t => t.name.toLowerCase());
+      const matchCount = gameTeams.filter(gt =>
+        divTeamNames.includes(gt.toLowerCase())
+      ).length;
+
+      // If both teams are in this division, it's a match
+      if (matchCount === gameTeams.length) {
+        matchingDivisions.push(div);
+      }
+    });
+
+    return matchingDivisions.length > 0 ? matchingDivisions : null;
+  }, [tournament]);
 
   const fetchSubmissions = async (includeApproved) => {
     if (!tournamentId) return;
@@ -32,6 +60,7 @@ export default function DivisionResults({ division, updateDivision, tournamentId
       const res = await fetch(`/api/submissions/${encodeURIComponent(tournamentId)}?status=${status}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to fetch');
+
       setSubmissions(data.submissions || []);
     } catch (err) {
       setSubmissionsError(err.message);
@@ -93,7 +122,7 @@ export default function DivisionResults({ division, updateDivision, tournamentId
 
   const handleBulkReprocess = () => {
     try {
-      const approved = submissions.filter(s => s.status === 'approved');
+      const approved = filteredSubmissions.filter(s => s.status === 'approved');
       const allParsed = [];
       for (const sub of approved) {
         const gameData = sub.game_data;
@@ -120,7 +149,7 @@ export default function DivisionResults({ division, updateDivision, tournamentId
   };
 
   const handleBulkApprove = async () => {
-    const pending = submissions.filter(s => s.status === 'pending');
+    const pending = filteredSubmissions.filter(s => s.status === 'pending');
     const allParsed = [];
     const approvedSubIds = [];
 
@@ -155,6 +184,17 @@ export default function DivisionResults({ division, updateDivision, tournamentId
   const teams = division.teams || [];
   const schedule = division.schedule || [];
   const rawMaps = division.rawMaps || [];
+
+  // Filter submissions by detected division if enabled
+  const filteredSubmissions = useMemo(() => {
+    if (!filterByDivision) return submissions;
+
+    return submissions.filter(sub => {
+      const divisions = detectSubmissionDivision(sub);
+      if (!divisions) return true; // Show if can't detect
+      return divisions.some(d => d.id === division.id);
+    });
+  }, [submissions, filterByDivision, division.id, detectSubmissionDivision]);
 
   // --- TEAM LOOKUP & SERIES LOGIC (UNCHANGED) ---
   const teamsJson = JSON.stringify(teams.map(t => ({ name: t.name, tag: t.tag })));
@@ -406,8 +446,34 @@ export default function DivisionResults({ division, updateDivision, tournamentId
         // Check if this specific map is already in the match
         if (!match.maps?.some(mp => mp.id === mapResult.id)) {
           const isNormalOrder = match.team1.toLowerCase() === res1Lower;
-          const score1 = isNormalOrder ? mapResult.scores[team1] : mapResult.scores[team2];
-          const score2 = isNormalOrder ? mapResult.scores[team2] : mapResult.scores[team1];
+
+          // Debug logging to diagnose score issues
+          console.log('🔍 Adding map to match:', {
+            matchTeams: [match.team1, match.team2],
+            mapResultTeams: mapResult.teams,
+            resolvedTeams: [resolved1, resolved2],
+            mapResultScores: mapResult.scores,
+            isNormalOrder,
+            mapName: mapResult.map
+          });
+
+          // Lookup scores using original team names from mapResult (they match the score keys)
+          const rawScore1 = isNormalOrder ? mapResult.scores[team1] : mapResult.scores[team2];
+          const rawScore2 = isNormalOrder ? mapResult.scores[team2] : mapResult.scores[team1];
+
+          // Ensure scores are never undefined
+          const score1 = rawScore1 ?? 0;
+          const score2 = rawScore2 ?? 0;
+
+          console.log('📊 Scores:', {
+            lookupKeys: [team1, team2],
+            rawScores: { rawScore1, rawScore2 },
+            finalScores: { score1, score2 }
+          });
+
+          if (score1 === 0 && score2 === 0) {
+            console.warn('⚠️ Both scores are 0! This might indicate a data issue.');
+          }
 
           match.maps = [...(match.maps || []), {
             id: mapResult.id,
@@ -713,16 +779,20 @@ export default function DivisionResults({ division, updateDivision, tournamentId
           <div className="flex items-center justify-between">
             <h3 className="font-display text-lg text-qw-accent">DISCORD SUBMISSIONS</h3>
             <div className="flex gap-2 items-center">
-              {submissions.filter(s => s.status === 'pending').length > 1 && (
+              {filteredSubmissions.filter(s => s.status === 'pending').length > 1 && (
                 <button onClick={handleBulkApprove} className="px-3 py-1 rounded bg-qw-win text-qw-dark text-sm font-semibold">
-                  Approve All ({submissions.filter(s => s.status === 'pending').length})
+                  Approve All ({filteredSubmissions.filter(s => s.status === 'pending').length})
                 </button>
               )}
-              {submissions.filter(s => s.status === 'approved').length > 1 && (
+              {filteredSubmissions.filter(s => s.status === 'approved').length > 1 && (
                 <button onClick={handleBulkReprocess} className="px-3 py-1 rounded bg-qw-accent text-qw-dark text-sm font-semibold">
-                  Reprocess All ({submissions.filter(s => s.status === 'approved').length})
+                  Reprocess All ({filteredSubmissions.filter(s => s.status === 'approved').length})
                 </button>
               )}
+              <label className="flex items-center gap-1.5 text-xs text-qw-muted cursor-pointer">
+                <input type="checkbox" checked={filterByDivision} onChange={(e) => setFilterByDivision(e.target.checked)} className="accent-qw-accent" />
+                This Division Only
+              </label>
               <label className="flex items-center gap-1.5 text-xs text-qw-muted cursor-pointer">
                 <input type="checkbox" checked={showApproved} onChange={(e) => { setShowApproved(e.target.checked); fetchSubmissions(e.target.checked); }} className="accent-qw-accent" />
                 Show Approved
@@ -743,17 +813,21 @@ export default function DivisionResults({ division, updateDivision, tournamentId
             <div className="p-3 bg-red-900/30 border border-red-500/50 rounded text-red-300 text-sm">{submissionsError}</div>
           )}
 
-          {submissions.length === 0 && !submissionsLoading && tournamentId && (
+          {filteredSubmissions.length === 0 && !submissionsLoading && tournamentId && (
             <div className="text-center py-8 text-qw-muted">
               <div className="text-4xl mb-2">🤖</div>
-              <p>No pending submissions</p>
-              <p className="text-xs mt-1">Hub URLs posted in registered Discord channels will appear here.</p>
+              <p>No {filterByDivision ? `submissions for ${division.name}` : 'pending submissions'}</p>
+              <p className="text-xs mt-1">
+                {filterByDivision
+                  ? `Uncheck "This Division Only" to see all submissions`
+                  : 'Hub URLs posted in registered Discord channels will appear here.'}
+              </p>
             </div>
           )}
 
-          {submissions.length > 0 && (
+          {filteredSubmissions.length > 0 && (
             <div className="space-y-2">
-              {submissions.map(sub => {
+              {filteredSubmissions.map(sub => {
                 const gameData = sub.game_data || {};
                 const teams = gameData.teams || [];
                 // Handle both formats: hub objects [{name, frags}] or ktxstats strings ["team"]
@@ -775,6 +849,10 @@ export default function DivisionResults({ division, updateDivision, tournamentId
                   });
                 }
 
+                // Detect which division(s) this submission belongs to
+                const detectedDivisions = detectSubmissionDivision(sub);
+                const isCurrentDivision = detectedDivisions?.some(d => d.id === division.id);
+
                 return (
                   <div key={sub.id} className="p-4 bg-qw-dark rounded border border-qw-border">
                     <div className="flex items-center justify-between flex-wrap gap-2">
@@ -790,12 +868,42 @@ export default function DivisionResults({ division, updateDivision, tournamentId
                           <span className="text-qw-muted text-xs bg-qw-darker px-2 py-0.5 rounded">{gameData.map || '?'}</span>
                           <span className="text-qw-muted text-xs bg-qw-darker px-2 py-0.5 rounded">{gameData.mode || '?'}</span>
                         </div>
-                        <div className="text-xs text-qw-muted mt-1">
-                          Submitted by <span className="text-qw-accent">{sub.submitted_by_name}</span>
-                          {' '}&middot;{' '}
-                          {new Date(sub.created_at).toLocaleString()}
-                          {' '}&middot;{' '}
-                          Game #{sub.game_id}
+                        <div className="text-xs text-qw-muted mt-1 flex items-center gap-2 flex-wrap">
+                          <span>
+                            Submitted by <span className="text-qw-accent">{sub.submitted_by_name}</span>
+                            {' '}&middot;{' '}
+                            {new Date(sub.created_at).toLocaleString()}
+                            {' '}&middot;{' '}
+                            Game #{sub.game_id}
+                          </span>
+                          {detectedDivisions ? (
+                            detectedDivisions.length === 1 ? (
+                              <span
+                                className={`px-2 py-0.5 rounded text-xs font-semibold ${
+                                  isCurrentDivision
+                                    ? 'bg-qw-win/20 border border-qw-win/50 text-qw-win'
+                                    : 'bg-blue-900/30 border border-blue-500/50 text-blue-300'
+                                }`}
+                                title={`Teams belong to ${detectedDivisions[0].name}`}
+                              >
+                                📍 {detectedDivisions[0].name}
+                              </span>
+                            ) : (
+                              <span
+                                className="px-2 py-0.5 bg-purple-900/30 border border-purple-500/50 text-purple-300 rounded text-xs font-semibold"
+                                title={`Teams found in: ${detectedDivisions.map(d => d.name).join(', ')}`}
+                              >
+                                📍 Multiple ({detectedDivisions.length})
+                              </span>
+                            )
+                          ) : (
+                            <span
+                              className="px-2 py-0.5 bg-yellow-900/30 border border-yellow-500/50 text-yellow-300 rounded text-xs font-semibold"
+                              title="Teams not found in any division"
+                            >
+                              ⚠ Unknown Teams
+                            </span>
+                          )}
                         </div>
                       </div>
                       <div className="flex gap-2 items-center">
