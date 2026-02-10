@@ -1,9 +1,11 @@
 // src/components/division/DivisionResults.jsx
 import React, { useState, useRef, useMemo, useCallback, useEffect } from 'react';
 import { parseMatch } from '../../utils/matchLogic';
+import DivisionStats from './DivisionStats';
 
 export default function DivisionResults({ division, updateDivision, tournamentId }) {
   const [mode, setMode] = useState('discord');
+  const [showStats, setShowStats] = useState(false);
   // API Fetch states
   const [apiInput, setApiInput] = useState('');
   const [apiStatus, setApiStatus] = useState(null);
@@ -989,6 +991,32 @@ export default function DivisionResults({ division, updateDivision, tournamentId
           </div>
         )}
       </div>
+
+      {/* PLAYER STATS - Expandable Section */}
+      {rawMaps.length > 0 && (
+        <div className="qw-panel overflow-hidden">
+          <button
+            onClick={() => setShowStats(!showStats)}
+            className="w-full flex items-center justify-between px-6 py-4 bg-qw-dark border-b border-qw-border hover:bg-qw-dark/80 transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <span className="text-xl">📊</span>
+              <h3 className="font-display text-lg text-qw-accent">PLAYER STATISTICS</h3>
+              <span className="text-xs text-qw-muted">
+                (detailed stats from imported matches)
+              </span>
+            </div>
+            <span className={`text-qw-accent transition-transform duration-200 ${showStats ? 'rotate-180' : ''}`}>
+              ▼
+            </span>
+          </button>
+          {showStats && (
+            <div className="p-6">
+              <DivisionStats division={division} />
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

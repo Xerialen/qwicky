@@ -1,7 +1,8 @@
 // src/components/division/DivisionBracket.jsx
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { createDefaultBracket } from '../../App';
 import EmptyState from '../EmptyState';
+import DivisionStandings from './DivisionStandings';
 
 function BracketMatch({ match, schedule, onUpdateTeam, label, showLabel = false, isFinal = false, isGrandFinal = false }) {
   const result = useMemo(() => {
@@ -442,6 +443,7 @@ function MultiTierBracketView({ tiers, schedule, onUpdateTierTeam }) {
 }
 
 export default function DivisionBracket({ division, updateDivision }) {
+  const [showStandings, setShowStandings] = useState(true);
   const schedule = division.schedule || [];
   const bracket = division.bracket || {};
   const isMultiTier = division.format === 'multi-tier';
@@ -614,6 +616,30 @@ export default function DivisionBracket({ division, updateDivision }) {
   if (isMultiTier) {
     return (
       <div className="space-y-6">
+        {/* Collapsible Standings Section */}
+        {(division.format === 'groups' || division.format === 'multi-tier') && (
+          <div className="qw-panel overflow-hidden">
+            <button
+              onClick={() => setShowStandings(!showStandings)}
+              className="w-full flex items-center justify-between px-4 py-3 bg-qw-dark border-b border-qw-border hover:bg-qw-dark/80 transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-lg">🏆</span>
+                <h3 className="font-display font-bold text-qw-accent">GROUP STANDINGS</h3>
+                <span className="text-xs text-qw-muted">(used for playoff seeding)</span>
+              </div>
+              <span className={`text-qw-accent transition-transform duration-200 ${showStandings ? 'rotate-180' : ''}`}>
+                ▼
+              </span>
+            </button>
+            {showStandings && (
+              <div className="p-4">
+                <DivisionStandings division={division} />
+              </div>
+            )}
+          </div>
+        )}
+
         <div className="flex items-center justify-between">
           <div>
             <p className="text-qw-muted text-sm">
@@ -654,6 +680,30 @@ export default function DivisionBracket({ division, updateDivision }) {
   // Standard single/double elimination view
   return (
     <div className="space-y-6">
+      {/* Collapsible Standings Section */}
+      {division.format === 'groups' && (
+        <div className="qw-panel overflow-hidden">
+          <button
+            onClick={() => setShowStandings(!showStandings)}
+            className="w-full flex items-center justify-between px-4 py-3 bg-qw-dark border-b border-qw-border hover:bg-qw-dark/80 transition-colors"
+          >
+            <div className="flex items-center gap-2">
+              <span className="text-lg">🏆</span>
+              <h3 className="font-display font-bold text-qw-accent">GROUP STANDINGS</h3>
+              <span className="text-xs text-qw-muted">(used for playoff seeding)</span>
+            </div>
+            <span className={`text-qw-accent transition-transform duration-200 ${showStandings ? 'rotate-180' : ''}`}>
+              ▼
+            </span>
+          </button>
+          {showStandings && (
+            <div className="p-4">
+              <DivisionStandings division={division} />
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="flex items-center justify-between">
         <div>
           <p className="text-qw-muted text-sm">
