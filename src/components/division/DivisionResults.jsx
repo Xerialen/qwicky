@@ -42,12 +42,15 @@ export default function DivisionResults({ division, updateDivision, tournamentId
       // Build lookup map including team names and aliases
       const teamNameLookup = new Set();
       (div.teams || []).forEach(team => {
-        teamNameLookup.add(team.name.toLowerCase());
-        // Also add aliases
+        // Clean team name for comparison (handles QuakeWorld characters)
+        teamNameLookup.add(unicodeToAscii(team.name).toLowerCase());
+
+        // Also add aliases (clean them too!)
         if (team.aliases && Array.isArray(team.aliases)) {
           team.aliases.forEach(alias => {
             if (alias && alias.trim()) {
-              teamNameLookup.add(alias.toLowerCase().trim());
+              // Clean alias before adding to lookup (in case user entered it with special chars)
+              teamNameLookup.add(unicodeToAscii(alias).toLowerCase().trim());
             }
           });
         }
