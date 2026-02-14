@@ -297,10 +297,13 @@ export default function DivisionResults({ division, updateDivision, tournamentId
       const [t1, t2] = series.resolvedTeams;
       const t1Lower = t1.toLowerCase();
       const t2Lower = t2.toLowerCase();
-      const scheduledMatch = schedule.find(m =>
-        (m.team1.toLowerCase() === t1Lower && m.team2.toLowerCase() === t2Lower) ||
-        (m.team1.toLowerCase() === t2Lower && m.team2.toLowerCase() === t1Lower)
-      );
+      // Resolve scheduled team names through aliases before comparing
+      const scheduledMatch = schedule.find(m => {
+        const schedT1 = resolveTeamName(m.team1).toLowerCase();
+        const schedT2 = resolveTeamName(m.team2).toLowerCase();
+        return (schedT1 === t1Lower && schedT2 === t2Lower) ||
+               (schedT1 === t2Lower && schedT2 === t1Lower);
+      });
       return {
         ...series,
         scheduledMatch,
@@ -405,10 +408,14 @@ export default function DivisionResults({ division, updateDivision, tournamentId
       const res2Lower = resolved2.toLowerCase();
 
       // Find all candidate schedule entries for this team pair
+      // IMPORTANT: Resolve scheduled team names through aliases before comparing
       const candidateIndices = [];
       newSchedule.forEach((m, idx) => {
-        if ((m.team1.toLowerCase() === res1Lower && m.team2.toLowerCase() === res2Lower) ||
-            (m.team1.toLowerCase() === res2Lower && m.team2.toLowerCase() === res1Lower)) {
+        const schedTeam1Resolved = resolveTeamName(m.team1).toLowerCase();
+        const schedTeam2Resolved = resolveTeamName(m.team2).toLowerCase();
+
+        if ((schedTeam1Resolved === res1Lower && schedTeam2Resolved === res2Lower) ||
+            (schedTeam1Resolved === res2Lower && schedTeam2Resolved === res1Lower)) {
           candidateIndices.push(idx);
         }
       });
