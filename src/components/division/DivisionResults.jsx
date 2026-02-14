@@ -28,18 +28,34 @@ export default function DivisionResults({ division, updateDivision, tournamentId
   const detectSubmissionDivision = useCallback((submission) => {
     if (!submission?.game_data?.teams || !tournament?.divisions) return null;
 
-    const gameTeams = submission.game_data.teams.map(t =>
-      typeof t === 'object' ? t.name : t
-    ).filter(Boolean);
+    // Extract and clean team names from submission (handle QuakeWorld characters)
+    const gameTeams = submission.game_data.teams.map(t => {
+      const name = typeof t === 'object' ? t.name : t;
+      return unicodeToAscii(name || '');
+    }).filter(Boolean);
 
     if (gameTeams.length === 0) return null;
 
     // Check each division to see if it contains these teams
     const matchingDivisions = [];
     tournament.divisions.forEach(div => {
-      const divTeamNames = (div.teams || []).map(t => t.name.toLowerCase());
+      // Build lookup map including team names and aliases
+      const teamNameLookup = new Set();
+      (div.teams || []).forEach(team => {
+        teamNameLookup.add(team.name.toLowerCase());
+        // Also add aliases
+        if (team.aliases && Array.isArray(team.aliases)) {
+          team.aliases.forEach(alias => {
+            if (alias && alias.trim()) {
+              teamNameLookup.add(alias.toLowerCase().trim());
+            }
+          });
+        }
+      });
+
+      // Count how many game teams are found in this division
       const matchCount = gameTeams.filter(gt =>
-        divTeamNames.includes(gt.toLowerCase())
+        teamNameLookup.has(gt.toLowerCase())
       ).length;
 
       // If both teams are in this division, it's a match
