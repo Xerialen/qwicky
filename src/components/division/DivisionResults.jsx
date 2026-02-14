@@ -688,25 +688,49 @@ export default function DivisionResults({ division, updateDivision, tournamentId
   };
 
   const createMatchFromSeries = (series) => {
-    const [t1, t2] = series.resolvedTeams;
+    const [res1, res2] = series.resolvedTeams;
+
+    // Detect group from teams if possible
+    const team1Obj = teams.find(t => resolveTeamName(t.name).toLowerCase() === res1.toLowerCase());
+    const team2Obj = teams.find(t => resolveTeamName(t.name).toLowerCase() === res2.toLowerCase());
+    const detectedGroup = (team1Obj?.group === team2Obj?.group && team1Obj?.group) ? team1Obj.group : '';
+
     const newMatch = {
       id: `match-${Date.now()}`,
-      team1: t1,
-      team2: t2,
-      group: '',
+      team1: res1,
+      team2: res2,
+      group: detectedGroup,
       round: 'group',
+      roundNum: 1,  // Default to round 1
+      meeting: 1,   // Default to first meeting
       bestOf: series.maps.length,
       date: series.maps[0]?.date?.split(' ')[0] || '',
       time: '',
       status: 'completed',
-      maps: series.maps.map(map => ({
-        id: map.id,
-        map: map.map,
-        date: map.date,
-        // Use resolved teams for consistent ordering
-        score1: map.scores[t1],
-        score2: map.scores[t2]
-      }))
+      maps: series.maps.map(map => {
+        // CRITICAL: Scores are keyed by ORIGINAL team names, not resolved names
+        const [mapT1, mapT2] = map.teams;
+        const mapT1Resolved = resolveTeamName(mapT1);
+
+        // Check if this map's first team matches series' first resolved team
+        const mapT1IsRes1 = mapT1Resolved.toLowerCase() === res1.toLowerCase();
+
+        // Get scores using ORIGINAL team names as keys
+        const mapScore1 = map.scores[mapT1] || 0;
+        const mapScore2 = map.scores[mapT2] || 0;
+
+        // Order scores to match series resolved team order
+        const score1 = mapT1IsRes1 ? mapScore1 : mapScore2;
+        const score2 = mapT1IsRes1 ? mapScore2 : mapScore1;
+
+        return {
+          id: map.id,
+          map: map.map,
+          date: map.date,
+          score1,
+          score2
+        };
+      })
     };
     updateDivision({ schedule: [...schedule, newMatch] });
   };
