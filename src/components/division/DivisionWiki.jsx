@@ -2,10 +2,24 @@
 import React, { useState, useMemo } from 'react';
 import { calculateStats, generateWikiTable } from '../../utils/statsLogic';
 import { unicodeToAscii } from '../../utils/matchLogic';
+import EmptyState from '../EmptyState';
 
 function getTeamInfo(teams, teamName) {
   const lowerName = (teamName || '').toLowerCase();
-  const team = teams.find(t => t.name.toLowerCase() === lowerName);
+
+  // Try exact match first
+  let team = teams.find(t => t.name.toLowerCase() === lowerName);
+
+  // If not found, check aliases
+  if (!team) {
+    team = teams.find(t => {
+      if (t.aliases && Array.isArray(t.aliases)) {
+        return t.aliases.some(alias => alias.toLowerCase().trim() === lowerName);
+      }
+      return false;
+    });
+  }
+
   return team || { name: teamName, tag: '', country: '', players: '' };
 }
 
@@ -1148,6 +1162,17 @@ export default function DivisionWiki({ division, tournamentName }) {
   const rawMaps = division.rawMaps || [];
   const standings = useMemo(() => calculateStandings(schedule, division), [schedule, division]);
 
+  // Show empty state if no teams exist
+  if (teams.length === 0) {
+    return (
+      <EmptyState
+        icon="📝"
+        title="Nothing to export yet"
+        description="Add teams and match results before generating wiki markup. The wiki export will include standings, match results, and playoff brackets."
+      />
+    );
+  }
+
   // Extract original ktxstats data for player stats calculation
   const ktxstatsData = useMemo(() => {
     if (!rawMaps || rawMaps.length === 0) return [];
@@ -1290,15 +1315,24 @@ const handleCopy = async () => {
 
       <div className="qw-panel overflow-hidden">
         <div className="flex items-center justify-between px-4 py-3 bg-qw-dark border-b border-qw-border">
-          <h3 className="font-display text-sm text-qw-accent">WIKI OUTPUT</h3>
+          <div>
+            <h3 className="font-display text-sm text-qw-accent">WIKI OUTPUT</h3>
+            <span className="text-xs text-zinc-500">
+              {wikiContent.split('\n').length} lines · {wikiContent.length.toLocaleString()} characters
+            </span>
+          </div>
           <div className="flex gap-2">
-            <button 
-              onClick={handleCopy} 
-              className={`px-3 py-1 rounded text-sm ${copied ? 'bg-qw-win text-white' : 'bg-qw-panel border border-qw-border text-qw-muted hover:text-white'}`}
+            <button
+              onClick={handleCopy}
+              className={`px-3 py-1.5 rounded text-xs transition-all duration-200 ${
+                copied
+                  ? 'bg-qw-win/20 text-qw-win'
+                  : 'bg-zinc-800 text-zinc-400 hover:text-zinc-200'
+              }`}
             >
-              {copied ? '✓ Copied' : '📋 Copy'}
+              {copied ? '✓ Copied!' : 'Copy to Clipboard'}
             </button>
-            <button onClick={handleDownload} className="px-3 py-1 rounded text-sm bg-qw-accent text-qw-dark">
+            <button onClick={handleDownload} className="px-3 py-1.5 rounded text-xs bg-qw-accent text-qw-dark hover:bg-qw-accent-dim transition-colors">
               ⬇ Download
             </button>
           </div>

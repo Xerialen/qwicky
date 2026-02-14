@@ -10,7 +10,7 @@ import {
 import TeamImportPreview from './TeamImportPreview';
 
 export default function DivisionTeams({ division, updateDivision, tournamentMode, allDivisions = [] }) {
-  const [newTeam, setNewTeam] = useState({ name: '', tag: '', country: '', group: '', players: '' });
+  const [newTeam, setNewTeam] = useState({ name: '', tag: '', country: '', group: '', players: '', aliases: '' });
   const [editingTeam, setEditingTeam] = useState(null);
   const [bulkInput, setBulkInput] = useState('');
   const [showBulkAdd, setShowBulkAdd] = useState(false);
@@ -56,10 +56,11 @@ export default function DivisionTeams({ division, updateDivision, tournamentMode
       country: newTeam.country.trim().toLowerCase(),
       group: newTeam.group || '',
       players: newTeam.players.trim(),
+      aliases: newTeam.aliases.trim() ? newTeam.aliases.split(',').map(a => a.trim()).filter(Boolean) : [],
     };
 
     updateDivision({ teams: [...teams, team] });
-    setNewTeam({ name: '', tag: '', country: '', group: '', players: '' });
+    setNewTeam({ name: '', tag: '', country: '', group: '', players: '', aliases: '' });
   };
 
   const handleBulkAdd = () => {
@@ -81,6 +82,7 @@ export default function DivisionTeams({ division, updateDivision, tournamentMode
     const finalTeams = teamsToImport.map((team, idx) => ({
       ...team,
       id: `team-${Date.now()}-${idx}`,
+      aliases: team.aliases || [],  // Ensure aliases field exists
       // Remove validation fields
       errors: undefined,
       warnings: undefined,
@@ -343,13 +345,17 @@ export default function DivisionTeams({ division, updateDivision, tournamentMode
               </select>
             </div>
             {!is1on1 && (
-              <div className="flex gap-3">
-                <input type="text" value={newTeam.players} onChange={(e) => setNewTeam({ ...newTeam, players: e.target.value })} placeholder="Players (for wiki): player1, player2, player3..." className="flex-1 bg-qw-dark border border-qw-border rounded px-4 py-2 text-white text-sm" />
-                <button type="submit" className="qw-btn">Add</button>
+              <div className="space-y-3">
+                <input type="text" value={newTeam.players} onChange={(e) => setNewTeam({ ...newTeam, players: e.target.value })} placeholder="Players (for wiki): player1, player2, player3..." className="w-full bg-qw-dark border border-qw-border rounded px-4 py-2 text-white text-sm" />
+                <input type="text" value={newTeam.aliases} onChange={(e) => setNewTeam({ ...newTeam, aliases: e.target.value })} placeholder="Aliases (optional): old tag, old name, ..." className="w-full bg-qw-dark border border-qw-border rounded px-4 py-2 text-white text-sm" />
+                <button type="submit" className="qw-btn w-full">Add</button>
               </div>
             )}
             {is1on1 && (
-              <button type="submit" className="qw-btn w-full">Add {entityLabel}</button>
+              <div className="space-y-3">
+                <input type="text" value={newTeam.aliases} onChange={(e) => setNewTeam({ ...newTeam, aliases: e.target.value })} placeholder="Aliases (optional): old name, alternate spelling, ..." className="w-full bg-qw-dark border border-qw-border rounded px-4 py-2 text-white text-sm" />
+                <button type="submit" className="qw-btn w-full">Add {entityLabel}</button>
+              </div>
             )}
           </form>
         )}
@@ -483,9 +489,9 @@ export default function DivisionTeams({ division, updateDivision, tournamentMode
                       </>
                     )}
                   </div>
-                  {/* Players row - always show for editing, show if exists otherwise */}
+                  {/* Players and Aliases rows - always show for editing, show if exists otherwise */}
                   {editingTeam === team.id ? (
-                    <div className="mt-2 ml-9">
+                    <div className="mt-2 ml-9 space-y-1">
                       <input
                         type="text"
                         value={team.players || ''}
@@ -493,10 +499,24 @@ export default function DivisionTeams({ division, updateDivision, tournamentMode
                         className="w-full bg-qw-darker border border-qw-accent rounded px-2 py-1 text-white text-xs"
                         placeholder="Players: player1, player2, player3..."
                       />
+                      <input
+                        type="text"
+                        value={Array.isArray(team.aliases) ? team.aliases.join(', ') : ''}
+                        onChange={(e) => handleUpdateTeam(team.id, 'aliases', e.target.value.split(',').map(a => a.trim()).filter(Boolean))}
+                        className="w-full bg-qw-darker border border-qw-accent rounded px-2 py-1 text-white text-xs"
+                        placeholder="Aliases: old tag, old name, ..."
+                      />
                     </div>
-                  ) : team.players ? (
-                    <div className="mt-1 ml-9 text-xs text-qw-muted">{team.players}</div>
-                  ) : null}
+                  ) : (
+                    <>
+                      {team.players && <div className="mt-1 ml-9 text-xs text-qw-muted">{team.players}</div>}
+                      {team.aliases && team.aliases.length > 0 && (
+                        <div className="mt-1 ml-9 text-xs text-qw-muted">
+                          <span className="text-qw-accent">Aliases:</span> {team.aliases.join(', ')}
+                        </div>
+                      )}
+                    </>
+                  )}
                 </div>
               ))}
             </div>

@@ -481,6 +481,7 @@ function App() {
             tournamentStartDate={tournament.startDate}
             tournamentId={(tournament.name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}
             allDivisions={tournament.divisions}
+            tournament={tournament}
           />
         );
       default:

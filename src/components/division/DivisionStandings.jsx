@@ -1,5 +1,6 @@
 // src/components/division/DivisionStandings.jsx
 import React, { useMemo } from 'react';
+import EmptyState from '../EmptyState';
 
 function calculateStandings(schedule, division) {
   const pointsWin = division.pointsWin ?? 3;
@@ -12,7 +13,23 @@ function calculateStandings(schedule, division) {
 
   // Initialize ALL teams from division.teams first
   const teams = division.teams || [];
+
+  // Build alias lookup map for resolving team names
+  const aliasLookup = {};
   teams.forEach(team => {
+    // Map canonical name
+    aliasLookup[team.name.toLowerCase()] = team.name;
+
+    // Map all aliases to canonical name
+    if (team.aliases && Array.isArray(team.aliases)) {
+      team.aliases.forEach(alias => {
+        if (alias && alias.trim()) {
+          aliasLookup[alias.toLowerCase().trim()] = team.name;
+        }
+      });
+    }
+
+    // Initialize standings
     standings[team.name] = {
       name: team.name,
       group: team.group || 'A',
@@ -27,10 +44,19 @@ function calculateStandings(schedule, division) {
     };
   });
 
+  // Helper to resolve team name via aliases
+  const resolveTeamName = (name) => {
+    return aliasLookup[name.toLowerCase()] || name;
+  };
+
   const groupMatches = schedule.filter(m => m.round === 'group' && m.maps?.length > 0);
 
   groupMatches.forEach(match => {
-    const { team1, team2, maps, group } = match;
+    const { maps, group } = match;
+
+    // Resolve team names via aliases
+    const team1 = resolveTeamName(match.team1);
+    const team2 = resolveTeamName(match.team2);
 
     // Ensure teams exist (in case schedule has teams not in teams list)
     [team1, team2].forEach(team => {
@@ -231,14 +257,25 @@ export default function DivisionStandings({ division }) {
     headToHead: 'H2H'
   };
 
-  // Show empty message only if there are NO teams at all
+  // Show empty state if no teams exist
   if (standings.length === 0) {
     return (
-      <div className="qw-panel p-12 text-center">
-        <div className="text-6xl mb-4">🏆</div>
-        <h2 className="font-display text-2xl text-white mb-2">No Teams Yet</h2>
-        <p className="text-qw-muted">Add teams to the division to see standings</p>
-      </div>
+      <EmptyState
+        icon="🏆"
+        title="No teams yet"
+        description="Add teams to the division first, then generate a schedule. Standings will calculate automatically as results are imported."
+      />
+    );
+  }
+
+  // Show empty state if no schedule exists
+  if (schedule.length === 0) {
+    return (
+      <EmptyState
+        icon="📊"
+        title="No matches scheduled yet"
+        description="Generate a schedule first, then import results. Standings will calculate automatically."
+      />
     );
   }
 

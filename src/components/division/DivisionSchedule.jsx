@@ -546,7 +546,21 @@ function MatchRow({ match, onUpdate, onRemove, isEditing, setEditing, showRound,
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 flex-1">
-          {showDragHandle && <span className="text-qw-muted/40 select-none text-xs">⠿</span>}
+          {showDragHandle && (
+            <span
+              className="flex-shrink-0 text-zinc-600 group-hover:text-zinc-400 transition-colors"
+              title="Drag to reorder between rounds"
+            >
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
+                <circle cx="3" cy="2" r="1.2"/>
+                <circle cx="9" cy="2" r="1.2"/>
+                <circle cx="3" cy="6" r="1.2"/>
+                <circle cx="9" cy="6" r="1.2"/>
+                <circle cx="3" cy="10" r="1.2"/>
+                <circle cx="9" cy="10" r="1.2"/>
+              </svg>
+            </span>
+          )}
           <div className="w-16 text-xs text-qw-muted font-mono">
             <div>{match.date || 'TBD'}</div>
           </div>

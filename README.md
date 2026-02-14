@@ -29,8 +29,8 @@ Tournament
 │   ├── Format Settings (groups, playoffs, points)
 │   ├── Teams
 │   ├── Schedule
-│   ├── Standings (auto-calculated)
-│   ├── Bracket
+│   ├── Results & Stats (import + player stats)
+│   ├── Bracket & Standings (playoff bracket + group tables)
 │   └── Wiki Export
 ├── Division 2
 │   └── ... (own teams, schedule, etc.)
@@ -45,9 +45,8 @@ Tournament
    - **Setup** → Configure groups, playoff format, points system
    - **Teams** → Add teams (single or bulk)
    - **Schedule** → Generate or manually add matches
-   - **Results** → Import game results
-   - **Standings** → View auto-calculated tables
-   - **Bracket** → Configure playoff bracket
+   - **Results** → Import game results (includes expandable player stats)
+   - **Bracket** → Configure playoff bracket (includes collapsible group standings)
    - **Wiki** → Export to MediaWiki format
 
 ## Setup
@@ -72,9 +71,10 @@ src/
 │       ├── DivisionSetup.jsx      # Format & rules
 │       ├── DivisionTeams.jsx      # Team management
 │       ├── DivisionSchedule.jsx   # Match schedule
-│       ├── DivisionResults.jsx    # Import results
-│       ├── DivisionStandings.jsx  # Group tables
-│       ├── DivisionBracket.jsx    # Playoff bracket
+│       ├── DivisionResults.jsx    # Import results + player stats
+│       ├── DivisionStandings.jsx  # Group tables (in Bracket)
+│       ├── DivisionBracket.jsx    # Playoff bracket + standings
+│       ├── DivisionStats.jsx      # Player statistics (in Results)
 │       └── DivisionWiki.jsx       # Wiki export
 ├── utils/
 │   ├── matchLogic.js          # Match parsing & standings

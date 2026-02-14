@@ -88,14 +88,12 @@ App.jsx (state provider — exports createDefaultDivision, createDefaultBracket)
 └── Tab Router:
     ├── "info"       → TournamentInfo
     ├── "divisions"  → DivisionManager
-    ├── "division"   → DivisionView
+    ├── "division"   → DivisionView (6 tabs — Standings & Stats consolidated)
     │   ├── "setup"      → DivisionSetup
     │   ├── "teams"      → DivisionTeams
     │   ├── "schedule"   → DivisionSchedule
-    │   ├── "results"    → DivisionResults
-    │   ├── "standings"  → DivisionStandings
-    │   ├── "bracket"    → DivisionBracket
-    │   ├── "stats"      → DivisionStats
+    │   ├── "results"    → DivisionResults (includes expandable Player Stats section)
+    │   ├── "bracket"    → DivisionBracket (includes collapsible Group Standings section)
     │   └── "wiki"       → DivisionWiki
     └── "data"       → DataManager
 ```
@@ -282,12 +280,13 @@ App.jsx (state provider — exports createDefaultDivision, createDefaultBracket)
 |------|-------|---------|
 | `App.jsx` | ~546 | Root component, tournament/division state, bracket factories (`createDefaultBracket`) |
 | `DivisionWiki.jsx` | ~1261 | MediaWiki export (most complex component) |
-| `DivisionResults.jsx` | ~920 | Result import (Discord/API/JSON), series grouping, submission approval |
-| `DivisionBracket.jsx` | ~690 | Playoff bracket UI — single, double, multi-tier |
+| `DivisionResults.jsx` | ~1020 | Result import (Discord/API/JSON), series grouping, submission approval, expandable player stats |
+| `DivisionBracket.jsx` | ~780 | Playoff bracket UI — single, double, multi-tier, collapsible group standings |
 | `DivisionSchedule.jsx` | ~750 | Match scheduling, multi-tier round selection, drag-and-drop |
 | `DivisionSetup.jsx` | ~647 | Format, group-stage, playoff, tier configuration |
 | `DivisionTeams.jsx` | ~640 | Team CRUD, group assignment, enhanced import UI |
-| `DivisionStandings.jsx` | ~301 | Group-stage standings with configurable tie-breakers |
+| `DivisionStandings.jsx` | ~301 | Standings calculation component (embedded in Bracket tab) |
+| `DivisionStats.jsx` | ~230 | Player statistics component (embedded in Results tab) |
 | `TeamImportPreview.jsx` | ~209 | Team import preview with validation & conflict resolution |
 | `teamImport.js` | ~282 | Team parsing (CSV/natural/simple), validation, duplicate detection |
 | `matchLogic.js` | ~227 | Parsing & standings calc used by the API import path |
@@ -522,6 +521,7 @@ Player posts hub URL in Discord channel
 15. **Bulk operations must batch maps** — `handleBulkApprove` and `handleBulkReprocess` must collect all parsed maps FIRST, then call `addMapsInBatch` ONCE. Calling it in a loop causes stale closure reads of `rawMaps` (last write wins) and breaks series detection.
 16. **ktxstats has no `team_stats` for team games** — scores must be calculated from the `players` array. Only some formats (e.g., simple JSON exports) include `team_stats`.
 17. **Discord bot is a separate project** — lives at `../qwicky-discord-bot/`. Changes to submission handling may require updates in both repos.
+18. **Standings & Stats tabs consolidated** — DivisionStandings and DivisionStats are no longer standalone tabs. Standings appear as a collapsible section at the top of the Bracket tab (for group-based formats), and Stats appear as an expandable section at the bottom of the Results tab. This improves information flow (standings → seeding → bracket) and keeps stats contextual to their data source (imported results).
 
 ## Environment Variables
 

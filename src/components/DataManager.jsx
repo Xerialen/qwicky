@@ -1,5 +1,6 @@
 // src/components/DataManager.jsx
 import React, { useRef } from 'react';
+import DangerButton from './DangerButton';
 
 export default function DataManager({ tournament, importTournament, resetTournament }) {
   const fileInputRef = useRef(null);
@@ -89,13 +90,12 @@ export default function DataManager({ tournament, importTournament, resetTournam
           💾 Save
         </button>
 
-        <button
-          onClick={resetTournament}
-          className="px-2 py-2 rounded text-red-400 hover:text-red-300 hover:bg-red-500/20 transition-all"
-          title="Reset all"
-        >
-          🗑️
-        </button>
+        <DangerButton
+          label="🗑️"
+          confirmLabel="Confirm Reset"
+          onConfirm={resetTournament}
+          className="!px-2 !py-2"
+        />
       </div>
     </div>
   );
