@@ -34,6 +34,13 @@ export default function DivisionResults({ division, updateDivision, tournamentId
       return unicodeToAscii(name || '');
     }).filter(Boolean);
 
+    console.log('🔍 Division Detection Debug:', {
+      submissionId: submission.id,
+      gameId: submission.game_id,
+      rawTeams: submission.game_data.teams,
+      cleanedTeams: gameTeams
+    });
+
     if (gameTeams.length === 0) return null;
 
     // Check each division to see if it contains these teams
@@ -60,6 +67,13 @@ export default function DivisionResults({ division, updateDivision, tournamentId
       const matchCount = gameTeams.filter(gt =>
         teamNameLookup.has(gt.toLowerCase())
       ).length;
+
+      console.log(`  📊 Division "${div.name}":`, {
+        divisionTeams: Array.from(teamNameLookup),
+        gameTeams: gameTeams.map(t => t.toLowerCase()),
+        matchCount,
+        required: gameTeams.length
+      });
 
       // If both teams are in this division, it's a match
       if (matchCount === gameTeams.length) {
