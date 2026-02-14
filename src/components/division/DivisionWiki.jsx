@@ -6,7 +6,20 @@ import EmptyState from '../EmptyState';
 
 function getTeamInfo(teams, teamName) {
   const lowerName = (teamName || '').toLowerCase();
-  const team = teams.find(t => t.name.toLowerCase() === lowerName);
+
+  // Try exact match first
+  let team = teams.find(t => t.name.toLowerCase() === lowerName);
+
+  // If not found, check aliases
+  if (!team) {
+    team = teams.find(t => {
+      if (t.aliases && Array.isArray(t.aliases)) {
+        return t.aliases.some(alias => alias.toLowerCase().trim() === lowerName);
+      }
+      return false;
+    });
+  }
+
   return team || { name: teamName, tag: '', country: '', players: '' };
 }
 

@@ -203,7 +203,7 @@ export default function DivisionResults({ division, updateDivision, tournamentId
     const byTag = {};
     const byName = {};
     const byNameLower = {};
-    
+
     teams.forEach(team => {
       if (team.tag) {
         byTag[team.tag.toLowerCase()] = team;
@@ -214,6 +214,15 @@ export default function DivisionResults({ division, updateDivision, tournamentId
       }
       byName[team.name] = team;
       byNameLower[team.name.toLowerCase()] = team;
+
+      // Index aliases
+      if (team.aliases && Array.isArray(team.aliases)) {
+        team.aliases.forEach(alias => {
+          if (alias && alias.trim()) {
+            byNameLower[alias.toLowerCase().trim()] = team;
+          }
+        });
+      }
     });
     return { byTag, byName, byNameLower };
   }, [teamsJson]);

@@ -13,7 +13,23 @@ function calculateStandings(schedule, division) {
 
   // Initialize ALL teams from division.teams first
   const teams = division.teams || [];
+
+  // Build alias lookup map for resolving team names
+  const aliasLookup = {};
   teams.forEach(team => {
+    // Map canonical name
+    aliasLookup[team.name.toLowerCase()] = team.name;
+
+    // Map all aliases to canonical name
+    if (team.aliases && Array.isArray(team.aliases)) {
+      team.aliases.forEach(alias => {
+        if (alias && alias.trim()) {
+          aliasLookup[alias.toLowerCase().trim()] = team.name;
+        }
+      });
+    }
+
+    // Initialize standings
     standings[team.name] = {
       name: team.name,
       group: team.group || 'A',
@@ -28,10 +44,19 @@ function calculateStandings(schedule, division) {
     };
   });
 
+  // Helper to resolve team name via aliases
+  const resolveTeamName = (name) => {
+    return aliasLookup[name.toLowerCase()] || name;
+  };
+
   const groupMatches = schedule.filter(m => m.round === 'group' && m.maps?.length > 0);
 
   groupMatches.forEach(match => {
-    const { team1, team2, maps, group } = match;
+    const { maps, group } = match;
+
+    // Resolve team names via aliases
+    const team1 = resolveTeamName(match.team1);
+    const team2 = resolveTeamName(match.team2);
 
     // Ensure teams exist (in case schedule has teams not in teams list)
     [team1, team2].forEach(team => {
