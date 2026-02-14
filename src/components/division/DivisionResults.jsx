@@ -640,14 +640,33 @@ export default function DivisionResults({ division, updateDivision, tournamentId
     const match = schedule.find(m => m.id === matchId);
     if (!match) return;
     const [res1, res2] = series.resolvedTeams;
-    const isNormalOrder = match.team1.toLowerCase() === res1.toLowerCase();
+    const matchT1Resolved = resolveTeamName(match.team1).toLowerCase();
+    const isNormalOrder = matchT1Resolved === res1.toLowerCase();
+
     const newSchedule = schedule.map(m => {
       if (m.id !== matchId) return m;
       const maps = series.maps.map(map => {
-        // Use resolved teams to get scores, not original teams
-        // This ensures consistent ordering regardless of JSON team order
-        const score1 = isNormalOrder ? map.scores[res1] : map.scores[res2];
-        const score2 = isNormalOrder ? map.scores[res2] : map.scores[res1];
+        // CRITICAL: Scores are keyed by ORIGINAL team names, not resolved names
+        // Must look up using map.teams, then reorder to match schedule
+        const [mapT1, mapT2] = map.teams;  // Original team names from ktxstats
+        const mapT1Resolved = resolveTeamName(mapT1);
+        const mapT2Resolved = resolveTeamName(mapT2);
+
+        // Check if this map's first team (when resolved) matches series' first resolved team
+        const mapT1IsRes1 = mapT1Resolved.toLowerCase() === res1.toLowerCase();
+
+        // Get scores using ORIGINAL team names as keys
+        const mapScore1 = map.scores[mapT1] || 0;
+        const mapScore2 = map.scores[mapT2] || 0;
+
+        // Reorder scores to match series resolved team order (res1, res2)
+        const scoreRes1 = mapT1IsRes1 ? mapScore1 : mapScore2;
+        const scoreRes2 = mapT1IsRes1 ? mapScore2 : mapScore1;
+
+        // Finally, map to scheduled match order (match.team1, match.team2)
+        const score1 = isNormalOrder ? scoreRes1 : scoreRes2;
+        const score2 = isNormalOrder ? scoreRes2 : scoreRes1;
+
         return { id: map.id, map: map.map, date: map.date, score1, score2 };
       });
       const isGroupPlayAll = m.round === 'group' && division.groupStageType === 'playall';
