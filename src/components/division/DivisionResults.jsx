@@ -1,6 +1,6 @@
 // src/components/division/DivisionResults.jsx
 import React, { useState, useRef, useMemo, useCallback, useEffect } from 'react';
-import { parseMatch } from '../../utils/matchLogic';
+import { parseMatch, unicodeToAscii } from '../../utils/matchLogic';
 import DivisionStats from './DivisionStats';
 
 export default function DivisionResults({ division, updateDivision, tournamentId, tournament }) {
@@ -840,16 +840,22 @@ export default function DivisionResults({ division, updateDivision, tournamentId
                 const gameData = sub.game_data || {};
                 const teams = gameData.teams || [];
                 // Handle both formats: hub objects [{name, frags}] or ktxstats strings ["team"]
-                const t1Name = typeof teams[0] === 'object' ? teams[0]?.name : teams[0] || '?';
-                const t2Name = typeof teams[1] === 'object' ? teams[1]?.name : teams[1] || '?';
+                // IMPORTANT: Clean QuakeWorld high-bit characters with unicodeToAscii
+                const rawT1Name = typeof teams[0] === 'object' ? teams[0]?.name : teams[0] || '?';
+                const rawT2Name = typeof teams[1] === 'object' ? teams[1]?.name : teams[1] || '?';
+                const t1Name = unicodeToAscii(rawT1Name);
+                const t2Name = unicodeToAscii(rawT2Name);
+                const mapName = unicodeToAscii(gameData.map || '?');
+
                 // Calculate frags: from hub objects, team_stats, or sum from players array
                 let t1Frags, t2Frags;
                 if (typeof teams[0] === 'object') {
                   t1Frags = teams[0]?.frags;
                   t2Frags = teams[1]?.frags;
                 } else if (gameData.team_stats) {
-                  t1Frags = gameData.team_stats[t1Name]?.frags;
-                  t2Frags = gameData.team_stats[t2Name]?.frags;
+                  // Use raw names for team_stats lookup (keys might have special chars)
+                  t1Frags = gameData.team_stats[rawT1Name]?.frags;
+                  t2Frags = gameData.team_stats[rawT2Name]?.frags;
                 } else if (gameData.players) {
                   t1Frags = 0; t2Frags = 0;
                   gameData.players.forEach(p => {
@@ -874,7 +880,7 @@ export default function DivisionResults({ division, updateDivision, tournamentId
                             <span className={(t2Frags || 0) > (t1Frags || 0) ? 'text-qw-win font-bold' : 'text-white'}>{t2Frags ?? '?'}</span>
                           </span>
                           <span className="font-body font-semibold text-white">{t2Name}</span>
-                          <span className="text-qw-muted text-xs bg-qw-darker px-2 py-0.5 rounded">{gameData.map || '?'}</span>
+                          <span className="text-qw-muted text-xs bg-qw-darker px-2 py-0.5 rounded">{mapName}</span>
                           <span className="text-qw-muted text-xs bg-qw-darker px-2 py-0.5 rounded">{gameData.mode || '?'}</span>
                         </div>
                         <div className="text-xs text-qw-muted mt-1 flex items-center gap-2 flex-wrap">
