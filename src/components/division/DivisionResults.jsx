@@ -34,23 +34,25 @@ export default function DivisionResults({ division, updateDivision, tournamentId
       return unicodeToAscii(name || '');
     }).filter(Boolean);
 
-    console.log('🔍 Division Detection Debug:', {
-      submissionId: submission.id,
-      gameId: submission.game_id,
-      rawTeams: submission.game_data.teams,
-      cleanedTeams: gameTeams
-    });
-
     if (gameTeams.length === 0) return null;
 
     // Check each division to see if it contains these teams
     const matchingDivisions = [];
     tournament.divisions.forEach(div => {
-      // Build lookup map including team names and aliases
+      // Build lookup map including team names, tags, and aliases
       const teamNameLookup = new Set();
       (div.teams || []).forEach(team => {
         // Clean team name for comparison (handles QuakeWorld characters)
         teamNameLookup.add(unicodeToAscii(team.name).toLowerCase());
+
+        // Add team tag (and bracket-stripped variant) — ktxstats often uses clan tags as team names
+        if (team.tag) {
+          teamNameLookup.add(team.tag.toLowerCase());
+          const cleanTag = team.tag.replace(/[\[\]]/g, '').toLowerCase();
+          if (cleanTag !== team.tag.toLowerCase()) {
+            teamNameLookup.add(cleanTag);
+          }
+        }
 
         // Also add aliases (clean them too!)
         if (team.aliases && Array.isArray(team.aliases)) {
@@ -67,13 +69,6 @@ export default function DivisionResults({ division, updateDivision, tournamentId
       const matchCount = gameTeams.filter(gt =>
         teamNameLookup.has(gt.toLowerCase())
       ).length;
-
-      console.log(`  📊 Division "${div.name}":`, {
-        divisionTeams: Array.from(teamNameLookup),
-        gameTeams: gameTeams.map(t => t.toLowerCase()),
-        matchCount,
-        required: gameTeams.length
-      });
 
       // If both teams are in this division, it's a match
       if (matchCount === gameTeams.length) {
@@ -496,16 +491,6 @@ export default function DivisionResults({ division, updateDivision, tournamentId
         if (!match.maps?.some(mp => mp.id === mapResult.id)) {
           const isNormalOrder = match.team1.toLowerCase() === res1Lower;
 
-          // Debug logging to diagnose score issues
-          console.log('🔍 Adding map to match:', {
-            matchTeams: [match.team1, match.team2],
-            mapResultTeams: mapResult.teams,
-            resolvedTeams: [resolved1, resolved2],
-            mapResultScores: mapResult.scores,
-            isNormalOrder,
-            mapName: mapResult.map
-          });
-
           // Lookup scores using original team names from mapResult (they match the score keys)
           const rawScore1 = isNormalOrder ? mapResult.scores[team1] : mapResult.scores[team2];
           const rawScore2 = isNormalOrder ? mapResult.scores[team2] : mapResult.scores[team1];
@@ -513,16 +498,6 @@ export default function DivisionResults({ division, updateDivision, tournamentId
           // Ensure scores are never undefined
           const score1 = rawScore1 ?? 0;
           const score2 = rawScore2 ?? 0;
-
-          console.log('📊 Scores:', {
-            lookupKeys: [team1, team2],
-            rawScores: { rawScore1, rawScore2 },
-            finalScores: { score1, score2 }
-          });
-
-          if (score1 === 0 && score2 === 0) {
-            console.warn('⚠️ Both scores are 0! This might indicate a data issue.');
-          }
 
           match.maps = [...(match.maps || []), {
             id: mapResult.id,
