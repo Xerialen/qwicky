@@ -1176,6 +1176,7 @@ export default function DivisionWiki({ division, tournamentName }) {
   const [activeExport, setActiveExport] = useState('standings');
   const [copied, setCopied] = useState(false);
   const [viewMode, setViewMode] = useState('code');
+  const [showPreview, setShowPreview] = useState(true);
   const [options, setOptions] = useState({
     title: division.name || 'Division'
   });
@@ -1384,6 +1385,27 @@ const handleCopy = async () => {
             </div>
           )}
         </div>
+      </div>
+
+      {/* Live Preview - Collapsible */}
+      <div className="qw-panel overflow-hidden">
+        <button
+          onClick={() => setShowPreview(!showPreview)}
+          className="w-full flex items-center justify-between px-4 py-3 bg-qw-dark border-b border-qw-border hover:bg-qw-dark/80 transition-colors"
+        >
+          <div className="flex items-center gap-2">
+            <h3 className="font-display text-sm text-qw-accent">LIVE PREVIEW</h3>
+            <span className="text-xs text-qw-muted">(updates as you edit)</span>
+          </div>
+          <span className={`text-qw-accent transition-transform duration-200 ${showPreview ? 'rotate-180' : ''}`}>
+            ▼
+          </span>
+        </button>
+        {showPreview && (
+          <div className="p-4 max-h-[600px] overflow-auto wiki-preview">
+            {renderWikiPreview(wikiContent, activeExport)}
+          </div>
+        )}
       </div>
 
       {/* Help section */}
