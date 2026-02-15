@@ -3,7 +3,7 @@ import React, { useState, useRef, useMemo, useCallback, useEffect } from 'react'
 import { parseMatch, unicodeToAscii } from '../../utils/matchLogic';
 import DivisionStats from './DivisionStats';
 
-export default function DivisionResults({ division, updateDivision, tournamentId, tournament }) {
+export default function DivisionResults({ division, updateDivision, updateAnyDivision, tournamentId, tournament }) {
   const [mode, setMode] = useState('discord');
   const [showStats, setShowStats] = useState(false);
   // API Fetch states
@@ -34,23 +34,25 @@ export default function DivisionResults({ division, updateDivision, tournamentId
       return unicodeToAscii(name || '');
     }).filter(Boolean);
 
-    console.log('🔍 Division Detection Debug:', {
-      submissionId: submission.id,
-      gameId: submission.game_id,
-      rawTeams: submission.game_data.teams,
-      cleanedTeams: gameTeams
-    });
-
     if (gameTeams.length === 0) return null;
 
     // Check each division to see if it contains these teams
     const matchingDivisions = [];
     tournament.divisions.forEach(div => {
-      // Build lookup map including team names and aliases
+      // Build lookup map including team names, tags, and aliases
       const teamNameLookup = new Set();
       (div.teams || []).forEach(team => {
         // Clean team name for comparison (handles QuakeWorld characters)
         teamNameLookup.add(unicodeToAscii(team.name).toLowerCase());
+
+        // Add team tag (and bracket-stripped variant) — ktxstats often uses clan tags as team names
+        if (team.tag) {
+          teamNameLookup.add(team.tag.toLowerCase());
+          const cleanTag = team.tag.replace(/[\[\]]/g, '').toLowerCase();
+          if (cleanTag !== team.tag.toLowerCase()) {
+            teamNameLookup.add(cleanTag);
+          }
+        }
 
         // Also add aliases (clean them too!)
         if (team.aliases && Array.isArray(team.aliases)) {
@@ -67,13 +69,6 @@ export default function DivisionResults({ division, updateDivision, tournamentId
       const matchCount = gameTeams.filter(gt =>
         teamNameLookup.has(gt.toLowerCase())
       ).length;
-
-      console.log(`  📊 Division "${div.name}":`, {
-        divisionTeams: Array.from(teamNameLookup),
-        gameTeams: gameTeams.map(t => t.toLowerCase()),
-        matchCount,
-        required: gameTeams.length
-      });
 
       // If both teams are in this division, it's a match
       if (matchCount === gameTeams.length) {
@@ -103,6 +98,14 @@ export default function DivisionResults({ division, updateDivision, tournamentId
 
   useEffect(() => { fetchSubmissions(showApproved); }, [tournamentId]);
 
+  // Find the target division for a submission (returns null for current division)
+  const getTargetDiv = (submission) => {
+    const detected = detectSubmissionDivision(submission);
+    if (!detected || detected.length !== 1) return null; // ambiguous or undetected → current division
+    const target = detected[0];
+    return target.id !== division.id ? target : null; // null = current division (no routing needed)
+  };
+
   const handleApprove = async (submission) => {
     try {
       // Process game data FIRST, before marking as approved in DB
@@ -116,7 +119,7 @@ export default function DivisionResults({ division, updateDivision, tournamentId
       const res = await fetch(`/api/submission/${submission.id}/approve`, { method: 'POST' });
       if (!res.ok) throw new Error('Failed to approve');
 
-      if (parsed) addMapsInBatch([parsed]);
+      if (parsed) addMapsInBatch([parsed], getTargetDiv(submission));
 
       setSubmissions(prev => prev.filter(s => s.id !== submission.id));
     } catch (err) {
@@ -140,7 +143,7 @@ export default function DivisionResults({ division, updateDivision, tournamentId
       if (gameData) {
         const parsed = parseMatch(submission.game_id, gameData);
         if (parsed) {
-          const added = addMapsInBatch([parsed]);
+          const added = addMapsInBatch([parsed], getTargetDiv(submission));
           if (added.length > 0) {
             setSubmissions(prev => prev.filter(s => s.id !== submission.id));
           } else {
@@ -156,25 +159,33 @@ export default function DivisionResults({ division, updateDivision, tournamentId
   const handleBulkReprocess = () => {
     try {
       const approved = filteredSubmissions.filter(s => s.status === 'approved');
-      const allParsed = [];
+      // Group parsed maps by target division for correct routing and series detection
+      const byDiv = new Map(); // divId → { targetDiv, parsed[] }
       for (const sub of approved) {
         const gameData = sub.game_data;
         if (gameData) {
           const parsed = parseMatch(sub.game_id, gameData);
-          if (parsed) allParsed.push(parsed);
+          if (parsed) {
+            const target = getTargetDiv(sub);
+            const key = target ? target.id : division.id;
+            if (!byDiv.has(key)) byDiv.set(key, { targetDiv: target, parsed: [] });
+            byDiv.get(key).parsed.push(parsed);
+          }
         }
       }
-      if (allParsed.length > 0) {
-        const added = addMapsInBatch(allParsed);
-        if (added.length > 0) {
-          const addedIds = new Set(added.map(m => m.id));
-          const reprocessedSubIds = new Set(
-            approved.filter(s => addedIds.has(s.game_id)).map(s => s.id)
-          );
-          setSubmissions(prev => prev.filter(s => !reprocessedSubIds.has(s.id)));
-        } else {
-          setSubmissionsError('All already imported (duplicates detected)');
-        }
+      let totalAdded = [];
+      for (const { targetDiv, parsed } of byDiv.values()) {
+        const added = addMapsInBatch(parsed, targetDiv);
+        totalAdded = totalAdded.concat(added);
+      }
+      if (totalAdded.length > 0) {
+        const addedIds = new Set(totalAdded.map(m => m.id));
+        const reprocessedSubIds = new Set(
+          approved.filter(s => addedIds.has(s.game_id)).map(s => s.id)
+        );
+        setSubmissions(prev => prev.filter(s => !reprocessedSubIds.has(s.id)));
+      } else {
+        setSubmissionsError('All already imported (duplicates detected)');
       }
     } catch (err) {
       setSubmissionsError(err.message);
@@ -183,7 +194,8 @@ export default function DivisionResults({ division, updateDivision, tournamentId
 
   const handleBulkApprove = async () => {
     const pending = filteredSubmissions.filter(s => s.status === 'pending');
-    const allParsed = [];
+    // Group parsed maps by target division for correct routing and series detection
+    const byDiv = new Map(); // divId → { targetDiv, parsed[] }
     const approvedSubIds = [];
 
     // First: parse all game data and approve in DB
@@ -192,7 +204,12 @@ export default function DivisionResults({ division, updateDivision, tournamentId
         const gameData = sub.game_data;
         if (gameData) {
           const parsed = parseMatch(sub.game_id, gameData);
-          if (parsed) allParsed.push(parsed);
+          if (parsed) {
+            const target = getTargetDiv(sub);
+            const key = target ? target.id : division.id;
+            if (!byDiv.has(key)) byDiv.set(key, { targetDiv: target, parsed: [] });
+            byDiv.get(key).parsed.push(parsed);
+          }
         }
 
         const res = await fetch(`/api/submission/${sub.id}/approve`, { method: 'POST' });
@@ -203,9 +220,9 @@ export default function DivisionResults({ division, updateDivision, tournamentId
       }
     }
 
-    // Then: add all maps in a single batch so series detection works
-    if (allParsed.length > 0) {
-      addMapsInBatch(allParsed);
+    // Then: add maps per division in a single batch so series detection works
+    for (const { targetDiv, parsed } of byDiv.values()) {
+      addMapsInBatch(parsed, targetDiv);
     }
 
     if (approvedSubIds.length > 0) {
@@ -229,15 +246,14 @@ export default function DivisionResults({ division, updateDivision, tournamentId
     });
   }, [submissions, filterByDivision, division.id, detectSubmissionDivision]);
 
-  // --- TEAM LOOKUP & SERIES LOGIC (UNCHANGED) ---
-  const teamsJson = JSON.stringify(teams.map(t => ({ name: t.name, tag: t.tag })));
-  
-  const teamLookup = useMemo(() => {
+  // --- TEAM LOOKUP & SERIES LOGIC ---
+
+  // Standalone helpers (usable for any division, not just the active one)
+  function buildTeamLookupForDiv(div) {
     const byTag = {};
     const byName = {};
     const byNameLower = {};
-
-    teams.forEach(team => {
+    (div.teams || []).forEach(team => {
       if (team.tag) {
         byTag[team.tag.toLowerCase()] = team;
         const cleanTag = team.tag.replace(/[\[\]]/g, '').toLowerCase();
@@ -247,8 +263,6 @@ export default function DivisionResults({ division, updateDivision, tournamentId
       }
       byName[team.name] = team;
       byNameLower[team.name.toLowerCase()] = team;
-
-      // Index aliases
       if (team.aliases && Array.isArray(team.aliases)) {
         team.aliases.forEach(alias => {
           if (alias && alias.trim()) {
@@ -258,16 +272,26 @@ export default function DivisionResults({ division, updateDivision, tournamentId
       }
     });
     return { byTag, byName, byNameLower };
-  }, [teamsJson]);
+  }
 
-  const resolveTeamName = useCallback((jsonTeamName) => {
+  function resolveTeamNameWithLookup(jsonTeamName, lookup) {
     if (!jsonTeamName) return jsonTeamName;
     const lower = jsonTeamName.toLowerCase().trim();
-    if (teamLookup.byName[jsonTeamName]) return teamLookup.byName[jsonTeamName].name;
-    if (teamLookup.byNameLower[lower]) return teamLookup.byNameLower[lower].name;
-    if (teamLookup.byTag[lower]) return teamLookup.byTag[lower].name;
+    if (lookup.byName[jsonTeamName]) return lookup.byName[jsonTeamName].name;
+    if (lookup.byNameLower[lower]) return lookup.byNameLower[lower].name;
+    if (lookup.byTag[lower]) return lookup.byTag[lower].name;
     return jsonTeamName;
-  }, [teamLookup]);
+  }
+
+  // Memoized lookup for the current (active) division
+  const teamsJson = JSON.stringify(teams.map(t => ({ name: t.name, tag: t.tag })));
+
+  const teamLookup = useMemo(() => buildTeamLookupForDiv(division), [teamsJson]);
+
+  const resolveTeamName = useCallback(
+    (jsonTeamName) => resolveTeamNameWithLookup(jsonTeamName, teamLookup),
+    [teamLookup]
+  );
 
   const SERIES_GAP_MS = 2 * 60 * 60 * 1000;
   
@@ -392,34 +416,41 @@ export default function DivisionResults({ division, updateDivision, tournamentId
     return parsed;
   };
 
-  const addMapsInBatch = (newMaps) => {
+  const addMapsInBatch = (newMaps, targetDiv = null) => {
+    // When targetDiv is provided, operate on that division's data instead of the current one
+    const tDiv = targetDiv || division;
+    const tRawMaps = tDiv.rawMaps || [];
+    const tSchedule = tDiv.schedule || [];
+    const tLookup = targetDiv ? buildTeamLookupForDiv(targetDiv) : teamLookup;
+    const tResolve = (name) => resolveTeamNameWithLookup(name, tLookup);
+
     // Duplicate detection: check by ID
-    const existingIds = new Set(rawMaps.map(m => m.id));
+    const existingIds = new Set(tRawMaps.map(m => m.id));
     const uniqueNewMaps = newMaps.filter(m => !existingIds.has(m.id));
-    
+
     // Additional duplicate detection: check by map+teams+timestamp (in case IDs differ but it's the same game)
     const existingFingerprints = new Set(
-      rawMaps.map(m => `${m.map}|${m.teams.sort().join('vs')}|${m.timestamp || m.date}`)
+      tRawMaps.map(m => `${m.map}|${m.teams.sort().join('vs')}|${m.timestamp || m.date}`)
     );
     const trulyUniqueMaps = uniqueNewMaps.filter(m => {
       const fingerprint = `${m.map}|${m.teams.sort().join('vs')}|${m.timestamp || m.date}`;
       return !existingFingerprints.has(fingerprint);
     });
-    
+
     if (trulyUniqueMaps.length === 0) {
       console.log('No new unique maps to add (all duplicates)');
       return [];
     }
-    
+
     console.log(`Adding ${trulyUniqueMaps.length} unique maps (filtered ${newMaps.length - trulyUniqueMaps.length} duplicates)`);
-    
-    const allMaps = [...rawMaps, ...trulyUniqueMaps];
-    let newSchedule = [...schedule];
-    
+
+    const allMaps = [...tRawMaps, ...trulyUniqueMaps];
+    let newSchedule = [...tSchedule];
+
     trulyUniqueMaps.forEach(mapResult => {
       const [team1, team2] = mapResult.teams;
-      const resolved1 = resolveTeamName(team1);
-      const resolved2 = resolveTeamName(team2);
+      const resolved1 = tResolve(team1);
+      const resolved2 = tResolve(team2);
 
       const res1Lower = resolved1.toLowerCase();
       const res2Lower = resolved2.toLowerCase();
@@ -428,8 +459,8 @@ export default function DivisionResults({ division, updateDivision, tournamentId
       // IMPORTANT: Resolve scheduled team names through aliases before comparing
       const candidateIndices = [];
       newSchedule.forEach((m, idx) => {
-        const schedTeam1Resolved = resolveTeamName(m.team1).toLowerCase();
-        const schedTeam2Resolved = resolveTeamName(m.team2).toLowerCase();
+        const schedTeam1Resolved = tResolve(m.team1).toLowerCase();
+        const schedTeam2Resolved = tResolve(m.team2).toLowerCase();
 
         if ((schedTeam1Resolved === res1Lower && schedTeam2Resolved === res2Lower) ||
             (schedTeam1Resolved === res2Lower && schedTeam2Resolved === res1Lower)) {
@@ -496,16 +527,6 @@ export default function DivisionResults({ division, updateDivision, tournamentId
         if (!match.maps?.some(mp => mp.id === mapResult.id)) {
           const isNormalOrder = match.team1.toLowerCase() === res1Lower;
 
-          // Debug logging to diagnose score issues
-          console.log('🔍 Adding map to match:', {
-            matchTeams: [match.team1, match.team2],
-            mapResultTeams: mapResult.teams,
-            resolvedTeams: [resolved1, resolved2],
-            mapResultScores: mapResult.scores,
-            isNormalOrder,
-            mapName: mapResult.map
-          });
-
           // Lookup scores using original team names from mapResult (they match the score keys)
           const rawScore1 = isNormalOrder ? mapResult.scores[team1] : mapResult.scores[team2];
           const rawScore2 = isNormalOrder ? mapResult.scores[team2] : mapResult.scores[team1];
@@ -513,16 +534,6 @@ export default function DivisionResults({ division, updateDivision, tournamentId
           // Ensure scores are never undefined
           const score1 = rawScore1 ?? 0;
           const score2 = rawScore2 ?? 0;
-
-          console.log('📊 Scores:', {
-            lookupKeys: [team1, team2],
-            rawScores: { rawScore1, rawScore2 },
-            finalScores: { score1, score2 }
-          });
-
-          if (score1 === 0 && score2 === 0) {
-            console.warn('⚠️ Both scores are 0! This might indicate a data issue.');
-          }
 
           match.maps = [...(match.maps || []), {
             id: mapResult.id,
@@ -533,7 +544,7 @@ export default function DivisionResults({ division, updateDivision, tournamentId
           }];
 
           // For Play All (Go) group matches, completed = all maps played. For Best Of, completed = first to majority wins.
-          const isGroupPlayAll = match.round === 'group' && division.groupStageType === 'playall';
+          const isGroupPlayAll = match.round === 'group' && tDiv.groupStageType === 'playall';
           if (isGroupPlayAll) {
             match.status = match.maps.length >= match.bestOf ? 'completed' : 'live';
           } else {
@@ -550,7 +561,12 @@ export default function DivisionResults({ division, updateDivision, tournamentId
       }
     });
 
-    updateDivision({ rawMaps: allMaps, schedule: newSchedule });
+    // Route update to the correct division
+    if (targetDiv && updateAnyDivision) {
+      updateAnyDivision(targetDiv.id, { rawMaps: allMaps, schedule: newSchedule });
+    } else {
+      updateDivision({ rawMaps: allMaps, schedule: newSchedule });
+    }
     return trulyUniqueMaps;
   };
 
