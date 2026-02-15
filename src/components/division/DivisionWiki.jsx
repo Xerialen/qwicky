@@ -2,6 +2,7 @@
 import React, { useState, useMemo } from 'react';
 import { calculateStats, generateWikiTable } from '../../utils/statsLogic';
 import { unicodeToAscii } from '../../utils/matchLogic';
+import { renderWikiPreview } from '../../utils/wikiPreview';
 import EmptyState from '../EmptyState';
 
 function getTeamInfo(teams, teamName) {
@@ -153,7 +154,7 @@ function generateStandingsWiki(standings, teams, division, options) {
       ).join(', ');
       info = `Playoff Tiers: ${tierDescriptions}`;
     } else {
-      info = options.advanceCount ? `Top ${options.advanceCount} advance to Playoffs.` : '';
+      info = division.advanceCount ? `Top ${division.advanceCount} advance to Playoffs.` : '';
     }
 
     wiki += `{{GroupTableStart|${options.title || division.name} - Group ${groupName}|width=100%|finished=|date=|info=${info}}}\n`;
@@ -179,8 +180,8 @@ function generateStandingsWiki(standings, teams, division, options) {
         }
       } else {
         // Standard playoffs: use advanceCount
-        if (i < (options.advanceCount || 2)) bg = 'up';
-        else if (i < (options.advanceCount || 2) + 2) bg = 'stayup';
+        if (i < (division.advanceCount || 2)) bg = 'up';
+        else if (i < (division.advanceCount || 2) + 2) bg = 'stayup';
         else if (i >= gs.length - 2) bg = 'staydown';
       }
       
@@ -1152,9 +1153,9 @@ function generateDoubleElimBracket(bracket, schedule, teams, division, options) 
 export default function DivisionWiki({ division, tournamentName }) {
   const [activeExport, setActiveExport] = useState('standings');
   const [copied, setCopied] = useState(false);
+  const [viewMode, setViewMode] = useState('code');
   const [options, setOptions] = useState({
-    title: division.name || 'Division',
-    advanceCount: division.advanceCount || 2
+    title: division.name || 'Division'
   });
 
   const teams = division.teams || [];
@@ -1285,29 +1286,20 @@ const handleCopy = async () => {
       </div>
 
       <div className="qw-panel p-4">
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-qw-muted text-sm mb-1">Division Title</label>
-            <input 
-              type="text" 
-              value={options.title} 
-              onChange={(e) => setOptions({ ...options, title: e.target.value })} 
-              className="w-full bg-qw-dark border border-qw-border rounded px-3 py-2 text-white text-sm" 
-            />
-          </div>
-          <div>
-            <label className="block text-qw-muted text-sm mb-1">Teams Advancing</label>
-            <select 
-              value={options.advanceCount} 
-              onChange={(e) => setOptions({ ...options, advanceCount: parseInt(e.target.value) })}
+            <input
+              type="text"
+              value={options.title}
+              onChange={(e) => setOptions({ ...options, title: e.target.value })}
               className="w-full bg-qw-dark border border-qw-border rounded px-3 py-2 text-white text-sm"
-            >
-              {[1, 2, 3, 4, 6, 8].map(n => <option key={n} value={n}>Top {n}</option>)}
-            </select>
+            />
           </div>
           <div className="flex items-end">
             <p className="text-xs text-qw-muted">
-              Uses Liquipedia templates: GroupTableStart, MatchMaps, 4SEBracket
+              Uses Liquipedia templates: GroupTableStart, MatchMaps, 4SEBracket.
+              Teams advancing ({division.advanceCount}) configured in Setup tab.
             </p>
           </div>
         </div>
@@ -1315,11 +1307,35 @@ const handleCopy = async () => {
 
       <div className="qw-panel overflow-hidden">
         <div className="flex items-center justify-between px-4 py-3 bg-qw-dark border-b border-qw-border">
-          <div>
-            <h3 className="font-display text-sm text-qw-accent">WIKI OUTPUT</h3>
-            <span className="text-xs text-zinc-500">
-              {wikiContent.split('\n').length} lines · {wikiContent.length.toLocaleString()} characters
-            </span>
+          <div className="flex items-center gap-4">
+            <div>
+              <h3 className="font-display text-sm text-qw-accent">WIKI OUTPUT</h3>
+              <span className="text-xs text-zinc-500">
+                {wikiContent.split('\n').length} lines · {wikiContent.length.toLocaleString()} characters
+              </span>
+            </div>
+            <div className="flex gap-1">
+              <button
+                onClick={() => setViewMode('code')}
+                className={`px-3 py-1 rounded text-xs font-semibold transition-colors ${
+                  viewMode === 'code'
+                    ? 'bg-qw-accent text-qw-dark'
+                    : 'bg-zinc-800 text-zinc-400 hover:text-zinc-200'
+                }`}
+              >
+                Code
+              </button>
+              <button
+                onClick={() => setViewMode('preview')}
+                className={`px-3 py-1 rounded text-xs font-semibold transition-colors ${
+                  viewMode === 'preview'
+                    ? 'bg-qw-accent text-qw-dark'
+                    : 'bg-zinc-800 text-zinc-400 hover:text-zinc-200'
+                }`}
+              >
+                Preview
+              </button>
+            </div>
           </div>
           <div className="flex gap-2">
             <button
@@ -1338,7 +1354,13 @@ const handleCopy = async () => {
           </div>
         </div>
         <div className="p-4 max-h-[500px] overflow-auto">
-          <pre className="font-mono text-xs text-qw-text whitespace-pre-wrap">{wikiContent || ''}</pre>
+          {viewMode === 'code' ? (
+            <pre className="font-mono text-xs text-qw-text whitespace-pre-wrap">{wikiContent || ''}</pre>
+          ) : (
+            <div className="wiki-preview">
+              {renderWikiPreview(wikiContent, activeExport)}
+            </div>
+          )}
         </div>
       </div>
 

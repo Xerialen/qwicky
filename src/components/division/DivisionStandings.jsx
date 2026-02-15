@@ -2,7 +2,7 @@
 import React, { useMemo } from 'react';
 import EmptyState from '../EmptyState';
 
-function calculateStandings(schedule, division) {
+export function calculateStandings(schedule, division) {
   const pointsWin = division.pointsWin ?? 3;
   const pointsLoss = division.pointsLoss ?? 0;
   const isPlayAll = (division.groupStageType || 'bestof') === 'playall';

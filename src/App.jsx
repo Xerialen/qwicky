@@ -321,6 +321,7 @@ function App() {
   // UI state
   const [activeTab, setActiveTab] = useState('info'); // info, divisions, division
   const [activeDivisionId, setActiveDivisionId] = useState(tournament.activeDivisionId);
+  const [initialSubTab, setInitialSubTab] = useState(null);
 
   // Persist to localStorage
   useEffect(() => {
@@ -462,6 +463,11 @@ function App() {
           <TournamentInfo
             tournament={tournament}
             updateTournament={updateTournamentInfo}
+            onNavigateToDivision={(divId, subTab) => {
+              setActiveDivisionId(divId);
+              setInitialSubTab(subTab || 'schedule');
+              setActiveTab('division');
+            }}
           />
         );
       case 'divisions':
@@ -503,6 +509,7 @@ function App() {
             tournamentId={(tournament.name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}
             allDivisions={tournament.divisions}
             tournament={tournament}
+            initialSubTab={initialSubTab}
           />
         );
       default:
@@ -510,6 +517,11 @@ function App() {
           <TournamentInfo
             tournament={tournament}
             updateTournament={updateTournamentInfo}
+            onNavigateToDivision={(divId, subTab) => {
+              setActiveDivisionId(divId);
+              setInitialSubTab(subTab || 'schedule');
+              setActiveTab('division');
+            }}
           />
         );
     }

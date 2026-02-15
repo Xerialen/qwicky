@@ -1,5 +1,5 @@
 // src/components/DivisionView.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import DivisionSetup from './division/DivisionSetup';
 import DivisionTeams from './division/DivisionTeams';
 import DivisionSchedule from './division/DivisionSchedule';
@@ -7,8 +7,15 @@ import DivisionResults from './division/DivisionResults';
 import DivisionBracket from './division/DivisionBracket';
 import DivisionWiki from './division/DivisionWiki';
 
-export default function DivisionView({ division, updateDivision, updateAnyDivision, tournamentName, tournamentMode, tournamentStartDate, tournamentId, allDivisions, tournament }) {
-  const [activeSubTab, setActiveSubTab] = useState('setup');
+export default function DivisionView({ division, updateDivision, updateAnyDivision, tournamentName, tournamentMode, tournamentStartDate, tournamentId, allDivisions, tournament, initialSubTab }) {
+  const [activeSubTab, setActiveSubTab] = useState(initialSubTab || 'setup');
+
+  // Respond to external navigation requests
+  useEffect(() => {
+    if (initialSubTab) {
+      setActiveSubTab(initialSubTab);
+    }
+  }, [initialSubTab]);
 
   // Helper to determine tab completion status
   const getTabStatus = (tabId) => {
