@@ -25,7 +25,7 @@ function parseGroupTables(markup) {
 
     // Parse GroupTableSlot entries
     const slots = [];
-    const slotRegex = /\{\{GroupTableSlot\|([^}]*(?:\{\{[^}]*\}\}[^}]*)*)\}\}/g;
+    const slotRegex = /\{\{GroupTableSlot\|((?:[^{}]|\{\{[^{}]*\}\})*)\}\}/g;
     let slotMatch;
     while ((slotMatch = slotRegex.exec(content)) !== null) {
       const slotContent = slotMatch[1];
