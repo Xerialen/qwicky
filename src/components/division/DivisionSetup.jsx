@@ -1,5 +1,5 @@
 // src/components/division/DivisionSetup.jsx
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { createDefaultBracket } from '../../App';
 
 const formatDisplay = (type, count) => {
@@ -141,6 +141,9 @@ export default function DivisionSetup({ division, updateDivision }) {
     return division.playoffFormat || 'single';
   };
 
+  const [showCustomRounds, setShowCustomRounds] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
+
   const isPlayAll = (division.groupStageType || 'bestof') === 'playall';
   const effectivePlayoffFormat = getEffectivePlayoffFormat();
   const isDoubleElim = effectivePlayoffFormat === 'double';
@@ -149,6 +152,34 @@ export default function DivisionSetup({ division, updateDivision }) {
   // Check if format is locked by division format selection
   const isPlayoffFormatLocked = division.format === 'single-elim' || division.format === 'double-elim';
   const isMultiTier = division.format === 'multi-tier';
+
+  // Detect if rounds have been customized (different formats across rounds)
+  const roundsAreCustomized = (() => {
+    const baseType = division.playoffSFType || 'bestof';
+    const baseBo = division.playoffSFBestOf || 3;
+    const checks = [
+      [division.playoffQFType || 'bestof', division.playoffQFBestOf || 3],
+    ];
+    if (playoffTeams >= 16) checks.push([division.playoffR16Type || 'bestof', division.playoffR16BestOf || 3]);
+    if (playoffTeams >= 32) checks.push([division.playoffR32Type || 'bestof', division.playoffR32BestOf || 3]);
+    if (isDoubleElim) checks.push([division.playoffLosersType || 'bestof', division.playoffLosersBestOf || 3]);
+    return checks.some(([t, b]) => t !== baseType || b !== baseBo);
+  })();
+
+  // Apply a single format to all non-final rounds
+  const handleBulkRoundFormat = (type, count) => {
+    const updates = {
+      playoffR32Type: type, playoffR32BestOf: count,
+      playoffR16Type: type, playoffR16BestOf: count,
+      playoffQFType: type, playoffQFBestOf: count,
+      playoffSFType: type, playoffSFBestOf: count,
+    };
+    if (isDoubleElim) {
+      updates.playoffLosersType = type;
+      updates.playoffLosersBestOf = count;
+    }
+    updateDivision(updates);
+  };
 
   // Multi-tier helper functions
   const handleAddTier = () => {
@@ -549,21 +580,25 @@ export default function DivisionSetup({ division, updateDivision }) {
             )}
           </div>
 
-          {/* Winners Bracket */}
+          {/* Series Format — compact default, expandable per-round */}
           <div className="mb-6">
-            <h4 className="text-sm font-semibold text-white mb-3">{isDoubleElim ? '🏆 Winners Bracket' : 'Bracket Rounds'}</h4>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {playoffTeams >= 32 && (
-                <FormatSelect label="Round of 32" typeValue={division.playoffR32Type || 'bestof'} countValue={division.playoffR32BestOf || 3} onTypeChange={(v) => handleUpdate('playoffR32Type', v)} onCountChange={(v) => handleUpdate('playoffR32BestOf', v)} />
-              )}
-              {playoffTeams >= 16 && (
-                <FormatSelect label="Round of 16" typeValue={division.playoffR16Type || 'bestof'} countValue={division.playoffR16BestOf || 3} onTypeChange={(v) => handleUpdate('playoffR16Type', v)} onCountChange={(v) => handleUpdate('playoffR16BestOf', v)} />
-              )}
-              {playoffTeams >= 8 && (
-                <FormatSelect label="Quarter Finals" typeValue={division.playoffQFType || 'bestof'} countValue={division.playoffQFBestOf || 3} onTypeChange={(v) => handleUpdate('playoffQFType', v)} onCountChange={(v) => handleUpdate('playoffQFBestOf', v)} />
-              )}
-              <FormatSelect label="Semi Finals" typeValue={division.playoffSFType || 'bestof'} countValue={division.playoffSFBestOf || 3} onTypeChange={(v) => handleUpdate('playoffSFType', v)} onCountChange={(v) => handleUpdate('playoffSFBestOf', v)} />
+              <div>
+                <label className="block text-qw-muted text-sm mb-1">All Rounds</label>
+                <div className="flex gap-1">
+                  <select value={division.playoffSFType || 'bestof'} onChange={(e) => handleBulkRoundFormat(e.target.value, division.playoffSFBestOf || 3)} className="flex-1 bg-qw-dark border border-qw-border rounded px-1 py-2 text-white text-sm">
+                    <option value="bestof">Bo</option>
+                    <option value="playall">Go</option>
+                  </select>
+                  <select value={division.playoffSFBestOf || 3} onChange={(e) => handleBulkRoundFormat(division.playoffSFType || 'bestof', parseInt(e.target.value))} className="w-12 bg-qw-dark border border-qw-border rounded px-1 py-2 text-white text-sm">
+                    {[1, 3, 5, 7].map(n => <option key={n} value={n}>{n}</option>)}
+                  </select>
+                </div>
+              </div>
               <FormatSelect label={isDoubleElim ? "Winners Final" : "Final"} typeValue={division.playoffFinalType || 'bestof'} countValue={division.playoffFinalBestOf || 5} onTypeChange={(v) => handleUpdate('playoffFinalType', v)} onCountChange={(v) => handleUpdate('playoffFinalBestOf', v)} />
+              {isDoubleElim && (
+                <FormatSelect label="Grand Final" typeValue={division.playoffGrandFinalType || 'bestof'} countValue={division.playoffGrandFinalBestOf || 5} onTypeChange={(v) => handleUpdate('playoffGrandFinalType', v)} onCountChange={(v) => handleUpdate('playoffGrandFinalBestOf', v)} />
+              )}
               {!isDoubleElim && (
                 <div>
                   <label className="block text-qw-muted text-sm mb-1">3rd Place Match</label>
@@ -582,18 +617,49 @@ export default function DivisionSetup({ division, updateDivision }) {
                 </div>
               )}
             </div>
-          </div>
 
-          {/* Losers Bracket - only for double elim */}
-          {isDoubleElim && (
-            <div className="mb-6">
-              <h4 className="text-sm font-semibold text-white mb-3">💀 Losers Bracket</h4>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <FormatSelect label="Losers Rounds" typeValue={division.playoffLosersType || 'bestof'} countValue={division.playoffLosersBestOf || 3} onTypeChange={(v) => handleUpdate('playoffLosersType', v)} onCountChange={(v) => handleUpdate('playoffLosersBestOf', v)} />
-                <FormatSelect label="Grand Final" typeValue={division.playoffGrandFinalType || 'bestof'} countValue={division.playoffGrandFinalBestOf || 5} onTypeChange={(v) => handleUpdate('playoffGrandFinalType', v)} onCountChange={(v) => handleUpdate('playoffGrandFinalBestOf', v)} />
-              </div>
+            {/* Customize per round toggle */}
+            <div className="mt-4">
+              <button
+                type="button"
+                onClick={() => setShowCustomRounds(!showCustomRounds)}
+                className="text-sm text-qw-muted hover:text-white transition-colors flex items-center gap-1"
+              >
+                <span className={`transition-transform ${showCustomRounds ? 'rotate-90' : ''}`}>&#9656;</span>
+                Customize per round
+                {roundsAreCustomized && !showCustomRounds && (
+                  <span className="ml-1 px-1.5 py-0.5 bg-qw-accent/20 text-qw-accent text-xs rounded">customized</span>
+                )}
+              </button>
+              {showCustomRounds && (
+                <div className="mt-3 pt-3 border-t border-qw-border/50 space-y-4">
+                  <div>
+                    <h4 className="text-sm font-semibold text-white mb-3">{isDoubleElim ? '🏆 Winners Bracket' : 'Bracket Rounds'}</h4>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      {playoffTeams >= 32 && (
+                        <FormatSelect label="Round of 32" typeValue={division.playoffR32Type || 'bestof'} countValue={division.playoffR32BestOf || 3} onTypeChange={(v) => handleUpdate('playoffR32Type', v)} onCountChange={(v) => handleUpdate('playoffR32BestOf', v)} />
+                      )}
+                      {playoffTeams >= 16 && (
+                        <FormatSelect label="Round of 16" typeValue={division.playoffR16Type || 'bestof'} countValue={division.playoffR16BestOf || 3} onTypeChange={(v) => handleUpdate('playoffR16Type', v)} onCountChange={(v) => handleUpdate('playoffR16BestOf', v)} />
+                      )}
+                      {playoffTeams >= 8 && (
+                        <FormatSelect label="Quarter Finals" typeValue={division.playoffQFType || 'bestof'} countValue={division.playoffQFBestOf || 3} onTypeChange={(v) => handleUpdate('playoffQFType', v)} onCountChange={(v) => handleUpdate('playoffQFBestOf', v)} />
+                      )}
+                      <FormatSelect label="Semi Finals" typeValue={division.playoffSFType || 'bestof'} countValue={division.playoffSFBestOf || 3} onTypeChange={(v) => handleUpdate('playoffSFType', v)} onCountChange={(v) => handleUpdate('playoffSFBestOf', v)} />
+                    </div>
+                  </div>
+                  {isDoubleElim && (
+                    <div>
+                      <h4 className="text-sm font-semibold text-white mb-3">💀 Losers Bracket</h4>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <FormatSelect label="Losers Rounds" typeValue={division.playoffLosersType || 'bestof'} countValue={division.playoffLosersBestOf || 3} onTypeChange={(v) => handleUpdate('playoffLosersType', v)} onCountChange={(v) => handleUpdate('playoffLosersBestOf', v)} />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
-          )}
+          </div>
 
           {/* Structure Preview */}
           <div className="p-3 bg-qw-dark rounded border border-qw-border">
@@ -636,36 +702,67 @@ export default function DivisionSetup({ division, updateDivision }) {
         </div>
       )}
 
-      {/* Points System */}
-      <div className="qw-panel p-6">
-        <h3 className="font-display text-lg text-qw-accent mb-4">POINTS SYSTEM</h3>
-        <div className="mb-4 p-3 bg-qw-dark rounded border border-qw-border text-sm">
-          {isPlayAll ? (
-            <div className="text-qw-accent"><strong>Play All (Go) Mode:</strong> Points awarded per map.</div>
-          ) : (
-            <div className="text-qw-muted"><strong>Best Of Mode:</strong> Points awarded per series.</div>
-          )}
-        </div>
-        <div className="grid grid-cols-2 gap-4">
+      {/* Advanced Settings — collapsed by default */}
+      <div className="qw-panel overflow-hidden">
+        <button
+          type="button"
+          onClick={() => setShowAdvanced(!showAdvanced)}
+          className="w-full px-6 py-4 flex items-center justify-between hover:bg-qw-dark/30 transition-colors"
+        >
           <div>
-            <label className="block text-qw-muted text-sm mb-1">{isPlayAll ? 'Points per Map Win' : 'Points for Series Win'}</label>
-            <input type="number" value={division.pointsWin} onChange={(e) => handleUpdate('pointsWin', parseInt(e.target.value) || 0)} className="w-full bg-qw-dark border border-qw-border rounded px-3 py-2 text-white" min={0} />
+            <h3 className="font-display text-lg text-qw-accent text-left">ADVANCED SETTINGS</h3>
+            {!showAdvanced && (
+              <p className="text-sm text-qw-muted mt-1 text-left">
+                Win: {division.pointsWin} pts, Loss: {division.pointsLoss} pts
+                {(division.format === 'groups' || division.format === 'multi-tier') && (
+                  <span>
+                    {' | Tie-break: '}
+                    {(division.tieBreakers || ['mapDiff', 'fragDiff', 'headToHead']).map((tb, i) => {
+                      const labels = { mapDiff: 'Map Diff', fragDiff: 'Frag Diff', headToHead: 'H2H' };
+                      return (i > 0 ? ' \u2192 ' : '') + (labels[tb] || tb);
+                    }).join('')}
+                  </span>
+                )}
+              </p>
+            )}
           </div>
-          <div>
-            <label className="block text-qw-muted text-sm mb-1">{isPlayAll ? 'Points per Map Loss' : 'Points for Series Loss'}</label>
-            <input type="number" value={division.pointsLoss} onChange={(e) => handleUpdate('pointsLoss', parseInt(e.target.value) || 0)} className="w-full bg-qw-dark border border-qw-border rounded px-3 py-2 text-white" min={0} />
-          </div>
-        </div>
-      </div>
+          <span className={`text-qw-muted text-lg transition-transform ${showAdvanced ? 'rotate-90' : ''}`}>&#9656;</span>
+        </button>
+        {showAdvanced && (
+          <div className="px-6 pb-6 space-y-6 border-t border-qw-border">
+            {/* Points System */}
+            <div className="pt-6">
+              <h4 className="text-sm font-semibold text-white mb-3">Points System</h4>
+              <div className="mb-4 p-3 bg-qw-dark rounded border border-qw-border text-sm">
+                {isPlayAll ? (
+                  <div className="text-qw-accent"><strong>Play All (Go) Mode:</strong> Points awarded per map.</div>
+                ) : (
+                  <div className="text-qw-muted"><strong>Best Of Mode:</strong> Points awarded per series.</div>
+                )}
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-qw-muted text-sm mb-1">{isPlayAll ? 'Points per Map Win' : 'Points for Series Win'}</label>
+                  <input type="number" value={division.pointsWin} onChange={(e) => handleUpdate('pointsWin', parseInt(e.target.value) || 0)} className="w-full bg-qw-dark border border-qw-border rounded px-3 py-2 text-white" min={0} />
+                </div>
+                <div>
+                  <label className="block text-qw-muted text-sm mb-1">{isPlayAll ? 'Points per Map Loss' : 'Points for Series Loss'}</label>
+                  <input type="number" value={division.pointsLoss} onChange={(e) => handleUpdate('pointsLoss', parseInt(e.target.value) || 0)} className="w-full bg-qw-dark border border-qw-border rounded px-3 py-2 text-white" min={0} />
+                </div>
+              </div>
+            </div>
 
-      {/* Tie-Breakers - Only for formats with group stage */}
-      {(division.format === 'groups' || division.format === 'multi-tier') && (
-        <div className="qw-panel p-6">
-          <h3 className="font-display text-lg text-qw-accent mb-4">TIE-BREAKER PRIORITY</h3>
-          <p className="text-sm text-qw-muted mb-4">When teams have equal points:</p>
-          <TieBreakerConfig value={division.tieBreakers} onChange={(newOrder) => handleUpdate('tieBreakers', newOrder)} />
-        </div>
-      )}
+            {/* Tie-Breakers - Only for formats with group stage */}
+            {(division.format === 'groups' || division.format === 'multi-tier') && (
+              <div>
+                <h4 className="text-sm font-semibold text-white mb-3">Tie-Breaker Priority</h4>
+                <p className="text-sm text-qw-muted mb-4">When teams have equal points:</p>
+                <TieBreakerConfig value={division.tieBreakers} onChange={(newOrder) => handleUpdate('tieBreakers', newOrder)} />
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
     </div>
   );
