@@ -4,7 +4,7 @@ import { createDefaultBracket } from '../../App';
 import EmptyState from '../EmptyState';
 import DivisionStandings from './DivisionStandings';
 
-function BracketMatch({ match, schedule, teams = [], onUpdateTeam, label, showLabel = false, isFinal = false, isGrandFinal = false }) {
+function BracketMatch({ match, schedule, teams = [], onUpdateTeam, label, showLabel = false, isFinal = false, isGrandFinal = false, roundHint = null }) {
   const result = useMemo(() => {
     if (!match?.team1 || !match?.team2) return null;
 
@@ -29,13 +29,27 @@ function BracketMatch({ match, schedule, teams = [], onUpdateTeam, label, showLa
     const t1Lower = t1Resolved.toLowerCase();
     const t2Lower = t2Resolved.toLowerCase();
 
-    // Find matching schedule entry (also check aliases in schedule)
-    const scheduled = schedule.find(m => {
+    const teamMatch = (m) => {
       const schedT1 = resolveTeam(m.team1).toLowerCase();
       const schedT2 = resolveTeam(m.team2).toLowerCase();
       return (schedT1 === t1Lower && schedT2 === t2Lower) ||
              (schedT1 === t2Lower && schedT2 === t1Lower);
-    });
+    };
+
+    // Find matching schedule entry with round-aware disambiguation
+    // Priority 1: exact round match via roundHint
+    let scheduled = null;
+    if (roundHint) {
+      scheduled = schedule.find(m => m.round === roundHint && teamMatch(m));
+    }
+    // Priority 2: prefer non-group matches (bracket always shows playoff results)
+    if (!scheduled) {
+      scheduled = schedule.filter(m => m.round !== 'group').find(m => teamMatch(m));
+    }
+    // Priority 3: fall back to any match
+    if (!scheduled) {
+      scheduled = schedule.find(m => teamMatch(m));
+    }
 
     if (!scheduled?.maps?.length) return null;
 
@@ -89,7 +103,7 @@ function SingleElimBracket({ bracket, schedule, teams = [], onUpdateTeam, teamCo
             <div className="text-center font-display text-sm text-qw-accent mb-2">ROUND OF 32</div>
             <div className="flex flex-col gap-4">
               {bracket.winners.round32.map((match, idx) => (
-                <BracketMatch key={match.id} match={match} schedule={schedule} teams={teams} onUpdateTeam={onUpdateTeam} />
+                <BracketMatch key={match.id} match={match} schedule={schedule} teams={teams} onUpdateTeam={onUpdateTeam} roundHint="round32" />
               ))}
             </div>
           </div>
@@ -111,7 +125,7 @@ function SingleElimBracket({ bracket, schedule, teams = [], onUpdateTeam, teamCo
             <div className="text-center font-display text-sm text-qw-accent mb-2">ROUND OF 16</div>
             <div className="flex flex-col gap-8" style={{ paddingTop: hasR32 ? '20px' : '0' }}>
               {bracket.winners.round16.map((match, idx) => (
-                <BracketMatch key={match.id} match={match} schedule={schedule} teams={teams} onUpdateTeam={onUpdateTeam} />
+                <BracketMatch key={match.id} match={match} schedule={schedule} teams={teams} onUpdateTeam={onUpdateTeam} roundHint="round16" />
               ))}
             </div>
           </div>
@@ -133,7 +147,7 @@ function SingleElimBracket({ bracket, schedule, teams = [], onUpdateTeam, teamCo
             <div className="text-center font-display text-sm text-qw-accent mb-2">QUARTER FINALS</div>
             <div className="flex flex-col gap-8" style={{ paddingTop: hasR16 ? '52px' : '0' }}>
               {bracket.winners.quarterFinals.map((match, idx) => (
-                <BracketMatch key={match.id} match={match} schedule={schedule} teams={teams} onUpdateTeam={onUpdateTeam} />
+                <BracketMatch key={match.id} match={match} schedule={schedule} teams={teams} onUpdateTeam={onUpdateTeam} roundHint="quarter" />
               ))}
             </div>
           </div>
@@ -151,12 +165,12 @@ function SingleElimBracket({ bracket, schedule, teams = [], onUpdateTeam, teamCo
       {/* Semi Finals */}
       <div className="flex flex-col gap-4">
         <div className="text-center font-display text-sm text-qw-accent mb-2">SEMI FINALS</div>
-        <div className="flex flex-col" style={{ 
-          gap: hasQF ? '100px' : '40px', 
-          paddingTop: hasR16 ? '180px' : hasQF ? '52px' : '0' 
+        <div className="flex flex-col" style={{
+          gap: hasQF ? '100px' : '40px',
+          paddingTop: hasR16 ? '180px' : hasQF ? '52px' : '0'
         }}>
           {bracket.winners?.semiFinals?.map((match, idx) => (
-            <BracketMatch key={match.id} match={match} schedule={schedule} teams={teams} onUpdateTeam={onUpdateTeam} />
+            <BracketMatch key={match.id} match={match} schedule={schedule} teams={teams} onUpdateTeam={onUpdateTeam} roundHint="semi" />
           ))}
         </div>
       </div>
@@ -179,7 +193,7 @@ function SingleElimBracket({ bracket, schedule, teams = [], onUpdateTeam, teamCo
           height: hasR16 ? '640px' : hasQF ? '320px' : '140px', 
           paddingTop: hasR16 ? '168px' : hasQF ? '40px' : '0' 
         }}>
-          <BracketMatch match={bracket.winners?.final} schedule={schedule} teams={teams} onUpdateTeam={onUpdateTeam} isFinal={true} />
+          <BracketMatch match={bracket.winners?.final} schedule={schedule} teams={teams} onUpdateTeam={onUpdateTeam} isFinal={true} roundHint="final" />
         </div>
       </div>
     </div>
@@ -207,7 +221,7 @@ function DoubleElimBracket({ bracket, schedule, teams = [], onUpdateTeam, teamCo
                   <div className="text-center text-xs text-qw-muted mb-1">W-R32</div>
                   <div className="flex flex-col gap-4">
                     {bracket.winners.round32.map((match) => (
-                      <BracketMatch key={match.id} match={match} schedule={schedule} teams={teams} onUpdateTeam={onUpdateTeam} />
+                      <BracketMatch key={match.id} match={match} schedule={schedule} teams={teams} onUpdateTeam={onUpdateTeam} roundHint="round32" />
                     ))}
                   </div>
                 </div>
@@ -229,7 +243,7 @@ function DoubleElimBracket({ bracket, schedule, teams = [], onUpdateTeam, teamCo
                   <div className="text-center text-xs text-qw-muted mb-1">W-R16</div>
                   <div className="flex flex-col gap-6" style={{ paddingTop: hasR32 ? '16px' : '0' }}>
                     {bracket.winners.round16.map((match) => (
-                      <BracketMatch key={match.id} match={match} schedule={schedule} teams={teams} onUpdateTeam={onUpdateTeam} />
+                      <BracketMatch key={match.id} match={match} schedule={schedule} teams={teams} onUpdateTeam={onUpdateTeam} roundHint="round16" />
                     ))}
                   </div>
                 </div>
@@ -251,7 +265,7 @@ function DoubleElimBracket({ bracket, schedule, teams = [], onUpdateTeam, teamCo
                   <div className="text-center text-xs text-qw-muted mb-1">W-QF</div>
                   <div className="flex flex-col gap-6" style={{ paddingTop: hasR16 ? '36px' : '0' }}>
                     {bracket.winners.quarterFinals.map((match) => (
-                      <BracketMatch key={match.id} match={match} schedule={schedule} teams={teams} onUpdateTeam={onUpdateTeam} />
+                      <BracketMatch key={match.id} match={match} schedule={schedule} teams={teams} onUpdateTeam={onUpdateTeam} roundHint="quarter" />
                     ))}
                   </div>
                 </div>
@@ -269,11 +283,11 @@ function DoubleElimBracket({ bracket, schedule, teams = [], onUpdateTeam, teamCo
             {/* W-SF */}
             <div className="flex flex-col gap-4">
               <div className="text-center text-xs text-qw-muted mb-1">W-SF</div>
-              <div className="flex flex-col gap-12" style={{ 
-                paddingTop: hasR16 ? '124px' : hasQF ? '36px' : '0' 
+              <div className="flex flex-col gap-12" style={{
+                paddingTop: hasR16 ? '124px' : hasQF ? '36px' : '0'
               }}>
                 {bracket.winners?.semiFinals?.map((match) => (
-                  <BracketMatch key={match.id} match={match} schedule={schedule} teams={teams} onUpdateTeam={onUpdateTeam} />
+                  <BracketMatch key={match.id} match={match} schedule={schedule} teams={teams} onUpdateTeam={onUpdateTeam} roundHint="semi" />
                 ))}
               </div>
             </div>
@@ -289,7 +303,7 @@ function DoubleElimBracket({ bracket, schedule, teams = [], onUpdateTeam, teamCo
             <div className="flex flex-col gap-4">
               <div className="text-center text-xs text-qw-muted mb-1">W-FINAL</div>
               <div style={{ paddingTop: hasQF ? '68px' : '32px' }}>
-                <BracketMatch match={bracket.winners?.final} schedule={schedule} teams={teams} onUpdateTeam={onUpdateTeam} />
+                <BracketMatch match={bracket.winners?.final} schedule={schedule} teams={teams} onUpdateTeam={onUpdateTeam} roundHint="final" />
               </div>
             </div>
           </div>
@@ -310,7 +324,7 @@ function DoubleElimBracket({ bracket, schedule, teams = [], onUpdateTeam, teamCo
                   <div className="text-center text-xs text-qw-muted mb-1">L-R1</div>
                   <div className="flex flex-col gap-6">
                     {bracket.losers.round1.map((match) => (
-                      <BracketMatch key={match.id} match={match} schedule={schedule} teams={teams} onUpdateTeam={onUpdateTeam} />
+                      <BracketMatch key={match.id} match={match} schedule={schedule} teams={teams} onUpdateTeam={onUpdateTeam} roundHint="losers-r1" />
                     ))}
                   </div>
                 </div>
@@ -327,7 +341,7 @@ function DoubleElimBracket({ bracket, schedule, teams = [], onUpdateTeam, teamCo
                   <div className="text-center text-xs text-qw-muted mb-1">L-R2</div>
                   <div className="flex flex-col gap-6">
                     {bracket.losers.round2.map((match) => (
-                      <BracketMatch key={match.id} match={match} schedule={schedule} teams={teams} onUpdateTeam={onUpdateTeam} />
+                      <BracketMatch key={match.id} match={match} schedule={schedule} teams={teams} onUpdateTeam={onUpdateTeam} roundHint="losers-r2" />
                     ))}
                   </div>
                 </div>
@@ -347,7 +361,7 @@ function DoubleElimBracket({ bracket, schedule, teams = [], onUpdateTeam, teamCo
                   <div className="text-center text-xs text-qw-muted mb-1">L-R3</div>
                   <div className="pt-8">
                     {bracket.losers.round3.map((match) => (
-                      <BracketMatch key={match.id} match={match} schedule={schedule} teams={teams} onUpdateTeam={onUpdateTeam} />
+                      <BracketMatch key={match.id} match={match} schedule={schedule} teams={teams} onUpdateTeam={onUpdateTeam} roundHint="losers-r3" />
                     ))}
                   </div>
                 </div>
@@ -362,7 +376,7 @@ function DoubleElimBracket({ bracket, schedule, teams = [], onUpdateTeam, teamCo
               <div className="flex flex-col gap-4">
                 <div className="text-center text-xs text-qw-muted mb-1">L-FINAL</div>
                 <div className="pt-8">
-                  <BracketMatch match={bracket.losers.final} schedule={schedule} teams={teams} onUpdateTeam={onUpdateTeam} />
+                  <BracketMatch match={bracket.losers.final} schedule={schedule} teams={teams} onUpdateTeam={onUpdateTeam} roundHint="losers-final" />
                 </div>
               </div>
             )}
@@ -378,7 +392,7 @@ function DoubleElimBracket({ bracket, schedule, teams = [], onUpdateTeam, teamCo
         <div className="flex items-start gap-6">
           <div className="flex flex-col gap-2">
             <div className="text-center text-xs text-qw-muted">Grand Final</div>
-            <BracketMatch match={bracket.grandFinal} schedule={schedule} teams={teams} onUpdateTeam={onUpdateTeam} isGrandFinal={true} />
+            <BracketMatch match={bracket.grandFinal} schedule={schedule} teams={teams} onUpdateTeam={onUpdateTeam} isGrandFinal={true} roundHint="grand-final" />
             <div className="text-center text-xs text-qw-muted mt-1">
               Winners bracket team has advantage
             </div>
@@ -391,12 +405,13 @@ function DoubleElimBracket({ bracket, schedule, teams = [], onUpdateTeam, teamCo
               </div>
               <div className="flex flex-col gap-2">
                 <div className="text-center text-xs text-qw-muted">Reset (if needed)</div>
-                <BracketMatch 
-                  match={bracket.bracketReset} 
-                  schedule={schedule} 
+                <BracketMatch
+                  match={bracket.bracketReset}
+                  schedule={schedule}
                   onUpdateTeam={onUpdateTeam}
                   showLabel={true}
                   label="Only if losers bracket winner wins GF"
+                  roundHint="bracket-reset"
                 />
               </div>
             </>

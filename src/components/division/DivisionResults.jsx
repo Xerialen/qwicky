@@ -348,13 +348,32 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
       const [t1, t2] = series.resolvedTeams;
       const t1Lower = t1.toLowerCase();
       const t2Lower = t2.toLowerCase();
-      // Resolve scheduled team names through aliases before comparing
-      const scheduledMatch = schedule.find(m => {
+      // Find all matching schedule entries for this team pair
+      const candidates = schedule.filter(m => {
         const schedT1 = resolveTeamName(m.team1).toLowerCase();
         const schedT2 = resolveTeamName(m.team2).toLowerCase();
         return (schedT1 === t1Lower && schedT2 === t2Lower) ||
                (schedT1 === t2Lower && schedT2 === t1Lower);
       });
+
+      let scheduledMatch = null;
+      if (candidates.length === 1) {
+        scheduledMatch = candidates[0];
+      } else if (candidates.length > 1) {
+        // Multiple meetings: prefer the one whose scheduled date is closest to the series' date range
+        const seriesDate = series.maps[0]?.date?.split(' ')[0];
+        const seriesTime = seriesDate ? new Date(seriesDate + 'T00:00:00').getTime() : null;
+        if (seriesTime) {
+          let bestDist = Infinity;
+          candidates.forEach(m => {
+            if (m.date) {
+              const dist = Math.abs(new Date(m.date + 'T00:00:00').getTime() - seriesTime);
+              if (dist < bestDist) { bestDist = dist; scheduledMatch = m; }
+            }
+          });
+        }
+        if (!scheduledMatch) scheduledMatch = candidates[0];
+      }
       return {
         ...series,
         scheduledMatch,
@@ -482,24 +501,52 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
       if (candidateIndices.length === 1) {
         matchIdx = candidateIndices[0];
       } else if (candidateIndices.length > 1) {
-        // Multiple meetings (double round-robin): pick by date proximity,
-        // preferring matches that don't have results yet
-        const gameDate = mapResult.date?.split(' ')[0];
-        const gameTime = gameDate ? new Date(gameDate + 'T00:00:00').getTime() : null;
-        const emptyOnes = candidateIndices.filter(i => !newSchedule[i].maps?.length);
-        const pool = emptyOnes.length > 0 ? emptyOnes : candidateIndices;
+        // Multiple meetings (group + playoffs, double round-robin, etc.)
+        // Use timestamp-based series affinity to cluster maps from the same session
+        const mapTs = mapResult.timestamp || null;
 
-        if (gameTime) {
-          let bestDist = Infinity;
-          pool.forEach(idx => {
-            const m = newSchedule[idx];
-            if (m.date) {
-              const dist = Math.abs(new Date(m.date + 'T00:00:00').getTime() - gameTime);
-              if (dist < bestDist) { bestDist = dist; matchIdx = idx; }
+        // Priority 1: Series affinity — if a candidate already has maps whose timestamps
+        // are within SERIES_GAP_MS of this map, it belongs to the same series
+        if (mapTs) {
+          let bestAffinityDist = Infinity;
+          candidateIndices.forEach(idx => {
+            const existingMaps = newSchedule[idx].maps || [];
+            if (existingMaps.length === 0) return;
+            // Check timestamp proximity to any existing map on this candidate
+            for (const em of existingMaps) {
+              // Look up the raw map's timestamp from allMaps (schedule maps don't store timestamp)
+              const rawMap = allMaps.find(rm => rm.id === em.id);
+              const emTs = rawMap?.timestamp;
+              if (emTs) {
+                const dist = Math.abs(mapTs - emTs);
+                if (dist <= SERIES_GAP_MS && dist < bestAffinityDist) {
+                  bestAffinityDist = dist;
+                  matchIdx = idx;
+                }
+              }
             }
           });
         }
-        if (matchIdx === -1) matchIdx = pool[0];
+
+        // Priority 2: Prefer empty candidates, pick by closest scheduled date
+        if (matchIdx === -1) {
+          const gameDate = mapResult.date?.split(' ')[0];
+          const gameTime = gameDate ? new Date(gameDate + 'T00:00:00').getTime() : null;
+          const emptyOnes = candidateIndices.filter(i => !newSchedule[i].maps?.length);
+          const pool = emptyOnes.length > 0 ? emptyOnes : candidateIndices;
+
+          if (gameTime) {
+            let bestDist = Infinity;
+            pool.forEach(idx => {
+              const m = newSchedule[idx];
+              if (m.date) {
+                const dist = Math.abs(new Date(m.date + 'T00:00:00').getTime() - gameTime);
+                if (dist < bestDist) { bestDist = dist; matchIdx = idx; }
+              }
+            });
+          }
+          if (matchIdx === -1) matchIdx = pool[0];
+        }
       }
 
       if (matchIdx !== -1) {
