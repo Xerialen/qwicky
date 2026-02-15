@@ -45,13 +45,13 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
         // Clean team name for comparison (handles QuakeWorld characters)
         teamNameLookup.add(unicodeToAscii(team.name).toLowerCase());
 
-        // Add team tag (and bracket-stripped variant) — ktxstats often uses clan tags as team names
+        // Add team tag variants — ktxstats often uses clan tags (with or without brackets) as team names
         if (team.tag) {
-          teamNameLookup.add(team.tag.toLowerCase());
-          const cleanTag = team.tag.replace(/[\[\]]/g, '').toLowerCase();
-          if (cleanTag !== team.tag.toLowerCase()) {
-            teamNameLookup.add(cleanTag);
-          }
+          const tagLower = team.tag.toLowerCase();
+          teamNameLookup.add(tagLower);
+          const cleanTag = tagLower.replace(/[\[\]]/g, '');
+          if (cleanTag !== tagLower) teamNameLookup.add(cleanTag);
+          if (!tagLower.startsWith('[')) teamNameLookup.add(`[${cleanTag}]`);
         }
 
         // Also add aliases (clean them too!)
@@ -66,9 +66,13 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
       });
 
       // Count how many game teams are found in this division
-      const matchCount = gameTeams.filter(gt =>
-        teamNameLookup.has(gt.toLowerCase())
-      ).length;
+      // Try both exact and bracket-stripped versions of game team names
+      const matchCount = gameTeams.filter(gt => {
+        const gtLower = gt.toLowerCase();
+        if (teamNameLookup.has(gtLower)) return true;
+        const gtStripped = gtLower.replace(/[\[\]]/g, '');
+        return gtStripped !== gtLower && teamNameLookup.has(gtStripped);
+      }).length;
 
       // If both teams are in this division, it's a match
       if (matchCount === gameTeams.length) {
@@ -255,11 +259,13 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
     const byNameLower = {};
     (div.teams || []).forEach(team => {
       if (team.tag) {
-        byTag[team.tag.toLowerCase()] = team;
-        const cleanTag = team.tag.replace(/[\[\]]/g, '').toLowerCase();
-        if (cleanTag !== team.tag.toLowerCase()) {
-          byTag[cleanTag] = team;
-        }
+        const tagLower = team.tag.toLowerCase();
+        byTag[tagLower] = team;
+        // Add bracket-stripped variant (e.g., "[sr]" → "sr")
+        const cleanTag = tagLower.replace(/[\[\]]/g, '');
+        if (cleanTag !== tagLower) byTag[cleanTag] = team;
+        // Add bracket-wrapped variant (e.g., "sr" → "[sr]") — ktxstats often wraps clan tags in brackets
+        if (!tagLower.startsWith('[')) byTag[`[${cleanTag}]`] = team;
       }
       byName[team.name] = team;
       byNameLower[team.name.toLowerCase()] = team;
@@ -280,6 +286,9 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
     if (lookup.byName[jsonTeamName]) return lookup.byName[jsonTeamName].name;
     if (lookup.byNameLower[lower]) return lookup.byNameLower[lower].name;
     if (lookup.byTag[lower]) return lookup.byTag[lower].name;
+    // Try bracket-stripped version (e.g., "[SR]" → "sr") in case tag stored without brackets
+    const stripped = lower.replace(/[\[\]]/g, '');
+    if (stripped !== lower && lookup.byTag[stripped]) return lookup.byTag[stripped].name;
     return jsonTeamName;
   }
 
