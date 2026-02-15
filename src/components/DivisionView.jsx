@@ -7,7 +7,7 @@ import DivisionResults from './division/DivisionResults';
 import DivisionBracket from './division/DivisionBracket';
 import DivisionWiki from './division/DivisionWiki';
 
-export default function DivisionView({ division, updateDivision, tournamentName, tournamentMode, tournamentStartDate, tournamentId, allDivisions, tournament }) {
+export default function DivisionView({ division, updateDivision, updateAnyDivision, tournamentName, tournamentMode, tournamentStartDate, tournamentId, allDivisions, tournament }) {
   const [activeSubTab, setActiveSubTab] = useState('setup');
 
   // Helper to determine tab completion status
@@ -55,7 +55,7 @@ export default function DivisionView({ division, updateDivision, tournamentName,
       case 'schedule':
         return <DivisionSchedule division={division} updateDivision={updateDivision} tournamentStartDate={tournamentStartDate} />;
       case 'results':
-        return <DivisionResults division={division} updateDivision={updateDivision} tournamentId={tournamentId} tournament={tournament} />;
+        return <DivisionResults division={division} updateDivision={updateDivision} updateAnyDivision={updateAnyDivision} tournamentId={tournamentId} tournament={tournament} />;
       case 'bracket':
         return <DivisionBracket division={division} updateDivision={updateDivision} />;
       case 'wiki':

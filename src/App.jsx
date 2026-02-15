@@ -476,6 +476,7 @@ function App() {
           <DivisionView
             division={activeDivision}
             updateDivision={(updates) => updateDivision(activeDivision.id, updates)}
+            updateAnyDivision={updateDivision}
             tournamentName={tournament.name}
             tournamentMode={tournament.mode}
             tournamentStartDate={tournament.startDate}
