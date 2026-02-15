@@ -132,7 +132,7 @@ The Vite dev server proxies `/api/*` requests to `http://localhost:3001`, so if 
 
 ## Discord Bot (`qwicky-discord-bot`)
 
-The Discord bot is a separate Node.js application that runs as an always-on process. It is **not** deployed to Vercel — it needs to be running on a host machine.
+The Discord bot is a separate Node.js application that runs as an always-on process. It is deployed to Vercel 
 
 **Repository:** `qwicky-discord-bot` (sibling directory to `qwicky`)
 
