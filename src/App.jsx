@@ -4,6 +4,8 @@ import Header from './components/Header';
 import TournamentInfo from './components/TournamentInfo';
 import DivisionManager from './components/DivisionManager';
 import DivisionView from './components/DivisionView';
+import LandingScreen from './components/LandingScreen';
+import SetupWizard from './components/SetupWizard';
 
 const STORAGE_KEY = 'qw-tournament-data';
 
@@ -313,6 +315,9 @@ function App() {
     }
   });
 
+  // App mode: 'landing' | 'wizard' | 'app'
+  const [appMode, setAppMode] = useState('landing');
+
   // UI state
   const [activeTab, setActiveTab] = useState('info'); // info, divisions, division
   const [activeDivisionId, setActiveDivisionId] = useState(tournament.activeDivisionId);
@@ -337,16 +342,24 @@ function App() {
     setTournament(prev => ({ ...prev, ...updates }));
   };
 
-  // Add a new division
-  const addDivision = (name) => {
+  // Add a new division (raw — no tab switch, used by wizard)
+  const addDivisionRaw = (name) => {
     const newDiv = createDefaultDivision(name);
     setTournament(prev => ({
       ...prev,
       divisions: [...prev.divisions, newDiv]
     }));
     setActiveDivisionId(newDiv.id);
-    setActiveTab('division');
     return newDiv.id;
+  };
+
+  // Add a new division (with tab switch for full app mode)
+  const addDivision = (name) => {
+    const id = addDivisionRaw(name);
+    if (appMode === 'app') {
+      setActiveTab('division');
+    }
+    return id;
   };
 
   // Remove a division
@@ -422,6 +435,7 @@ function App() {
         setActiveDivisionId(data.activeDivisionId || data.divisions[0].id);
         setActiveTab('division');
       }
+      setAppMode('app');
     }
   };
 
@@ -434,6 +448,12 @@ function App() {
       sum + (d.schedule?.filter(m => m.status === 'completed')?.length || 0), 0
     )
   };
+
+  // Check if there's meaningful existing data
+  const hasExistingData = !!(
+    tournament.name ||
+    tournament.divisions.length > 0
+  );
 
   const renderContent = () => {
     switch (activeTab) {
@@ -495,12 +515,54 @@ function App() {
     }
   };
 
+  // ─── Landing screen ──────────────────────────────────────────────
+  if (appMode === 'landing') {
+    return (
+      <LandingScreen
+        hasExistingData={hasExistingData}
+        tournamentName={tournament.name}
+        stats={stats}
+        onCreateNew={() => {
+          setTournament(createDefaultTournament());
+          setActiveDivisionId(null);
+          setActiveTab('info');
+          setAppMode('wizard');
+        }}
+        onContinue={() => setAppMode('app')}
+        onLoadFile={(data) => importTournament(data)}
+      />
+    );
+  }
+
+  // ─── Setup wizard ──────────────────────────────────────────────
+  if (appMode === 'wizard') {
+    return (
+      <SetupWizard
+        tournament={tournament}
+        updateTournamentInfo={updateTournamentInfo}
+        addDivision={addDivisionRaw}
+        removeDivision={removeDivision}
+        updateDivision={updateDivision}
+        onComplete={() => {
+          if (tournament.divisions.length > 0) {
+            setActiveDivisionId(tournament.divisions[0].id);
+            setActiveTab('division');
+          }
+          setAppMode('app');
+        }}
+        onSkipToApp={() => setAppMode('app')}
+        onBackToLanding={() => setAppMode('landing')}
+      />
+    );
+  }
+
+  // ─── Full app (existing behavior) ─────────────────────────────
   return (
     <div className="min-h-screen bg-qw-darker">
       {/* Decorative Elements */}
       <div className="noise-overlay" />
       <div className="scanline" />
-      
+
       {/* Header */}
       <Header
         tournament={tournament}
@@ -511,13 +573,14 @@ function App() {
         setActiveDivisionId={setActiveDivisionId}
         importTournament={importTournament}
         resetTournament={resetTournament}
+        onGoHome={() => setAppMode('landing')}
       />
-      
+
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 py-8 pb-24">
         {renderContent()}
       </main>
-      
+
       {/* Status Bar */}
       <div className="fixed bottom-0 left-0 right-0 bg-qw-panel border-t border-qw-border py-2 px-4 flex items-center justify-between text-xs font-mono text-qw-muted z-30">
         <div className="flex items-center gap-4">

@@ -9,7 +9,8 @@ export default function Header({
   activeDivisionId,
   setActiveDivisionId,
   importTournament,
-  resetTournament
+  resetTournament,
+  onGoHome,
 }) {
   const [showDivisionDropdown, setShowDivisionDropdown] = useState(false);
   const fileInputRef = useRef(null);
@@ -64,17 +65,21 @@ export default function Header({
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <div className="flex items-center gap-3">
+          <button
+            onClick={() => onGoHome?.()}
+            className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+            title="Back to home"
+          >
             <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: '#FFB300' }}>
               <span className="font-logo font-black text-lg" style={{ color: '#121212' }}>QW</span>
             </div>
-            <div>
+            <div className="text-left">
               <h1 className="font-display font-bold text-lg text-white">
                 QWICKY
               </h1>
               <p className="text-xs text-qw-muted -mt-0.5">tournament admin tools - by Xerial</p>
             </div>
-          </div>
+          </button>
 
           {/* Navigation + Save Controls */}
           <div className="flex items-center gap-3">
