@@ -140,6 +140,34 @@ function parseBracket(markup) {
   return { bracketType, rounds };
 }
 
+// Parse a single MediaWiki cell, separating optional attributes from content.
+// e.g. 'style="border-left: 3px solid #f00" | PlayerName' → { content: 'PlayerName', style: { borderLeft: '3px solid #f00' } }
+function parseWikiCell(raw) {
+  const trimmed = raw.trim();
+  // Check for attribute | content pattern (single pipe with attributes before it)
+  const attrMatch = trimmed.match(/^((?:style|class|colspan|rowspan)\s*=\s*"[^"]*"(?:\s+(?:style|class|colspan|rowspan)\s*=\s*"[^"]*")*)\s*\|\s*(.*)/s);
+  if (attrMatch) {
+    const attrs = attrMatch[1];
+    const content = attrMatch[2].trim();
+    // Extract inline style if present
+    const styleMatch = attrs.match(/style\s*=\s*"([^"]*)"/);
+    let style = null;
+    if (styleMatch) {
+      style = {};
+      styleMatch[1].split(';').forEach(decl => {
+        const [prop, val] = decl.split(':').map(s => s.trim());
+        if (prop && val) {
+          // Convert CSS property to camelCase for React
+          const camelProp = prop.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
+          style[camelProp] = val;
+        }
+      });
+    }
+    return { content, style };
+  }
+  return { content: trimmed, style: null };
+}
+
 // Parse generic wikitable (for stats)
 function parseWikiTable(markup) {
   const lines = markup.split('\n');
@@ -162,7 +190,8 @@ function parseWikiTable(markup) {
         // Row separator — start a new row
         currentTable.rows.push([]);
       } else if (trimmed.startsWith('|') && !trimmed.startsWith('|-') && !trimmed.startsWith('|}')) {
-        const cells = trimmed.replace(/^\|/, '').split('||').map(c => c.trim());
+        const rawCells = trimmed.replace(/^\|/, '').split('||');
+        const cells = rawCells.map(c => parseWikiCell(c));
         if (currentTable.rows.length === 0) currentTable.rows.push([]);
         const lastRow = currentTable.rows[currentTable.rows.length - 1];
         lastRow.push(...cells);
@@ -181,65 +210,62 @@ const countryToFlag = (code) => {
   );
 };
 
-// Background color mapping for standings rows
+// Background color mapping for standings rows (Liquipedia-style)
 const bgColorMap = {
-  up: 'bg-emerald-900/40 border-l-2 border-emerald-500',
-  stayup: 'bg-teal-900/25 border-l-2 border-teal-600',
-  stay: 'bg-amber-900/20 border-l-2 border-amber-700',
-  staydown: 'bg-orange-900/20 border-l-2 border-orange-700',
-  down: 'bg-red-900/25 border-l-2 border-red-700',
+  up: 'wiki-row-up',
+  stayup: 'wiki-row-stayup',
+  stay: 'wiki-row-stay',
+  staydown: 'wiki-row-staydown',
+  down: 'wiki-row-down',
 };
 
-// Render the parsed data as React elements
+// Render the parsed data as React elements (Liquipedia-style)
 export function renderStandingsPreview(markup) {
   const tables = parseGroupTables(markup);
-  if (tables.length === 0) return React.createElement('p', { className: 'text-qw-muted text-sm italic' }, 'No standings data to preview.');
+  if (tables.length === 0) return React.createElement('p', { className: 'wiki-empty' }, 'No standings data to preview.');
 
-  return React.createElement('div', { className: 'space-y-6' },
+  return React.createElement('div', { style: { display: 'flex', flexDirection: 'column', gap: '20px' } },
     tables.map((table, ti) =>
-      React.createElement('div', { key: ti, className: 'border border-qw-border rounded overflow-hidden' },
-        // Table header
-        React.createElement('div', { className: 'bg-qw-dark px-4 py-2 border-b border-qw-border' },
-          React.createElement('h4', { className: 'font-display font-bold text-qw-accent text-sm' }, table.title),
-          table.info && React.createElement('p', { className: 'text-xs text-qw-muted mt-0.5' }, table.info)
-        ),
-        // Table content
-        React.createElement('table', { className: 'w-full text-sm' },
-          React.createElement('thead', null,
-            React.createElement('tr', { className: 'bg-qw-dark/50 text-xs text-qw-muted' },
-              React.createElement('th', { className: 'text-center w-8 py-1.5' }, '#'),
-              React.createElement('th', { className: 'text-left py-1.5' }, 'Team'),
-              React.createElement('th', { className: 'text-center w-10 py-1.5' }, 'W'),
-              React.createElement('th', { className: 'text-center w-10 py-1.5' }, 'L'),
-              React.createElement('th', { className: 'text-center w-12 py-1.5' }, 'Maps'),
-              React.createElement('th', { className: 'text-center w-10 py-1.5' }, 'M\u00B1')
-            )
+      React.createElement('table', { key: ti, className: 'wiki-table' },
+        // Title row
+        React.createElement('thead', null,
+          React.createElement('tr', null,
+            React.createElement('th', { className: 'wiki-table-title', colSpan: 6 }, table.title)
           ),
-          React.createElement('tbody', null,
-            table.slots.map((slot, si) =>
-              React.createElement('tr', {
-                key: si,
-                className: `border-t border-qw-border/30 ${bgColorMap[slot.bg] || ''}`
-              },
-                React.createElement('td', { className: 'text-center py-1.5 text-qw-muted' }, slot.place),
-                React.createElement('td', { className: 'py-1.5 flex items-center gap-1.5' },
-                  React.createElement('span', { className: 'text-sm' }, countryToFlag(slot.flag)),
-                  React.createElement('span', { className: slot.place === 1 ? 'text-qw-accent font-semibold' : 'text-white' }, slot.teamName)
-                ),
-                React.createElement('td', { className: 'text-center text-qw-win' }, slot.winM),
-                React.createElement('td', { className: 'text-center text-qw-loss' }, slot.loseM),
-                React.createElement('td', { className: 'text-center font-mono text-xs' },
-                  React.createElement('span', { className: 'text-qw-win' }, slot.winG),
-                  '-',
-                  React.createElement('span', { className: 'text-qw-loss' }, slot.loseG)
-                ),
-                React.createElement('td', {
-                  className: `text-center font-mono text-xs font-semibold ${
-                    slot.diff.startsWith('+') ? 'text-qw-win' :
-                    slot.diff.startsWith('-') ? 'text-qw-loss' : 'text-qw-muted'
-                  }`
-                }, slot.diff)
-              )
+          table.info && React.createElement('tr', null,
+            React.createElement('th', { className: 'wiki-table-subtitle', colSpan: 6 }, table.info)
+          ),
+          // Column headers
+          React.createElement('tr', null,
+            React.createElement('th', { style: { textAlign: 'center', width: '30px' } }, '#'),
+            React.createElement('th', { style: { textAlign: 'left' } }, 'Team'),
+            React.createElement('th', { style: { textAlign: 'center', width: '40px' } }, 'W'),
+            React.createElement('th', { style: { textAlign: 'center', width: '40px' } }, 'L'),
+            React.createElement('th', { style: { textAlign: 'center', width: '60px' } }, 'Maps'),
+            React.createElement('th', { style: { textAlign: 'center', width: '40px' } }, 'M\u00B1')
+          )
+        ),
+        React.createElement('tbody', null,
+          table.slots.map((slot, si) =>
+            React.createElement('tr', {
+              key: si,
+              className: bgColorMap[slot.bg] || ''
+            },
+              React.createElement('td', { className: 'wiki-place-col' }, slot.place),
+              React.createElement('td', { className: slot.place === 1 ? 'wiki-team-col wiki-team-first' : 'wiki-team-col' },
+                React.createElement('span', { style: { marginRight: '6px' } }, countryToFlag(slot.flag)),
+                slot.teamName
+              ),
+              React.createElement('td', { className: 'wiki-stat-win' }, slot.winM),
+              React.createElement('td', { className: 'wiki-stat-loss' }, slot.loseM),
+              React.createElement('td', { className: 'wiki-stat-center', style: { fontFamily: 'monospace', fontSize: '12px' } },
+                slot.winG, '-', slot.loseG
+              ),
+              React.createElement('td', {
+                className: slot.diff.startsWith('+') ? 'wiki-stat-diff-pos' :
+                  slot.diff.startsWith('-') ? 'wiki-stat-diff-neg' : 'wiki-stat-diff-zero',
+                style: { fontFamily: 'monospace', fontSize: '12px' }
+              }, slot.diff)
             )
           )
         )
@@ -250,36 +276,37 @@ export function renderStandingsPreview(markup) {
 
 export function renderMatchesPreview(markup) {
   const matches = parseMatchList(markup);
-  if (matches.length === 0) return React.createElement('p', { className: 'text-qw-muted text-sm italic' }, 'No match data to preview.');
+  if (matches.length === 0) return React.createElement('p', { className: 'wiki-empty' }, 'No match data to preview.');
 
-  return React.createElement('div', { className: 'space-y-2' },
+  return React.createElement('div', { style: { display: 'flex', flexDirection: 'column', gap: '6px' } },
     matches.map((m, i) =>
-      React.createElement('div', {
-        key: i,
-        className: 'flex items-center gap-3 p-3 bg-qw-dark rounded border border-qw-border/50'
-      },
+      React.createElement('div', { key: i, className: 'wiki-match-card' },
         // Team 1
-        React.createElement('div', { className: `flex items-center gap-1.5 flex-1 justify-end ${m.winner === '1' ? 'text-qw-accent font-semibold' : 'text-white'}` },
+        React.createElement('div', {
+          className: `wiki-match-team wiki-match-team-right ${m.winner === '1' ? 'wiki-match-winner' : ''}`
+        },
           React.createElement('span', null, m.team1),
-          React.createElement('span', { className: 'text-sm' }, countryToFlag(m.team1Flag))
+          React.createElement('span', null, countryToFlag(m.team1Flag))
         ),
         // Score
-        React.createElement('div', { className: 'flex items-center gap-1 font-mono text-sm font-bold min-w-[3rem] justify-center' },
-          React.createElement('span', { className: m.winner === '1' ? 'text-qw-win' : 'text-white' }, m.score1),
-          React.createElement('span', { className: 'text-qw-muted' }, ':'),
-          React.createElement('span', { className: m.winner === '2' ? 'text-qw-win' : 'text-white' }, m.score2)
+        React.createElement('div', { className: 'wiki-match-score' },
+          React.createElement('span', { className: m.winner === '1' ? 'wiki-match-score-win' : 'wiki-match-score-lose' }, m.score1),
+          React.createElement('span', { style: { color: '#72777d' } }, ':'),
+          React.createElement('span', { className: m.winner === '2' ? 'wiki-match-score-win' : 'wiki-match-score-lose' }, m.score2)
         ),
         // Team 2
-        React.createElement('div', { className: `flex items-center gap-1.5 flex-1 ${m.winner === '2' ? 'text-qw-accent font-semibold' : 'text-white'}` },
-          React.createElement('span', { className: 'text-sm' }, countryToFlag(m.team2Flag)),
+        React.createElement('div', {
+          className: `wiki-match-team ${m.winner === '2' ? 'wiki-match-winner' : ''}`
+        },
+          React.createElement('span', null, countryToFlag(m.team2Flag)),
           React.createElement('span', null, m.team2)
         ),
         // Maps detail
-        m.maps.length > 0 && React.createElement('div', { className: 'flex gap-1 ml-2' },
+        m.maps.length > 0 && React.createElement('div', { className: 'wiki-match-maps' },
           m.maps.map((mp, mi) =>
             React.createElement('span', {
               key: mi,
-              className: 'text-[10px] text-qw-muted px-1 py-0.5 bg-qw-panel rounded',
+              className: 'wiki-match-map',
               title: `${mp.p1frags}-${mp.p2frags}`
             }, mp.map || '?')
           )
@@ -296,7 +323,7 @@ export function renderBracketPreview(markup) {
     if (markup.includes('===') || markup.includes('Winners Bracket') || markup.includes('TBD')) {
       return renderTextBracketPreview(markup);
     }
-    return React.createElement('p', { className: 'text-qw-muted text-sm italic' }, 'No bracket data to preview.');
+    return React.createElement('p', { className: 'wiki-empty' }, 'No bracket data to preview.');
   }
 
   const { bracketType, rounds } = bracketData;
@@ -310,8 +337,8 @@ export function renderBracketPreview(markup) {
 
   const sortedRounds = Object.keys(rounds).map(Number).sort((a, b) => a - b);
 
-  return React.createElement('div', { className: 'space-y-4' },
-    React.createElement('div', { className: 'text-xs text-qw-muted mb-2' }, `${bracketType} Bracket`),
+  return React.createElement('div', null,
+    React.createElement('div', { style: { fontSize: '12px', color: '#54595d', marginBottom: '8px' } }, `${bracketType} Bracket`),
     sortedRounds.map(roundNum => {
       const entries = rounds[roundNum].sort((a, b) => a.slot - b.slot);
       // Group entries into pairs (matches)
@@ -320,29 +347,25 @@ export function renderBracketPreview(markup) {
         pairs.push([entries[i], entries[i + 1]].filter(Boolean));
       }
 
-      return React.createElement('div', { key: roundNum, className: 'mb-4' },
-        React.createElement('h4', { className: 'font-display text-xs text-qw-accent uppercase mb-2' },
+      return React.createElement('div', { key: roundNum },
+        React.createElement('div', { className: 'wiki-bracket-round-title' },
           names[roundNum] || `Round ${roundNum}`
         ),
-        React.createElement('div', { className: 'space-y-2' },
+        React.createElement('div', null,
           pairs.map((pair, pi) =>
-            React.createElement('div', {
-              key: pi,
-              className: 'inline-flex flex-col bg-qw-dark rounded border border-qw-border/50 overflow-hidden mr-3 mb-2'
-            },
+            React.createElement('div', { key: pi, className: 'wiki-bracket-matchup' },
               pair.map((entry, ei) =>
                 React.createElement('div', {
                   key: ei,
-                  className: `flex items-center gap-2 px-3 py-1.5 text-sm ${
-                    ei === 0 ? '' : 'border-t border-qw-border/30'
-                  } ${entry.win ? 'bg-qw-win/10' : ''}`
+                  className: `wiki-bracket-entry ${
+                    entry.win ? 'wiki-bracket-entry-winner' :
+                    entry.name === 'TBD' || !entry.name ? 'wiki-bracket-entry-tbd' : ''
+                  }`
                 },
-                  React.createElement('span', { className: 'text-sm w-5' }, countryToFlag(entry.flag)),
+                  React.createElement('span', { style: { width: '20px', fontSize: '14px' } }, countryToFlag(entry.flag)),
+                  React.createElement('span', { className: 'wiki-bracket-entry-name' }, entry.name || 'TBD'),
                   React.createElement('span', {
-                    className: `min-w-[8rem] ${entry.win ? 'text-qw-accent font-semibold' : entry.name === 'TBD' ? 'text-qw-muted italic' : 'text-white'}`
-                  }, entry.name || 'TBD'),
-                  React.createElement('span', {
-                    className: `font-mono text-xs ml-2 ${entry.win ? 'text-qw-win font-bold' : 'text-qw-muted'}`
+                    className: `wiki-bracket-entry-score ${entry.win ? 'wiki-bracket-entry-score-win' : 'wiki-bracket-entry-score-lose'}`
                   }, entry.score)
                 )
               )
@@ -357,31 +380,31 @@ export function renderBracketPreview(markup) {
 function renderTextBracketPreview(markup) {
   // For text-based brackets (double elim, multi-tier), render the markup as styled text
   const lines = markup.split('\n').filter(l => l.trim());
-  return React.createElement('div', { className: 'space-y-1' },
+  return React.createElement('div', null,
     lines.map((line, i) => {
       const trimmed = line.trim();
       if (trimmed.startsWith('== ') || trimmed.startsWith('=== ')) {
         const text = trimmed.replace(/^=+\s*/, '').replace(/\s*=+$/, '');
         const isH2 = trimmed.startsWith('== ') && !trimmed.startsWith('=== ');
-        return React.createElement(isH2 ? 'h3' : 'h4', {
+        return React.createElement(isH2 ? 'h2' : 'h3', {
           key: i,
-          className: `font-display ${isH2 ? 'text-qw-accent text-base mt-4' : 'text-white text-sm mt-3'}`
+          className: isH2 ? 'wiki-section-h2' : 'wiki-section-h3'
         }, text);
       }
       if (trimmed.startsWith("'''") && trimmed.endsWith("'''")) {
-        return React.createElement('div', { key: i, className: 'font-semibold text-white text-sm mt-2' },
+        return React.createElement('div', { key: i, className: 'wiki-text-bold' },
           trimmed.replace(/'''/g, '')
         );
       }
       if (trimmed.startsWith('* ') || trimmed.startsWith('** ')) {
-        const indent = trimmed.startsWith('** ') ? 'ml-4' : '';
+        const indent = trimmed.startsWith('** ') ? { marginLeft: '24px' } : {};
         const text = trimmed.replace(/^\*+\s*/, '');
-        return React.createElement('div', { key: i, className: `text-sm text-qw-muted ${indent}` },
+        return React.createElement('div', { key: i, className: 'wiki-text-bullet', style: indent },
           '\u2022 ', text
         );
       }
       if (trimmed) {
-        return React.createElement('div', { key: i, className: 'text-sm text-qw-muted' }, trimmed);
+        return React.createElement('div', { key: i, className: 'wiki-text-line' }, trimmed);
       }
       return null;
     })
@@ -390,25 +413,27 @@ function renderTextBracketPreview(markup) {
 
 export function renderStatsPreview(markup) {
   const tables = parseWikiTable(markup);
-  if (tables.length === 0) return React.createElement('p', { className: 'text-qw-muted text-sm italic' }, 'No stats data to preview.');
+  if (tables.length === 0) return React.createElement('p', { className: 'wiki-empty' }, 'No stats data to preview.');
 
-  return React.createElement('div', { className: 'space-y-4' },
+  return React.createElement('div', { style: { display: 'flex', flexDirection: 'column', gap: '16px' } },
     tables.map((table, ti) =>
-      React.createElement('div', { key: ti, className: 'border border-qw-border rounded overflow-hidden overflow-x-auto' },
-        React.createElement('table', { className: 'w-full text-sm' },
+      React.createElement('div', { key: ti, style: { overflowX: 'auto' } },
+        React.createElement('table', { className: 'wiki-table' },
           table.headers.length > 0 && React.createElement('thead', null,
-            React.createElement('tr', { className: 'bg-qw-dark text-xs text-qw-muted' },
+            React.createElement('tr', null,
               table.headers.map((h, hi) =>
-                React.createElement('th', { key: hi, className: 'px-2 py-1.5 text-left whitespace-nowrap' }, h)
+                React.createElement('th', { key: hi, style: { whiteSpace: 'nowrap' } }, h)
               )
             )
           ),
           React.createElement('tbody', null,
             table.rows.filter(r => r.length > 0).map((row, ri) =>
-              React.createElement('tr', { key: ri, className: 'border-t border-qw-border/30' },
-                row.map((cell, ci) =>
-                  React.createElement('td', { key: ci, className: 'px-2 py-1 text-white whitespace-nowrap' }, cell)
-                )
+              React.createElement('tr', { key: ri },
+                row.map((cell, ci) => {
+                  const content = typeof cell === 'object' ? cell.content : cell;
+                  const style = typeof cell === 'object' ? cell.style : null;
+                  return React.createElement('td', { key: ci, style: { ...style, whiteSpace: 'nowrap' } }, content);
+                })
               )
             )
           )
@@ -421,7 +446,7 @@ export function renderStatsPreview(markup) {
 // Main entry point: render preview for any export type
 export function renderWikiPreview(wikiContent, activeExport) {
   if (!wikiContent) {
-    return React.createElement('p', { className: 'text-qw-muted text-sm italic' }, 'No content to preview.');
+    return React.createElement('p', { className: 'wiki-empty' }, 'No content to preview.');
   }
 
   switch (activeExport) {
@@ -439,29 +464,28 @@ export function renderWikiPreview(wikiContent, activeExport) {
       // Split into sections based on templates
       if (wikiContent.includes('{{GroupTableStart')) {
         parts.push(React.createElement('div', { key: 'standings' },
-          React.createElement('h3', { className: 'font-display text-qw-accent text-sm mb-3 uppercase' }, 'Standings'),
+          React.createElement('h2', { className: 'wiki-full-section-title' }, 'Standings'),
           renderStandingsPreview(wikiContent)
         ));
       }
       if (wikiContent.includes('{{MatchList')) {
-        parts.push(React.createElement('div', { key: 'matches', className: 'mt-6' },
-          React.createElement('h3', { className: 'font-display text-qw-accent text-sm mb-3 uppercase' }, 'Match Results'),
+        parts.push(React.createElement('div', { key: 'matches' },
+          React.createElement('h2', { className: 'wiki-full-section-title' }, 'Match Results'),
           renderMatchesPreview(wikiContent)
         ));
       }
       if (wikiContent.includes('SEBracket') || wikiContent.includes('=== ') || wikiContent.includes('Winners Bracket')) {
-        // Extract bracket portion (after MatchList ends or from bracket template)
-        parts.push(React.createElement('div', { key: 'bracket', className: 'mt-6' },
-          React.createElement('h3', { className: 'font-display text-qw-accent text-sm mb-3 uppercase' }, 'Playoffs'),
+        parts.push(React.createElement('div', { key: 'bracket' },
+          React.createElement('h2', { className: 'wiki-full-section-title' }, 'Playoffs'),
           renderBracketPreview(wikiContent)
         ));
       }
       if (parts.length === 0) {
-        return React.createElement('p', { className: 'text-qw-muted text-sm italic' }, 'No previewable content found.');
+        return React.createElement('p', { className: 'wiki-empty' }, 'No previewable content found.');
       }
-      return React.createElement('div', { className: 'space-y-2' }, parts);
+      return React.createElement('div', null, parts);
     }
     default:
-      return React.createElement('p', { className: 'text-qw-muted text-sm italic' }, 'Preview not available for this export type.');
+      return React.createElement('p', { className: 'wiki-empty' }, 'Preview not available for this export type.');
   }
 }

@@ -424,6 +424,359 @@ td .font-bold {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
+   WIKI PREVIEW — Liquipedia-style light theme
+   Scoped under .wiki-preview so it doesn't leak into the rest of the app.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.wiki-preview {
+  background: #f8f9fa;
+  color: #202122;
+  font-family: -apple-system, 'Segoe UI', 'Roboto', 'Lato', 'Helvetica', 'Arial', sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  border-radius: 8px;
+  padding: 16px;
+  border: 1px solid #a2a9b1;
+}
+
+/* Override dark theme leaking through global table/tr/td styles */
+.wiki-preview tr:hover {
+  background: rgba(0, 0, 0, 0.03);
+  box-shadow: none;
+}
+.wiki-preview th {
+  background: #eaecf0;
+  color: #202122;
+  font-family: inherit;
+  text-transform: none;
+  letter-spacing: normal;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 6px 8px;
+  border: 1px solid #a2a9b1;
+}
+.wiki-preview td {
+  color: #202122;
+  padding: 4px 8px;
+  border: 1px solid #a2a9b1;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.wiki-preview table {
+  font-family: inherit;
+}
+
+/* ── Wiki Tables ── */
+
+.wiki-table {
+  border-collapse: collapse;
+  width: 100%;
+  border: 1px solid #a2a9b1;
+  background: #ffffff;
+}
+
+.wiki-table th {
+  background: #eaecf0;
+  color: #202122;
+  font-weight: 700;
+  font-size: 13px;
+  padding: 6px 8px;
+  text-align: left;
+  border: 1px solid #a2a9b1;
+}
+
+.wiki-table td {
+  padding: 4px 8px;
+  border: 1px solid #a2a9b1;
+  font-size: 13px;
+  color: #202122;
+}
+
+/* Title row spanning full table width */
+.wiki-table-title {
+  background: #eaecf0;
+  text-align: center;
+  font-weight: 700;
+  font-size: 14px;
+  padding: 8px;
+  border: 1px solid #a2a9b1;
+}
+
+.wiki-table-subtitle {
+  background: #f0f0f0;
+  text-align: center;
+  font-size: 12px;
+  color: #54595d;
+  padding: 4px 8px;
+  border: 1px solid #a2a9b1;
+}
+
+/* ── Standings placement row colors (Liquipedia GroupTableSlot bg= values) ── */
+
+.wiki-row-up {
+  background: #D8FFD8;
+}
+.wiki-row-stayup {
+  background: #E2FFE2;
+}
+.wiki-row-stay {
+  background: #FFFFDD;
+}
+.wiki-row-staydown {
+  background: #FFE8D0;
+}
+.wiki-row-down {
+  background: #FFD0D0;
+}
+
+/* ── Match cards ── */
+
+.wiki-match-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: #ffffff;
+  border: 1px solid #c8ccd1;
+  border-radius: 3px;
+}
+
+.wiki-match-team {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  color: #202122;
+  font-size: 13px;
+}
+
+.wiki-match-team-right {
+  justify-content: flex-end;
+}
+
+.wiki-match-winner {
+  font-weight: 700;
+  color: #202122;
+}
+
+.wiki-match-score {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-family: monospace;
+  font-size: 13px;
+  font-weight: 700;
+  min-width: 3rem;
+  justify-content: center;
+}
+
+.wiki-match-score-win {
+  color: #008800;
+}
+
+.wiki-match-score-lose {
+  color: #555555;
+}
+
+.wiki-match-maps {
+  display: flex;
+  gap: 4px;
+  margin-left: 8px;
+}
+
+.wiki-match-map {
+  font-size: 11px;
+  color: #54595d;
+  padding: 1px 5px;
+  background: #f0f0f0;
+  border: 1px solid #c8ccd1;
+  border-radius: 2px;
+}
+
+/* ── Bracket ── */
+
+.wiki-bracket-round-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #202122;
+  border-bottom: 1px solid #a2a9b1;
+  padding-bottom: 4px;
+  margin-bottom: 8px;
+  margin-top: 16px;
+}
+
+.wiki-bracket-matchup {
+  display: inline-flex;
+  flex-direction: column;
+  border: 1px solid #a2a9b1;
+  border-radius: 2px;
+  overflow: hidden;
+  margin-right: 12px;
+  margin-bottom: 8px;
+  background: #ffffff;
+}
+
+.wiki-bracket-entry {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px;
+  font-size: 13px;
+  color: #202122;
+}
+
+.wiki-bracket-entry + .wiki-bracket-entry {
+  border-top: 1px solid #c8ccd1;
+}
+
+.wiki-bracket-entry-winner {
+  background: #D8FFD8;
+  font-weight: 700;
+}
+
+.wiki-bracket-entry-tbd {
+  color: #72777d;
+  font-style: italic;
+}
+
+.wiki-bracket-entry-name {
+  min-width: 8rem;
+}
+
+.wiki-bracket-entry-score {
+  font-family: monospace;
+  font-size: 12px;
+  margin-left: auto;
+}
+
+.wiki-bracket-entry-score-win {
+  font-weight: 700;
+  color: #008800;
+}
+
+.wiki-bracket-entry-score-lose {
+  color: #72777d;
+}
+
+/* ── Text bracket sections (double-elim, multi-tier text) ── */
+
+.wiki-preview h2,
+.wiki-preview h3,
+.wiki-preview h4 {
+  color: #202122;
+  font-family: inherit;
+  font-weight: 400;
+  letter-spacing: normal;
+  text-transform: none;
+  line-height: 1.3;
+}
+
+.wiki-section-h2 {
+  font-size: 20px;
+  font-weight: 400;
+  color: #000000;
+  border-bottom: 1px solid #a2a9b1;
+  padding-bottom: 4px;
+  margin-top: 20px;
+  margin-bottom: 8px;
+}
+
+.wiki-section-h3 {
+  font-size: 16px;
+  font-weight: 700;
+  color: #000000;
+  margin-top: 16px;
+  margin-bottom: 6px;
+}
+
+.wiki-text-bold {
+  font-weight: 700;
+  color: #202122;
+  font-size: 13px;
+  margin-top: 8px;
+}
+
+.wiki-text-bullet {
+  font-size: 13px;
+  color: #202122;
+}
+
+.wiki-text-line {
+  font-size: 13px;
+  color: #54595d;
+}
+
+/* ── Full page section headers ── */
+
+.wiki-full-section-title {
+  font-size: 18px;
+  font-weight: 400;
+  color: #000000;
+  border-bottom: 1px solid #a2a9b1;
+  padding-bottom: 2px;
+  margin-top: 20px;
+  margin-bottom: 12px;
+}
+
+/* ── Empty state messages ── */
+
+.wiki-empty {
+  color: #54595d;
+  font-size: 13px;
+  font-style: italic;
+}
+
+/* ── Standings-specific ── */
+
+.wiki-place-col {
+  text-align: center;
+  font-weight: 700;
+  color: #202122;
+  width: 30px;
+}
+
+.wiki-team-col {
+  font-weight: 400;
+  color: #202122;
+}
+
+.wiki-team-first {
+  font-weight: 700;
+}
+
+.wiki-stat-win {
+  color: #008800;
+  text-align: center;
+}
+
+.wiki-stat-loss {
+  color: #CC0000;
+  text-align: center;
+}
+
+.wiki-stat-center {
+  text-align: center;
+}
+
+.wiki-stat-diff-pos {
+  text-align: center;
+  font-weight: 700;
+  color: #008800;
+}
+
+.wiki-stat-diff-neg {
+  text-align: center;
+  font-weight: 700;
+  color: #CC0000;
+}
+
+.wiki-stat-diff-zero {
+  text-align: center;
+  font-weight: 700;
+  color: #54595d;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
    RESPONSIVE
    ═══════════════════════════════════════════════════════════════════════════ */
 
