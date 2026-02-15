@@ -6,6 +6,7 @@ import DivisionStats from './DivisionStats';
 export default function DivisionResults({ division, updateDivision, updateAnyDivision, tournamentId, tournament }) {
   const [mode, setMode] = useState('discord');
   const [showStats, setShowStats] = useState(false);
+  const [showRawMaps, setShowRawMaps] = useState(false);
   // API Fetch states
   const [apiInput, setApiInput] = useState('');
   const [apiStatus, setApiStatus] = useState(null);
@@ -1200,29 +1201,6 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
         </div>
       )}
 
-      {/* RAW MAPS (UNCHANGED) */}
-      <div className="qw-panel p-6">
-        <h3 className="font-display text-lg text-qw-accent mb-4">RAW MAPS ({rawMaps.length})</h3>
-        {rawMaps.length === 0 ? (
-          <div className="text-center py-8 text-qw-muted">
-            <div className="text-4xl mb-2">?</div>
-            <p>No results imported yet</p>
-          </div>
-        ) : (
-          <div className="space-y-1 max-h-48 overflow-y-auto">
-            {rawMaps.slice().reverse().map(map => (
-              <div key={map.id} className="flex items-center justify-between p-2 bg-qw-dark rounded text-sm">
-                <div className="flex items-center gap-3">
-                  <span className="text-qw-muted font-mono text-xs">{map.map}</span>
-                  <span className="text-white">{resolveTeamName(map.teams[0])} <span className="text-qw-accent">{map.scores[map.teams[0]]}-{map.scores[map.teams[1]]}</span> {resolveTeamName(map.teams[1])}</span>
-                </div>
-                <span className="text-qw-muted text-xs">{map.date?.split(' ')[0]}</span>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
       {/* PLAYER STATS - Expandable Section */}
       {rawMaps.length > 0 && (
         <div className="qw-panel overflow-hidden">
@@ -1248,6 +1226,44 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
           )}
         </div>
       )}
+
+      {/* RAW MAPS - Collapsible Section */}
+      <div className="qw-panel overflow-hidden">
+        <button
+          onClick={() => setShowRawMaps(!showRawMaps)}
+          className="w-full flex items-center justify-between px-6 py-4 bg-qw-dark border-b border-qw-border hover:bg-qw-dark/80 transition-colors"
+        >
+          <div className="flex items-center gap-3">
+            <span className="text-xl">🗺️</span>
+            <h3 className="font-display text-lg text-qw-accent">RAW MAPS ({rawMaps.length})</h3>
+          </div>
+          <span className={`text-qw-accent transition-transform duration-200 ${showRawMaps ? 'rotate-180' : ''}`}>
+            ▼
+          </span>
+        </button>
+        {showRawMaps && (
+          <div className="p-6">
+            {rawMaps.length === 0 ? (
+              <div className="text-center py-8 text-qw-muted">
+                <div className="text-4xl mb-2">?</div>
+                <p>No results imported yet</p>
+              </div>
+            ) : (
+              <div className="space-y-1 max-h-48 overflow-y-auto">
+                {rawMaps.slice().reverse().map(map => (
+                  <div key={map.id} className="flex items-center justify-between p-2 bg-qw-dark rounded text-sm">
+                    <div className="flex items-center gap-3">
+                      <span className="text-qw-muted font-mono text-xs">{map.map}</span>
+                      <span className="text-white">{resolveTeamName(map.teams[0])} <span className="text-qw-accent">{map.scores[map.teams[0]]}-{map.scores[map.teams[1]]}</span> {resolveTeamName(map.teams[1])}</span>
+                    </div>
+                    <span className="text-qw-muted text-xs">{map.date?.split(' ')[0]}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
