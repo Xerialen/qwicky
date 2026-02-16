@@ -151,10 +151,10 @@ function BracketMatch({ match, schedule, teams = [], onUpdateTeam, onUpdateScore
       </div>
       {isEditingScore && (
         <div className="bg-qw-darker border border-t-0 border-qw-border px-2 py-1.5">
-          <div className="flex items-center gap-1 mb-1">
-            <input type="number" min="0" max="99" value={editS1} onChange={(e) => setEditS1(parseInt(e.target.value) || 0)} onKeyDown={handleKeyDown} autoFocus className="w-10 px-1 py-0.5 bg-qw-dark border border-qw-border rounded text-center text-white text-xs font-mono" />
-            <span className="text-qw-muted text-xs">-</span>
-            <input type="number" min="0" max="99" value={editS2} onChange={(e) => setEditS2(parseInt(e.target.value) || 0)} onKeyDown={handleKeyDown} className="w-10 px-1 py-0.5 bg-qw-dark border border-qw-border rounded text-center text-white text-xs font-mono" />
+          <div className="flex items-center gap-1.5 mb-1">
+            <input type="text" inputMode="numeric" pattern="[0-9]*" value={editS1} onChange={(e) => { const v = e.target.value.replace(/\D/g, ''); setEditS1(v === '' ? 0 : Math.min(99, parseInt(v))); }} onKeyDown={(e) => { if (e.key === 'ArrowUp') { e.preventDefault(); setEditS1(v => Math.min(99, v + 1)); } else if (e.key === 'ArrowDown') { e.preventDefault(); setEditS1(v => Math.max(0, v - 1)); } else { handleKeyDown(e); } }} autoFocus className="w-8 h-6 px-0 py-0 bg-qw-dark border border-qw-border rounded text-center text-white text-sm font-mono leading-none" />
+            <span className="text-qw-muted text-sm font-bold">:</span>
+            <input type="text" inputMode="numeric" pattern="[0-9]*" value={editS2} onChange={(e) => { const v = e.target.value.replace(/\D/g, ''); setEditS2(v === '' ? 0 : Math.min(99, parseInt(v))); }} onKeyDown={(e) => { if (e.key === 'ArrowUp') { e.preventDefault(); setEditS2(v => Math.min(99, v + 1)); } else if (e.key === 'ArrowDown') { e.preventDefault(); setEditS2(v => Math.max(0, v - 1)); } else { handleKeyDown(e); } }} className="w-8 h-6 px-0 py-0 bg-qw-dark border border-qw-border rounded text-center text-white text-sm font-mono leading-none" />
             <button onClick={saveScore} className="ml-auto px-1.5 py-0.5 bg-qw-win/20 text-qw-win text-[10px] rounded hover:bg-qw-win/30" title="Save (Enter)">OK</button>
             <button onClick={cancelEditing} className="px-1.5 py-0.5 bg-qw-dark text-qw-muted text-[10px] rounded hover:text-white" title="Cancel (Esc)">X</button>
             {isManual && <button onClick={clearOverride} className="px-1.5 py-0.5 bg-red-900/30 text-red-400 text-[10px] rounded hover:bg-red-900/50" title="Clear manual override">CLR</button>}

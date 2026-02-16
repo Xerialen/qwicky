@@ -265,14 +265,29 @@ export default function DivisionSchedule({ division, updateDivision, tournamentS
     }
     // Standard playoffs (single/double-elim or groups with playoffs)
     else {
-      if (division.playoffQFBestOf > 0) list.push({ id: 'quarter', label: 'Quarter Final' });
-      if (division.playoffSFBestOf > 0) list.push({ id: 'semi', label: 'Semi Final' });
-      list.push({ id: 'final', label: 'Grand Final' });
+      const isDouble = division.playoffFormat === 'double';
+      const teamCount = division.playoffTeams || 4;
+      if (teamCount >= 32) list.push({ id: 'r32', label: 'Round of 32' });
+      if (teamCount >= 16) list.push({ id: 'r16', label: 'Round of 16' });
+      if (division.playoffQFBestOf > 0 || teamCount >= 8) list.push({ id: 'quarter', label: 'Quarter Final' });
+      if (division.playoffSFBestOf > 0 || teamCount >= 4) list.push({ id: 'semi', label: 'Semi Final' });
+      list.push({ id: 'final', label: isDouble ? 'Winners Final' : 'Final' });
+      if (isDouble) {
+        list.push({ id: 'lr1', label: 'Losers R1' });
+        if (teamCount >= 8) list.push({ id: 'lr2', label: 'Losers R2' });
+        if (teamCount >= 8) list.push({ id: 'lr3', label: 'Losers R3' });
+        if (teamCount >= 16) list.push({ id: 'lr4', label: 'Losers R4' });
+        if (teamCount >= 16) list.push({ id: 'lr5', label: 'Losers R5' });
+        if (teamCount >= 32) list.push({ id: 'lr6', label: 'Losers R6' });
+        list.push({ id: 'lsemi', label: 'Losers Semi' });
+        list.push({ id: 'lfinal', label: 'Losers Final' });
+        list.push({ id: 'grand', label: 'Grand Final' });
+      }
       if (division.playoff3rdBestOf > 0) list.push({ id: 'third', label: '3rd Place' });
     }
 
     return list;
-  }, [division.format, division.playoffTiers, division.playoffQFBestOf, division.playoffSFBestOf, division.playoff3rdBestOf]);
+  }, [division.format, division.playoffFormat, division.playoffTeams, division.playoffTiers, division.playoffQFBestOf, division.playoffSFBestOf, division.playoff3rdBestOf]);
 
   // Helper to render round options with optgroups for edit form
   const renderRoundOptions = () => {
