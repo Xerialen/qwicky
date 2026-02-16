@@ -242,6 +242,11 @@ App.jsx (state provider — exports createDefaultDivision, createDefaultBracket)
   grandFinal: BracketMatch,
   bracketReset: { …, needed: boolean }
 }
+
+// Each BracketMatch can have an optional manual score override:
+// { id, team1, team2, scoreOverride?: { s1: number, s2: number } }
+// scoreOverride takes priority over auto-resolved schedule scores.
+// Set dynamically by admin via inline editing UI; not in createDefaultBracket.
 ```
 
 ## Code Conventions
@@ -393,6 +398,8 @@ docker-compose up
 - Bracket structure factories live in `App.jsx`: `createDefaultBracket(format, teamCount)`
 - `DivisionSetup.jsx` manages format/tier configuration and calls the factories when format or team count changes.
 - `DivisionBracket.jsx` renders the bracket; it supports single-elim (`SingleElimBracket`), double-elim (`DoubleElimBracket`), and multi-tier (renders a bracket per tier).
+- **Round hint translation**: `BracketMatch` uses `roundHint` props (e.g. `"grand-final"`, `"losers-r1"`) that differ from schedule `round` values (e.g. `"grand"`, `"lr1"`). The `ROUND_HINT_TO_SCHEDULE` map in `DivisionBracket.jsx` and `DivisionWiki.jsx` translates between them. When `roundHint` is provided and no match is found (even after translation), the component returns no score — it does NOT fall back to any match between those teams. This prevents the same score from leaking across rounds when teams meet multiple times (e.g., Winners Final and Grand Final).
+- **Manual score override**: Admins can click on scores (or the `–` placeholder) to enter scores directly via inline editing. Stored as `scoreOverride: { s1, s2 }` on the bracket match object. Resolution priority: `scoreOverride` > schedule auto-lookup. Setting 0-0 clears the override. Manual scores display an orange ring and "MANUAL" label. Handlers: `handleUpdateScore` (standard brackets), `handleUpdateTierScore` (multi-tier).
 
 ### Modifying the Schedule / Drag-and-Drop
 - Schedule generation (polygon round-robin) and drag-and-drop logic both live in `DivisionSchedule.jsx`.
@@ -509,7 +516,8 @@ Player posts hub URL in Discord channel
 3. **localStorage persistence** — tournament data saved automatically via `useLocalStorage` hook.
 4. **Team matching is case-insensitive** throughout: standings lookup, bracket result resolution, and API import all normalise to lowercase before comparing.
 5. **Series detection** uses a 2-hour timestamp gap threshold (`SERIES_GAP_MS` in `DivisionResults.jsx`) to split consecutive maps of the same matchup into separate series.
-6. **Multi-tier round selection** — Schedule round dropdown dynamically generates options based on `division.format` and `playoffTiers`. The `renderRoundOptions()` function must be passed as a prop to the `MatchRow` component.
+6. **Multi-tier round selection** — Schedule round dropdown dynamically generates options based on `division.format` and `playoffTiers`. The `renderRoundOptions()` function must be passed as a prop to the `MatchRow` component. The Add Match form `rounds` useMemo also generates options dynamically — for double-elim it includes all loser bracket rounds (`lr1`–`lr6`, `lsemi`, `lfinal`) and `grand`.
+6a. **Bracket round name mismatch** — Bracket `roundHint` values (`"grand-final"`, `"losers-r1"`, etc.) differ from schedule `round` values (`"grand"`, `"lr1"`, etc.). The `ROUND_HINT_TO_SCHEDULE` constant in `DivisionBracket.jsx` and `DivisionWiki.jsx` handles this translation. If you add new bracket rounds, update this map in **both** files.
 7. **Flag emoji parsing** — Uses Unicode Regional Indicator Symbols (U+1F1E6–U+1F1FF) with regex pattern `[\u{1F1E6}-\u{1F1FF}]{2}` + `u` flag. Do NOT use character class ranges like `[🇦-🇿]` (invalid).
 8. **Backup / copy files** exist and can be ignored: `DivisionSchedule (copy 1).jsx`, `DivisionWiki (copy 1).jsx`.
 9. **No TypeScript** — project uses plain JavaScript.
