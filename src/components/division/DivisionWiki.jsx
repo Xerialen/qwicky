@@ -620,6 +620,15 @@ function generateTierDoubleElimBracket(bracket, schedule, teams, tier, options) 
   return wiki;
 }
 
+const ROUND_HINT_TO_SCHEDULE = {
+  'round32': 'r32',    'round16': 'r16',
+  'quarter': 'quarter', 'semi': 'semi', 'final': 'final',
+  'losers-r1': 'lr1',  'losers-r2': 'lr2', 'losers-r3': 'lr3',
+  'losers-r4': 'lr4',  'losers-r5': 'lr5', 'losers-r6': 'lr6',
+  'losers-semi': 'lsemi', 'losers-final': 'lfinal',
+  'grand-final': 'grand', 'bracket-reset': 'bracket-reset', 'third': 'third',
+};
+
 // Helper functions for bracket generation
 function getMatchResultHelper(team1, team2, schedule, roundHint) {
   if (!team1 || !team2) return { maps: [], s1: 0, s2: 0 };
@@ -630,16 +639,22 @@ function getMatchResultHelper(team1, team2, schedule, roundHint) {
     (m.team1.toLowerCase() === t1Lower && m.team2.toLowerCase() === t2Lower) ||
     (m.team1.toLowerCase() === t2Lower && m.team2.toLowerCase() === t1Lower);
 
-  // Round-aware disambiguation: try exact round first, then non-group, then any
+  // Round-aware disambiguation
   let match = null;
   if (roundHint) {
     match = schedule.find(m => m.round === roundHint && teamMatch(m));
-  }
-  if (!match) {
+    if (!match) {
+      const translated = ROUND_HINT_TO_SCHEDULE[roundHint];
+      if (translated && translated !== roundHint) {
+        match = schedule.find(m => m.round === translated && teamMatch(m));
+      }
+    }
+    // roundHint was provided but no match found — match not played yet
+  } else {
     match = schedule.filter(m => m.round !== 'group').find(m => teamMatch(m));
-  }
-  if (!match) {
-    match = schedule.find(m => teamMatch(m));
+    if (!match) {
+      match = schedule.find(m => teamMatch(m));
+    }
   }
 
   if (!match?.maps?.length) return { maps: [], s1: 0, s2: 0 };
@@ -722,12 +737,17 @@ function generateMatchDetailsHelper(team1, team2, schedule, roundHint) {
   let match = null;
   if (roundHint) {
     match = schedule.find(m => m.round === roundHint && teamMatch(m));
-  }
-  if (!match) {
+    if (!match) {
+      const translated = ROUND_HINT_TO_SCHEDULE[roundHint];
+      if (translated && translated !== roundHint) {
+        match = schedule.find(m => m.round === translated && teamMatch(m));
+      }
+    }
+  } else {
     match = schedule.filter(m => m.round !== 'group').find(m => teamMatch(m));
-  }
-  if (!match) {
-    match = schedule.find(m => teamMatch(m));
+    if (!match) {
+      match = schedule.find(m => teamMatch(m));
+    }
   }
   
   if (!result.maps.length) return '';
@@ -1306,26 +1326,6 @@ const handleCopy = async () => {
             {type === 'full' ? 'Full Page' : type === 'stats' ? 'Player Stats' : type}
           </button>
         ))}
-      </div>
-
-      <div className="qw-panel p-4">
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-qw-muted text-sm mb-1">Division Title</label>
-            <input
-              type="text"
-              value={options.title}
-              onChange={(e) => setOptions({ ...options, title: e.target.value })}
-              className="w-full bg-qw-dark border border-qw-border rounded px-3 py-2 text-white text-sm"
-            />
-          </div>
-          <div className="flex items-end">
-            <p className="text-xs text-qw-muted">
-              Uses Liquipedia templates: GroupTableStart, MatchMaps, 4SEBracket.
-              Teams advancing ({division.advanceCount}) configured in Setup tab.
-            </p>
-          </div>
-        </div>
       </div>
 
       <div className="qw-panel overflow-hidden">
