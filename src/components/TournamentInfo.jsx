@@ -1,5 +1,5 @@
 // src/components/TournamentInfo.jsx
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { calculateStandings } from './division/DivisionStandings';
 
 const countryToFlag = (code) => {
@@ -131,9 +131,31 @@ function DivisionStandingsCard({ division, onNavigate }) {
 export default function TournamentInfo({ tournament, updateTournament, onNavigateToDivision }) {
   const [copiedField, setCopiedField] = useState(null);
   const [showSettings, setShowSettings] = useState(false);
+  const [channels, setChannels] = useState(null);
+  const [channelsLoading, setChannelsLoading] = useState(false);
+  const [channelsError, setChannelsError] = useState(null);
 
   const tournamentSlug = (tournament.name || 'my-tournament')
     .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+
+  const loadChannels = useCallback(async () => {
+    setChannelsLoading(true);
+    setChannelsError(null);
+    try {
+      const res = await fetch('/api/channels');
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      setChannels(data.channels || []);
+    } catch (err) {
+      setChannelsError(err.message);
+    } finally {
+      setChannelsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadChannels();
+  }, [loadChannels]);
 
   const botInviteUrl = 'https://discord.com/oauth2/authorize?client_id=1469479991929733140&permissions=83968&integration_type=0&scope=bot+applications.commands';
 
@@ -290,6 +312,93 @@ export default function TournamentInfo({ tournament, updateTournament, onNavigat
                   <li>Players can now post hub.quakeworld.nu links and the bot will track them</li>
                   <li>Review submissions in the <span className="text-qw-accent">Results</span> tab of each division</li>
                 </ol>
+              </div>
+
+              {/* Registered Channels status */}
+              <div className="p-4 bg-qw-dark rounded border border-qw-border">
+                <div className="flex items-center justify-between mb-3">
+                  <label className="block text-qw-muted text-sm">Registered Channels</label>
+                  <button
+                    onClick={loadChannels}
+                    disabled={channelsLoading}
+                    className="px-2 py-1 text-xs rounded bg-qw-darker border border-qw-border text-qw-muted hover:text-white hover:border-qw-accent transition-all disabled:opacity-50"
+                  >
+                    {channelsLoading ? 'Loading…' : 'Refresh'}
+                  </button>
+                </div>
+
+                {channelsError && (
+                  <p className="text-qw-loss text-xs font-mono">Error: {channelsError}</p>
+                )}
+
+                {!channelsError && channels !== null && channels.length === 0 && (
+                  <p className="text-qw-muted text-sm italic">No channels registered yet.</p>
+                )}
+
+                {!channelsError && channels !== null && channels.length > 0 && (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs font-mono">
+                      <thead>
+                        <tr className="text-qw-muted border-b border-qw-border">
+                          <th className="text-left pb-2 pr-4">Tournament</th>
+                          <th className="text-left pb-2 pr-4">Division</th>
+                          <th className="text-left pb-2 pr-4">Channel</th>
+                          <th className="text-left pb-2 pr-4">Last game</th>
+                          <th className="text-left pb-2">Activity</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {channels.map(ch => {
+                          const isCurrent = ch.tournament_id === tournamentSlug;
+                          const lastDate = ch.latest_submission_at;
+                          const gameDate = ch.latest_game_date
+                            ? ch.latest_game_date.split(' ')[0]
+                            : null;
+                          const daysAgo = lastDate
+                            ? Math.floor((Date.now() - new Date(lastDate).getTime()) / 86400000)
+                            : null;
+                          const activityColor =
+                            daysAgo === null ? 'text-qw-muted' :
+                            daysAgo > 30 ? 'text-qw-loss' :
+                            daysAgo > 14 ? 'text-yellow-400' :
+                            'text-qw-win';
+                          const activityLabel =
+                            daysAgo === null ? 'never' :
+                            daysAgo === 0 ? 'today' :
+                            `${daysAgo}d ago`;
+
+                          return (
+                            <tr
+                              key={ch.discord_channel_id}
+                              className={`border-b border-qw-border/20 ${isCurrent ? 'text-qw-accent' : 'text-qw-text'}`}
+                            >
+                              <td className="py-1.5 pr-4">
+                                {isCurrent && <span className="text-qw-win mr-1">●</span>}
+                                {ch.tournament_id}
+                              </td>
+                              <td className="py-1.5 pr-4 text-qw-muted">
+                                {ch.division_id || '—'}
+                              </td>
+                              <td className="py-1.5 pr-4 text-qw-muted">
+                                …{ch.discord_channel_id.slice(-7)}
+                              </td>
+                              <td className="py-1.5 pr-4">
+                                {gameDate || '—'}
+                              </td>
+                              <td className={`py-1.5 ${activityColor}`}>
+                                {activityLabel}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                {channelsLoading && channels === null && (
+                  <p className="text-qw-muted text-xs font-mono animate-pulse">Fetching channels…</p>
+                )}
               </div>
             </div>
           </div>
