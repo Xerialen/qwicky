@@ -259,7 +259,7 @@ const GlobalBadge = () => (
   <span className="ml-2 text-[10px] text-qw-muted font-normal normal-case tracking-normal">🌍 Global</span>
 );
 
-function ExtH2HPanel({ data, tag1 }) {
+function ExtH2HPanel({ data, tag1, tag2 }) {
   const rows = Array.isArray(data) ? data : (data?.matches || data?.games || []);
   if (rows.length === 0) return <p className="text-qw-muted text-xs italic">No global H2H data found.</p>;
   const tag1Lower = tag1.toLowerCase();
@@ -288,37 +288,51 @@ function ExtH2HPanel({ data, tag1 }) {
 
   const wins2 = rows.length - wins1;
   const hasMapInfo = matches.some(m => m.map);
+  const hasScores = matches.some(m => m.score1 != null && m.score2 != null);
 
   return (
     <div>
-      {/* Summary score */}
+      {/* Summary score with team labels */}
       <div className="text-xs font-mono mb-2">
+        <span className="text-qw-muted">{tag1}: </span>
         <span className={wins1 > wins2 ? 'text-qw-win font-bold' : 'text-white'}>{wins1}</span>
         <span className="text-qw-muted"> – </span>
         <span className={wins2 > wins1 ? 'text-qw-win font-bold' : 'text-white'}>{wins2}</span>
+        <span className="text-qw-muted"> :{tag2}</span>
         <span className="text-qw-muted ml-2">({rows.length} maps, 12 months)</span>
       </div>
 
-      {/* Per-match breakdown */}
+      {/* Per-match breakdown with team header */}
       {hasMapInfo && (
-        <div className="space-y-0.5 max-h-48 overflow-y-auto">
-          {matches.map((m, i) => (
-            <div key={i} className="flex items-center gap-2 text-xs font-mono text-qw-muted">
-              {m.date && (
-                <span className="w-20 text-[10px] opacity-50 flex-shrink-0">{m.date}</span>
-              )}
-              <span className="w-12 text-qw-text flex-shrink-0" title={m.map}>{m.map || '—'}</span>
-              {m.score1 != null && m.score2 != null ? (
-                <>
-                  <span className={m.tag1Won ? 'text-qw-win font-bold' : ''}>{m.score1}</span>
-                  <span>–</span>
-                  <span className={!m.tag1Won ? 'text-qw-win font-bold' : ''}>{m.score2}</span>
-                </>
-              ) : (
-                <span className={m.tag1Won ? 'text-qw-win' : 'text-qw-loss'}>{m.tag1Won ? 'W' : 'L'}</span>
-              )}
+        <div>
+          {hasScores && (
+            <div className="flex items-center gap-2 text-[10px] font-mono text-qw-muted mb-1 border-b border-qw-border/20 pb-1">
+              {matches.some(m => m.date) && <span className="w-20 flex-shrink-0">Date</span>}
+              <span className="w-12 flex-shrink-0">Map</span>
+              <span className="w-6 text-right">{tag1}</span>
+              <span className="w-3 text-center"></span>
+              <span className="w-6">{tag2}</span>
             </div>
-          ))}
+          )}
+          <div className="space-y-0.5 max-h-48 overflow-y-auto">
+            {matches.map((m, i) => (
+              <div key={i} className="flex items-center gap-2 text-xs font-mono text-qw-muted">
+                {m.date && (
+                  <span className="w-20 text-[10px] opacity-50 flex-shrink-0">{m.date}</span>
+                )}
+                <span className="w-12 text-qw-text flex-shrink-0" title={m.map}>{m.map || '—'}</span>
+                {m.score1 != null && m.score2 != null ? (
+                  <>
+                    <span className={`w-6 text-right ${m.tag1Won ? 'text-qw-win font-bold' : ''}`}>{m.score1}</span>
+                    <span className="w-3 text-center">–</span>
+                    <span className={`w-6 ${!m.tag1Won ? 'text-qw-win font-bold' : ''}`}>{m.score2}</span>
+                  </>
+                ) : (
+                  <span className={m.tag1Won ? 'text-qw-win' : 'text-qw-loss'}>{m.tag1Won ? 'W' : 'L'}</span>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
       )}
     </div>
@@ -540,155 +554,96 @@ function MergedPlayerRow({ extPlayer, localPlayer }) {
   );
 }
 
-// Player spotlight card — tournament mode shows hot/struggling, global shows roster eff
+// Player spotlight card — always shows DetailedPlayerCard per team
+// Core stats (frags, K/D, eff, dmg, toDie, speed) always visible.
+// Weapon rows (RL/LG T/K/D) appear when ktxstats weapon data exists.
+// Global mode overlays API efficiency/winRate on each card.
 function PlayerSpotlightCard({ spotlight, team1, team2, extRoster1, extRoster2, extLoading, showGlobal }) {
-  if (!showGlobal) {
-    const allPlayers = spotlight.allPlayers || [];
-    const hasDetailed = allPlayers.some(p => p.hasDetailedStats);
+  const allPlayers = spotlight.allPlayers || [];
+  const t1n = normalizeTeam(team1);
+  const t2n = normalizeTeam(team2);
+  const team1Players = allPlayers
+    .filter(p => normalizeTeam(p.team) === t1n)
+    .sort((a, b) => b.fragsPerMap - a.fragsPerMap);
+  const team2Players = allPlayers
+    .filter(p => normalizeTeam(p.team) === t2n)
+    .sort((a, b) => b.fragsPerMap - a.fragsPerMap);
 
-    // If no detailed ktxstats data, fall back to the simple Hot Hands / Under Pressure view
-    if (!hasDetailed) {
+  const hasAnyWeapons = allPlayers.some(p => p.hasDetailedStats);
+
+  // Build global lookup maps (used in global mode)
+  const extPlayers1 = normalizeExtRoster(extRoster1);
+  const extPlayers2 = normalizeExtRoster(extRoster2);
+  const extByName1 = {};
+  for (const ep of extPlayers1) extByName1[(ep.name || '').toLowerCase().trim()] = ep;
+  const extByName2 = {};
+  for (const ep of extPlayers2) extByName2[(ep.name || '').toLowerCase().trim()] = ep;
+
+  if (showGlobal && extLoading) return <ExtLoadingOverlay />;
+
+  // No local players at all — show fallback
+  if (team1Players.length === 0 && team2Players.length === 0) {
+    if (showGlobal && (extPlayers1.length > 0 || extPlayers2.length > 0)) {
+      // No local players but have global roster data — use MergedPlayerRow fallback
+      const localByName = {};
+      for (const p of allPlayers) localByName[(p.name || '').toLowerCase().trim()] = p;
+      const renderColumn = (team, extPlayers) => (
+        <div>
+          <div className="text-xs text-qw-muted font-display uppercase tracking-wider mb-1.5 truncate">
+            {team} <span className="font-normal normal-case">(3mo global)</span>
+          </div>
+          {extPlayers.map((ep, i) => {
+            const localP = localByName[(ep.name || '').toLowerCase().trim()] ?? null;
+            return <MergedPlayerRow key={`${ep.name}-${i}`} extPlayer={ep} localPlayer={localP} />;
+          })}
+        </div>
+      );
       return (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <div className="text-xs text-qw-win font-display uppercase tracking-wider mb-2">Hot Hands</div>
-            {spotlight.hotHands.length === 0
-              ? <p className="text-qw-muted text-xs italic">Not enough data</p>
-              : spotlight.hotHands.map(p => <PlayerRow key={p.name} player={p} />)
-            }
-          </div>
-          <div>
-            <div className="text-xs text-qw-loss font-display uppercase tracking-wider mb-2">Under Pressure</div>
-            {spotlight.struggling.length === 0
-              ? <p className="text-qw-muted text-xs italic">Not enough data</p>
-              : spotlight.struggling.map(p => <PlayerRow key={p.name} player={p} />)
-            }
-          </div>
+          {renderColumn(team1, extPlayers1.sort((a, b) => (b.eff ?? -1) - (a.eff ?? -1)))}
+          {renderColumn(team2, extPlayers2.sort((a, b) => (b.eff ?? -1) - (a.eff ?? -1)))}
         </div>
       );
     }
-
-    // Detailed view: per-team columns with full weapon/damage/item stats
-    const t1n = normalizeTeam(team1);
-    const t2n = normalizeTeam(team2);
-    const team1Players = allPlayers
-      .filter(p => normalizeTeam(p.team) === t1n)
-      .sort((a, b) => b.fragsPerMap - a.fragsPerMap);
-    const team2Players = allPlayers
-      .filter(p => normalizeTeam(p.team) === t2n)
-      .sort((a, b) => b.fragsPerMap - a.fragsPerMap);
-
-    return (
-      <div>
-        {/* Weapon legend */}
-        <div className="text-[10px] text-qw-muted mb-3 font-mono">
-          T = Taken · K = Kills (enemy holding weapon) · D = Dropped
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <div className="text-xs text-qw-muted font-display uppercase tracking-wider mb-2 truncate" title={team1}>{team1}</div>
-            <div className="space-y-2">
-              {team1Players.length === 0
-                ? <p className="text-qw-muted text-xs italic">No player data</p>
-                : team1Players.map(p => <DetailedPlayerCard key={p.name} player={p} />)
-              }
-            </div>
-          </div>
-          <div>
-            <div className="text-xs text-qw-muted font-display uppercase tracking-wider mb-2 truncate" title={team2}>{team2}</div>
-            <div className="space-y-2">
-              {team2Players.length === 0
-                ? <p className="text-qw-muted text-xs italic">No player data</p>
-                : team2Players.map(p => <DetailedPlayerCard key={p.name} player={p} />)
-              }
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+    return <p className="text-qw-muted text-xs italic">No player data available.</p>;
   }
 
-  // Global mode — show DetailedPlayerCards with global stats overlaid
-  const allPlayers = spotlight.allPlayers || [];
-  const hasDetailed = allPlayers.some(p => p.hasDetailedStats);
-  const t1n = normalizeTeam(team1);
-  const t2n = normalizeTeam(team2);
-
-  const extPlayers1 = normalizeExtRoster(extRoster1);
-  const extPlayers2 = normalizeExtRoster(extRoster2);
-
-  if (extLoading) return <ExtLoadingOverlay />;
-
-  // When local detailed stats exist, show DetailedPlayerCards with global overlay
-  if (hasDetailed) {
-    const team1Local = allPlayers.filter(p => normalizeTeam(p.team) === t1n).sort((a, b) => b.fragsPerMap - a.fragsPerMap);
-    const team2Local = allPlayers.filter(p => normalizeTeam(p.team) === t2n).sort((a, b) => b.fragsPerMap - a.fragsPerMap);
-
-    const extByName1 = {};
-    for (const ep of extPlayers1) extByName1[(ep.name || '').toLowerCase().trim()] = ep;
-    const extByName2 = {};
-    for (const ep of extPlayers2) extByName2[(ep.name || '').toLowerCase().trim()] = ep;
-
-    return (
-      <div>
-        <div className="text-[10px] text-qw-muted mb-3 font-mono">
-          T = Taken · K = Kills (enemy holding weapon) · D = Dropped
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {[
-            { team: team1, players: team1Local, extMap: extByName1 },
-            { team: team2, players: team2Local, extMap: extByName2 },
-          ].map(({ team, players, extMap }) => (
-            <div key={team}>
-              <div className="text-xs text-qw-muted font-display uppercase tracking-wider mb-2 truncate" title={team}>
-                {team} <span className="font-normal normal-case">(+ global)</span>
-              </div>
-              <div className="space-y-2">
-                {players.length === 0
-                  ? <p className="text-qw-muted text-xs italic">No player data</p>
-                  : players.map(p => (
-                      <DetailedPlayerCard
-                        key={p.name}
-                        player={p}
-                        globalStats={extMap[(p.name || '').toLowerCase().trim()]}
-                      />
-                    ))
-                }
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  // Fallback: no local detailed stats — show MergedPlayerRow (global eff + local K/D)
-  if (extPlayers1.length === 0 && extPlayers2.length === 0) {
-    return <p className="text-qw-muted text-xs italic">No global roster data available.</p>;
-  }
-
-  const localByName = {};
-  for (const p of allPlayers) localByName[(p.name || '').toLowerCase().trim()] = p;
-
-  const renderColumn = (team, extPlayers) => (
-    <div>
-      <div className="text-xs text-qw-muted font-display uppercase tracking-wider mb-1.5 truncate">
-        {team} <span className="font-normal normal-case">(3mo global)</span>
-      </div>
-      {extPlayers.length === 0
-        ? <p className="text-qw-muted text-xs italic">No global roster data for {team}.</p>
-        : extPlayers.map((ep, i) => {
-            const localP = localByName[(ep.name || '').toLowerCase().trim()] ?? null;
-            return <MergedPlayerRow key={`${ep.name}-${i}`} extPlayer={ep} localPlayer={localP} />;
-          })
-      }
-    </div>
-  );
+  // Main view — DetailedPlayerCard for both tournament and global modes
+  const isGlobal = showGlobal;
+  const teamColumns = [
+    { team: team1, players: team1Players, extMap: extByName1 },
+    { team: team2, players: team2Players, extMap: extByName2 },
+  ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      {renderColumn(team1, extPlayers1.sort((a, b) => (b.eff ?? -1) - (a.eff ?? -1)))}
-      {renderColumn(team2, extPlayers2.sort((a, b) => (b.eff ?? -1) - (a.eff ?? -1)))}
+    <div>
+      {/* Weapon legend — only when weapon data exists */}
+      {hasAnyWeapons && (
+        <div className="text-[10px] text-qw-muted mb-3 font-mono">
+          T = Taken · K = Kills (enemy holding weapon) · D = Dropped
+        </div>
+      )}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {teamColumns.map(({ team, players, extMap }) => (
+          <div key={team}>
+            <div className="text-xs text-qw-muted font-display uppercase tracking-wider mb-2 truncate" title={team}>
+              {team}{isGlobal && <span className="font-normal normal-case"> (+ global)</span>}
+            </div>
+            <div className="space-y-2">
+              {players.length === 0
+                ? <p className="text-qw-muted text-xs italic">No player data</p>
+                : players.map(p => (
+                    <DetailedPlayerCard
+                      key={p.name}
+                      player={p}
+                      globalStats={isGlobal ? extMap[(p.name || '').toLowerCase().trim()] : undefined}
+                    />
+                  ))
+              }
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -1054,7 +1009,7 @@ export default function DivisionCasterView({ division }) {
             <div className="text-xs text-qw-muted font-display uppercase tracking-wider mb-2">
               H2H <GlobalBadge />
             </div>
-            <ExtH2HPanel data={extData.h2h} tag1={getTag(team1)} />
+            <ExtH2HPanel data={extData.h2h} tag1={getTag(team1)} tag2={getTag(team2)} />
           </div>
         )}
       </div>
