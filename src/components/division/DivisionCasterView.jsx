@@ -271,65 +271,91 @@ function ExtH2HPanel({ data, tag1, tag2 }) {
     const tag1Won = team === tag1Lower ? result === 'W' : result === 'L';
     if (tag1Won) wins1++;
 
-    // Defensive: try common field names for map, date, scores
     const map = r.map || r.mapName || '';
     const rawDate = r.date || r.played_at || r.timestamp || '';
     const dateMatch = typeof rawDate === 'string' ? rawDate.match(/(\d{4}-\d{2}-\d{2})/) : null;
     const date = dateMatch ? dateMatch[1] : (typeof rawDate === 'string' ? rawDate.slice(0, 10) : '');
 
-    return {
-      map,
-      date,
-      score1: r.score1 ?? r.frags_for ?? r.scoreFor ?? null,
-      score2: r.score2 ?? r.frags_against ?? r.scoreAgainst ?? null,
-      tag1Won,
-    };
+    // Try many possible field names for frag scores
+    const score1 = r.score1 ?? r.frags_for ?? r.scoreFor ?? r.frags ?? r.score ?? null;
+    const score2 = r.score2 ?? r.frags_against ?? r.scoreAgainst ?? r.opponent_frags ?? r.opponentFrags ?? r.opponent_score ?? r.opponentScore ?? null;
+
+    return { map, date, score1, score2, tag1Won };
   });
 
   const wins2 = rows.length - wins1;
   const hasMapInfo = matches.some(m => m.map);
   const hasScores = matches.some(m => m.score1 != null && m.score2 != null);
+  const hasDates = matches.some(m => m.date);
+  const winPct1 = rows.length > 0 ? Math.round((wins1 / rows.length) * 100) : 0;
 
   return (
     <div>
-      {/* Summary score with team labels */}
-      <div className="text-xs font-mono mb-2">
-        <span className="text-qw-muted">{tag1}: </span>
-        <span className={wins1 > wins2 ? 'text-qw-win font-bold' : 'text-white'}>{wins1}</span>
-        <span className="text-qw-muted"> – </span>
-        <span className={wins2 > wins1 ? 'text-qw-win font-bold' : 'text-white'}>{wins2}</span>
-        <span className="text-qw-muted"> :{tag2}</span>
-        <span className="text-qw-muted ml-2">({rows.length} maps, 12 months)</span>
+      {/* Scoreboard header — team1 left, team2 right */}
+      <div className="flex items-center justify-between mb-3">
+        <div className="text-left">
+          <div className="text-xs text-qw-muted font-display uppercase tracking-wider">{tag1}</div>
+          <div className={`text-2xl font-display font-bold leading-none ${wins1 > wins2 ? 'text-qw-win' : 'text-white'}`}>{wins1}</div>
+        </div>
+        <div className="text-center">
+          <div className="text-[10px] text-qw-muted">{rows.length} maps</div>
+          <div className="text-[10px] text-qw-muted">12 months</div>
+        </div>
+        <div className="text-right">
+          <div className="text-xs text-qw-muted font-display uppercase tracking-wider">{tag2}</div>
+          <div className={`text-2xl font-display font-bold leading-none ${wins2 > wins1 ? 'text-qw-win' : 'text-white'}`}>{wins2}</div>
+        </div>
       </div>
 
-      {/* Per-match breakdown with team header */}
+      {/* Win-rate bar */}
+      {rows.length > 0 && (
+        <div className="flex items-center gap-2 mb-3">
+          <span className="text-[10px] font-mono text-qw-muted w-8 text-right">{winPct1}%</span>
+          <div className="flex-1 h-1.5 bg-qw-loss/30 rounded-full overflow-hidden">
+            <div className="h-full bg-qw-win rounded-full" style={{ width: `${winPct1}%` }} />
+          </div>
+          <span className="text-[10px] font-mono text-qw-muted w-8">{100 - winPct1}%</span>
+        </div>
+      )}
+
+      {/* Per-match table — team1 left, map center, team2 right */}
       {hasMapInfo && (
-        <div>
-          {hasScores && (
-            <div className="flex items-center gap-2 text-[10px] font-mono text-qw-muted mb-1 border-b border-qw-border/20 pb-1">
-              {matches.some(m => m.date) && <span className="w-20 flex-shrink-0">Date</span>}
-              <span className="w-12 flex-shrink-0">Map</span>
-              <span className="w-6 text-right">{tag1}</span>
-              <span className="w-3 text-center"></span>
-              <span className="w-6">{tag2}</span>
-            </div>
-          )}
-          <div className="space-y-0.5 max-h-48 overflow-y-auto">
+        <div className="max-h-56 overflow-y-auto">
+          {/* Column headers */}
+          <div className="grid grid-cols-[1fr_auto_1fr] items-center text-[10px] font-mono text-qw-muted border-b border-qw-border/30 pb-1 mb-1 sticky top-0 bg-qw-panel">
+            <span className="text-left">{tag1}</span>
+            <span className="text-center px-3">Map</span>
+            <span className="text-right">{tag2}</span>
+          </div>
+          {/* Match rows */}
+          <div className="space-y-0.5">
             {matches.map((m, i) => (
-              <div key={i} className="flex items-center gap-2 text-xs font-mono text-qw-muted">
-                {m.date && (
-                  <span className="w-20 text-[10px] opacity-50 flex-shrink-0">{m.date}</span>
-                )}
-                <span className="w-12 text-qw-text flex-shrink-0" title={m.map}>{m.map || '—'}</span>
-                {m.score1 != null && m.score2 != null ? (
-                  <>
-                    <span className={`w-6 text-right ${m.tag1Won ? 'text-qw-win font-bold' : ''}`}>{m.score1}</span>
-                    <span className="w-3 text-center">–</span>
-                    <span className={`w-6 ${!m.tag1Won ? 'text-qw-win font-bold' : ''}`}>{m.score2}</span>
-                  </>
-                ) : (
-                  <span className={m.tag1Won ? 'text-qw-win' : 'text-qw-loss'}>{m.tag1Won ? 'W' : 'L'}</span>
-                )}
+              <div key={i} className="grid grid-cols-[1fr_auto_1fr] items-center text-xs font-mono py-0.5">
+                {/* Team 1 side */}
+                <div className="flex items-center gap-2">
+                  {hasScores && m.score1 != null && (
+                    <span className={m.tag1Won ? 'text-qw-win font-bold' : 'text-qw-muted'}>{m.score1}</span>
+                  )}
+                  <span className={`text-sm font-bold ${m.tag1Won ? 'text-qw-win' : 'text-qw-loss'}`}>
+                    {m.tag1Won ? 'W' : 'L'}
+                  </span>
+                </div>
+                {/* Center: map + date */}
+                <div className="text-center px-3">
+                  <div className="text-qw-text text-xs">{m.map || '—'}</div>
+                  {hasDates && m.date && (
+                    <div className="text-[9px] text-qw-muted/50">{m.date}</div>
+                  )}
+                </div>
+                {/* Team 2 side */}
+                <div className="flex items-center justify-end gap-2">
+                  <span className={`text-sm font-bold ${!m.tag1Won ? 'text-qw-win' : 'text-qw-loss'}`}>
+                    {m.tag1Won ? 'L' : 'W'}
+                  </span>
+                  {hasScores && m.score2 != null && (
+                    <span className={!m.tag1Won ? 'text-qw-win font-bold' : 'text-qw-muted'}>{m.score2}</span>
+                  )}
+                </div>
               </div>
             ))}
           </div>
@@ -968,36 +994,67 @@ export default function DivisionCasterView({ division }) {
           <p className="text-qw-muted text-sm italic">No previous meetings in this tournament's data.</p>
         ) : (
           <>
-            {/* Scoreboard */}
-            <div className="grid grid-cols-3 gap-2 text-center mb-4">
-              <div>
-                <div className={`text-4xl font-display font-bold leading-none ${localH2H.team1Wins > localH2H.team2Wins ? 'text-qw-win' : 'text-white'}`}>
+            {/* Scoreboard — team1 left, team2 right */}
+            <div className="flex items-center justify-between mb-3">
+              <div className="text-left">
+                <div className="text-xs text-qw-muted font-display uppercase tracking-wider truncate max-w-[140px]" title={team1}>{team1}</div>
+                <div className={`text-3xl font-display font-bold leading-none ${localH2H.team1Wins > localH2H.team2Wins ? 'text-qw-win' : 'text-white'}`}>
                   {localH2H.team1Wins}
                 </div>
-                <div className="text-xs text-qw-muted mt-1 truncate" title={team1}>{team1}</div>
               </div>
-              <div className="flex flex-col items-center justify-center">
-                <div className="text-xs text-qw-muted uppercase tracking-widest mb-1">Maps</div>
-                <div className="text-2xl font-display font-bold text-qw-muted">{localH2H.totalMaps}</div>
+              <div className="text-center">
+                <div className="text-[10px] text-qw-muted">{localH2H.totalMaps} maps</div>
+                <div className="text-[10px] text-qw-muted">
+                  Frags: {localH2H.team1Frags} – {localH2H.team2Frags}
+                </div>
               </div>
-              <div>
-                <div className={`text-4xl font-display font-bold leading-none ${localH2H.team2Wins > localH2H.team1Wins ? 'text-qw-win' : 'text-white'}`}>
+              <div className="text-right">
+                <div className="text-xs text-qw-muted font-display uppercase tracking-wider truncate max-w-[140px] ml-auto" title={team2}>{team2}</div>
+                <div className={`text-3xl font-display font-bold leading-none ${localH2H.team2Wins > localH2H.team1Wins ? 'text-qw-win' : 'text-white'}`}>
                   {localH2H.team2Wins}
                 </div>
-                <div className="text-xs text-qw-muted mt-1 truncate" title={team2}>{team2}</div>
               </div>
             </div>
-            {/* Per-map breakdown */}
-            <div className="space-y-1 border-t border-qw-border/30 pt-3">
-              {localH2H.maps.map((m, i) => (
-                <div key={`h2h-${i}-${m.map}`} className="flex items-center gap-2 text-xs font-mono text-qw-muted">
-                  <span className="w-16 text-qw-text flex-shrink-0" title={m.map}>{m.map}</span>
-                  <span className={m.score1 > m.score2 ? 'text-qw-win font-bold' : ''}>{m.score1}</span>
-                  <span>–</span>
-                  <span className={m.score2 > m.score1 ? 'text-qw-win font-bold' : ''}>{m.score2}</span>
-                  <span className="ml-auto opacity-50">{m.date ? m.date.split(' ')[0] : ''}</span>
-                </div>
-              ))}
+
+            {/* Per-map breakdown — team1 left, map center, team2 right */}
+            <div className="border-t border-qw-border/30 pt-3">
+              {/* Column headers */}
+              <div className="grid grid-cols-[1fr_auto_1fr] items-center text-[10px] font-mono text-qw-muted border-b border-qw-border/20 pb-1 mb-1">
+                <span className="text-left truncate" title={team1}>{getTag(team1)}</span>
+                <span className="text-center px-4">Map</span>
+                <span className="text-right truncate" title={team2}>{getTag(team2)}</span>
+              </div>
+              <div className="space-y-0.5 max-h-56 overflow-y-auto">
+                {localH2H.maps.map((m, i) => {
+                  const t1Won = m.score1 > m.score2;
+                  const t2Won = m.score2 > m.score1;
+                  return (
+                    <div key={`h2h-${i}-${m.map}`} className="grid grid-cols-[1fr_auto_1fr] items-center text-xs font-mono py-0.5">
+                      {/* Team 1 side: score + W/L */}
+                      <div className="flex items-center gap-2">
+                        <span className={`font-bold ${t1Won ? 'text-qw-win' : 'text-qw-muted'}`}>{m.score1}</span>
+                        <span className={`text-sm font-bold ${t1Won ? 'text-qw-win' : 'text-qw-loss'}`}>
+                          {t1Won ? 'W' : t2Won ? 'L' : 'D'}
+                        </span>
+                      </div>
+                      {/* Center: map + date */}
+                      <div className="text-center px-4">
+                        <div className="text-qw-text">{m.map}</div>
+                        {m.date && (
+                          <div className="text-[9px] text-qw-muted/50">{m.date.split(' ')[0]}</div>
+                        )}
+                      </div>
+                      {/* Team 2 side: W/L + score */}
+                      <div className="flex items-center justify-end gap-2">
+                        <span className={`text-sm font-bold ${t2Won ? 'text-qw-win' : 'text-qw-loss'}`}>
+                          {t2Won ? 'W' : t1Won ? 'L' : 'D'}
+                        </span>
+                        <span className={`font-bold ${t2Won ? 'text-qw-win' : 'text-qw-muted'}`}>{m.score2}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </>
         )}
