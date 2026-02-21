@@ -4,24 +4,38 @@
 // Note: 4on4 only. No SLA — keep Supabase/ktxstats as authoritative source for imports.
 
 const BASE_URL = 'https://qw-api.poker-affiliate.org';
+const FETCH_TIMEOUT_MS = 8000;
 
 /**
- * Normalize a team tag for API use: lowercase + URL-encoded.
- * e.g. "]sr[" → "%5Dsr%5B"
+ * Normalize a team tag for API use: lowercase + trimmed.
+ * URLSearchParams handles percent-encoding, so we must NOT call
+ * encodeURIComponent here (that would double-encode).
  * @param {string} tag
  */
-const normalizeTag = (tag) => encodeURIComponent((tag || '').toLowerCase().trim());
+const normalizeTag = (tag) => (tag || '').toLowerCase().trim();
 
 /**
  * Fetch helper — returns parsed JSON or throws with a descriptive message.
+ * Includes an 8-second timeout so the UI never hangs indefinitely.
  * @param {string} path - URL path + query string
  */
 async function qwFetch(path) {
-  const res = await fetch(`${BASE_URL}${path}`);
-  if (!res.ok) {
-    throw new Error(`QW Stats API ${res.status}: ${path}`);
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+  try {
+    const res = await fetch(`${BASE_URL}${path}`, { signal: controller.signal });
+    if (!res.ok) {
+      throw new Error(`QW Stats API ${res.status}: ${path}`);
+    }
+    return res.json();
+  } catch (err) {
+    if (err.name === 'AbortError') {
+      throw new Error(`QW Stats API timeout after ${FETCH_TIMEOUT_MS / 1000}s: ${path}`);
+    }
+    throw err;
+  } finally {
+    clearTimeout(timer);
   }
-  return res.json();
 }
 
 const QWStatsService = {

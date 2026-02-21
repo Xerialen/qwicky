@@ -718,10 +718,11 @@ export default function DivisionCasterView({ division }) {
         </div>
 
         {extError && (
-          <div className="mt-2 flex items-center gap-3">
-            <p className="text-qw-loss text-xs flex-1">
-              Global stats unavailable — local data only.{' '}
-              <span className="font-mono opacity-60 text-[10px]">{extError}</span>
+          <div className="mt-2 flex items-center gap-3 p-2.5 rounded border border-qw-loss/30 bg-qw-loss/5">
+            <span className="text-qw-loss text-sm flex-shrink-0">⚠</span>
+            <p className="text-qw-loss text-sm flex-1">
+              Global stats unavailable — local data only.
+              <span className="font-mono opacity-75 text-xs ml-2">{extError}</span>
             </p>
           </div>
         )}
