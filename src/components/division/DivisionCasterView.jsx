@@ -63,6 +63,26 @@ const MapResultCard = ({ result }) => {
   );
 };
 
+// Tournament / Global toggle
+const TabToggle = ({ value, onChange, disabled }) => (
+  <div className="flex rounded overflow-hidden border border-qw-border text-xs font-display">
+    {['tournament', 'global'].map(v => (
+      <button
+        key={v}
+        onClick={() => !disabled && onChange(v)}
+        disabled={disabled}
+        className={`px-2.5 py-1 transition-colors capitalize ${
+          value === v
+            ? 'bg-qw-accent text-qw-dark font-bold'
+            : 'bg-qw-border text-qw-muted hover:text-white'
+        } disabled:opacity-40 disabled:cursor-not-allowed`}
+      >
+        {v === 'global' ? '🌍 Global' : 'Tournament'}
+      </button>
+    ))}
+  </div>
+);
+
 // Always-visible quick-glance bar at the top of the analysis view
 const QuickGlance = ({ team1, team2, h2h, form1, form2, mapStats1, mapStats2 }) => {
   let h2hText;
@@ -152,51 +172,283 @@ function ExtH2HPanel({ data, tag1 }) {
   );
 }
 
-function ExtFormSummary({ data }) {
-  const rows = Array.isArray(data) ? data : (data?.matches || data?.games || []);
-  if (rows.length === 0) return null;
-  const wins   = rows.filter(r => (r.result || '').toUpperCase() === 'W').length;
-  const losses = rows.filter(r => (r.result || '').toUpperCase() === 'L').length;
-  return (
-    <div className="mt-1.5 text-xs text-qw-muted font-mono">
-      🌍 Global (6mo):{' '}
-      <span className="text-qw-win">{wins}W</span>–<span className="text-qw-loss">{losses}L</span>
-      <span className="ml-1">of {rows.length} maps</span>
-    </div>
-  );
-}
-
-function ExtRosterPanel({ data, team }) {
-  const players = Array.isArray(data) ? data : (data?.players || data?.roster || []);
-  if (players.length === 0) return <p className="text-qw-muted text-xs italic">No roster data for {team}.</p>;
-  return (
-    <div>
-      <div className="text-xs text-qw-muted truncate mb-1.5" title={team}>{team}</div>
-      <div className="space-y-1">
-        {players.slice(0, 5).map((p, i) => {
-          const name = p.name || p.nick || p.player || '?';
-          const kd   = p.kd ?? p.kdRatio ?? p.efficiency ?? null;
-          return (
-            <div key={`${name}-${i}`} className="flex items-center gap-2 text-xs font-mono">
-              <span className="text-qw-text truncate flex-1" title={name}>{name}</span>
-              {kd !== null && (
-                <span className={`flex-shrink-0 ${parseFloat(kd) >= 1 ? 'text-qw-win' : 'text-qw-loss'}`}>
-                  {parseFloat(kd).toFixed(2)}
-                </span>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
 function ExtLoadingOverlay() {
   return (
     <div className="mt-3 flex items-center gap-2 text-qw-muted text-xs">
       <span className="inline-block w-3 h-3 border border-qw-accent border-t-transparent rounded-full animate-spin flex-shrink-0" />
       Loading global stats…
+    </div>
+  );
+}
+
+// ─── Data normalization helpers ───────────────────────────────────────────────
+
+// Returns { wins, losses, total, winRatePct } or null
+function normalizeExtForm(data) {
+  if (!data) return null;
+  const rows = Array.isArray(data) ? data : (data?.matches || data?.games || []);
+  if (rows.length === 0) return null;
+  const wins   = rows.filter(r => (r.result || '').toUpperCase() === 'W').length;
+  const losses = rows.filter(r => (r.result || '').toUpperCase() === 'L').length;
+  const total  = rows.length;
+  return { wins, losses, total, winRatePct: total > 0 ? Math.round((wins / total) * 100) : 0 };
+}
+
+// Returns { [mapName]: { wins, losses, played, winRate, avgFragDiff } } or {}
+// NOTE: API winRate is 0–100; converted to 0–1 fraction here to match local convention
+function normalizeExtMaps(data) {
+  const mapArray = data?.maps || (Array.isArray(data) ? data : []);
+  if (mapArray.length === 0) return {};
+  const result = {};
+  for (const entry of mapArray) {
+    const name = entry?.map;
+    if (!name) continue;
+    result[name] = {
+      wins:        entry.wins        ?? 0,
+      losses:      entry.losses      ?? 0,
+      played:      entry.games       ?? ((entry.wins ?? 0) + (entry.losses ?? 0)),
+      winRate:     entry.winRate != null ? entry.winRate / 100 : 0,
+      avgFragDiff: entry.avgFragDiff ?? 0,
+    };
+  }
+  return result;
+}
+
+// Returns [{ name, games, wins, winRatePct, eff, avgDmg }] or []
+function normalizeExtRoster(data) {
+  const players = Array.isArray(data) ? data : (data?.players || data?.roster || []);
+  return players.map(p => ({
+    name:       p.player || p.name || p.nick || '?',
+    games:      p.games   ?? 0,
+    wins:       p.wins    ?? 0,
+    winRatePct: p.winRate ?? 0,
+    eff:        p.eff     ?? null,
+    avgDmg:     p.avgDmg  ?? null,
+  }));
+}
+
+// Returns first extPlayers entry whose name matches localName case-insensitively, or null
+function fuzzyMatchPlayer(localName, extPlayers) {
+  const norm = (s) => (s || '').toLowerCase().trim();
+  const target = norm(localName);
+  return extPlayers.find(p => norm(p.name) === target) ?? null;
+}
+
+// ─── Comparison sub-components ────────────────────────────────────────────────
+
+// Inline delta badge appended to the Momentum line in Recent Form
+function FormDeltaBadge({ localForm, extFormData, extLoading }) {
+  if (extLoading) return (
+    <span className="ml-2 inline-flex items-center gap-1 text-[10px] text-qw-muted">
+      <span className="inline-block w-2.5 h-2.5 border border-qw-accent border-t-transparent rounded-full animate-spin" />
+    </span>
+  );
+  const extNorm = normalizeExtForm(extFormData);
+  if (!extNorm) return null;
+  const localTotal = localForm.wins + localForm.losses;
+  if (localTotal === 0) return null;
+  const localPct = Math.round(localForm.wins / localTotal * 100);
+  const delta = localPct - extNorm.winRatePct;
+  const isNeutral = Math.abs(delta) < 3;
+  const deltaColor = isNeutral ? 'text-qw-muted' : delta > 0 ? 'text-qw-win' : 'text-qw-loss';
+  const deltaText = isNeutral ? '±0%' : `${delta > 0 ? '+' : ''}${delta}%`;
+  return (
+    <span className="ml-3 inline-flex items-center gap-1 text-[10px] font-mono text-qw-muted">
+      <span>Tournament: <span className="text-white">{localPct}%</span></span>
+      <span>·</span>
+      <span>Global: <span className="text-white">{extNorm.winRatePct}%</span></span>
+      <span>·</span>
+      <span className={`font-bold ${deltaColor}`}>{deltaText}</span>
+      <span className="text-qw-muted/50 ml-0.5">🌍</span>
+    </span>
+  );
+}
+
+// Map performance rows for one team, with tournament/global toggle
+function MapStatsPanel({ stats, extMapsData, extLoading, showGlobal }) {
+  if (showGlobal) {
+    const extStats = normalizeExtMaps(extMapsData);
+    if (Object.keys(extStats).length === 0) {
+      if (extLoading) return <ExtLoadingOverlay />;
+      return <p className="text-qw-muted text-xs italic">No global map data.</p>;
+    }
+    return (
+      <div className="space-y-2">
+        {Object.entries(extStats)
+          .sort((a, b) => b[1].played - a[1].played)
+          .map(([mapName, es]) => {
+            const localWR = stats?.[mapName]?.winRate ?? null;
+            const delta = localWR !== null
+              ? Math.round((localWR - es.winRate) * 100)
+              : null;
+            const deltaClass = delta === null ? 'text-qw-muted'
+              : Math.abs(delta) < 3 ? 'text-qw-muted'
+              : delta > 0 ? 'text-qw-win' : 'text-qw-loss';
+            const deltaText = delta === null ? '—'
+              : Math.abs(delta) < 3 ? '±0%'
+              : `${delta > 0 ? '+' : ''}${delta}%`;
+            return (
+              <div key={mapName} className="space-y-0.5">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-mono text-qw-text" title={mapName}>{mapName}</span>
+                  <div className="flex items-center gap-2 font-mono flex-shrink-0">
+                    <span className="text-qw-muted">{es.wins}W–{es.losses}L</span>
+                    <span className={`w-8 text-right ${es.winRate >= 0.5 ? 'text-qw-win' : 'text-qw-loss'}`}>
+                      {Math.round(es.winRate * 100)}%
+                    </span>
+                    <span className="text-qw-muted text-[10px]">{es.played}G</span>
+                    <span
+                      className={`w-10 text-right text-[10px] ${deltaClass}`}
+                      title="Tournament vs Global win rate (Δ)"
+                    >
+                      {deltaText}
+                    </span>
+                  </div>
+                </div>
+                <div className="h-1.5 bg-qw-border rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full ${es.winRate >= 0.5 ? 'bg-qw-win' : 'bg-qw-loss'}`}
+                    style={{ width: `${Math.round(es.winRate * 100)}%` }}
+                  />
+                </div>
+              </div>
+            );
+          })}
+        <p className="text-[10px] text-qw-muted mt-1">Δ = Tournament vs. Global win rate</p>
+      </div>
+    );
+  }
+
+  // Tournament mode
+  if (!stats || Object.keys(stats).length === 0) {
+    return (
+      <>
+        <p className="text-qw-muted text-xs italic">No map data.</p>
+        {extLoading && <ExtLoadingOverlay />}
+      </>
+    );
+  }
+  return (
+    <div className="space-y-2">
+      {Object.entries(stats)
+        .sort((a, b) => b[1].played - a[1].played)
+        .map(([mapName, s]) => (
+          <div key={mapName} className="space-y-0.5">
+            <div className="flex items-center justify-between text-xs">
+              <span className="font-mono text-qw-text" title={mapName}>{mapName}</span>
+              <div className="flex items-center gap-3 font-mono flex-shrink-0">
+                <span className="text-qw-muted">{s.wins}W–{s.losses}L</span>
+                <span className={`w-8 text-right ${s.winRate >= 0.5 ? 'text-qw-win' : 'text-qw-loss'}`}>
+                  {Math.round(s.winRate * 100)}%
+                </span>
+                <span
+                  className={`w-10 text-right ${s.avgFragDiff >= 0 ? 'text-qw-win' : 'text-qw-loss'}`}
+                  title="Average frag differential"
+                >
+                  {s.avgFragDiff >= 0 ? '+' : ''}{s.avgFragDiff}
+                </span>
+              </div>
+            </div>
+            <div className="h-1.5 bg-qw-border rounded-full overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all ${s.winRate >= 0.5 ? 'bg-qw-win' : 'bg-qw-loss'}`}
+                style={{ width: `${Math.round(s.winRate * 100)}%` }}
+              />
+            </div>
+          </div>
+        ))}
+    </div>
+  );
+}
+
+// Single merged player row used in global spotlight view
+function MergedPlayerRow({ extPlayer, localPlayer }) {
+  const effColor = extPlayer.eff == null ? 'text-qw-muted'
+    : extPlayer.eff >= 50 ? 'text-qw-win'
+    : extPlayer.eff < 40  ? 'text-qw-loss'
+    : 'text-yellow-400';
+  return (
+    <div className="flex items-center gap-2 py-1.5 text-xs border-b border-qw-border/20 last:border-0">
+      <div className="flex-1 min-w-0">
+        <div className="text-white truncate">{extPlayer.name}</div>
+        <div className="text-qw-muted text-[10px]">{extPlayer.games}G global</div>
+      </div>
+      <div className="text-right flex-shrink-0 space-y-0.5">
+        {extPlayer.eff != null && (
+          <div className={`font-mono font-bold ${effColor}`}>{extPlayer.eff.toFixed(1)}% eff</div>
+        )}
+        {localPlayer && (
+          <div className="text-[10px] text-qw-muted font-mono">
+            K/D:{' '}
+            <span className={localPlayer.kdRatio >= 1 ? 'text-qw-win' : 'text-qw-loss'}>
+              {localPlayer.kdRatio}
+            </span>
+            {' '}
+            {localPlayer.trend === 'hot'  ? <span className="text-qw-win">▲</span>
+            : localPlayer.trend === 'cold' ? <span className="text-qw-loss">▼</span>
+            : null}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Player spotlight card — tournament mode shows hot/struggling, global shows roster eff
+function PlayerSpotlightCard({ spotlight, team1, team2, extRoster1, extRoster2, extLoading, showGlobal }) {
+  if (!showGlobal) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <div className="text-xs text-qw-win font-display uppercase tracking-wider mb-2">Hot Hands</div>
+          {spotlight.hotHands.length === 0
+            ? <p className="text-qw-muted text-xs italic">Not enough data</p>
+            : spotlight.hotHands.map(p => <PlayerRow key={p.name} player={p} />)
+          }
+        </div>
+        <div>
+          <div className="text-xs text-qw-loss font-display uppercase tracking-wider mb-2">Under Pressure</div>
+          {spotlight.struggling.length === 0
+            ? <p className="text-qw-muted text-xs italic">Not enough data</p>
+            : spotlight.struggling.map(p => <PlayerRow key={p.name} player={p} />)
+          }
+        </div>
+      </div>
+    );
+  }
+
+  // Global mode
+  const allPlayers = spotlight.allPlayers || [];
+  const extPlayers1 = normalizeExtRoster(extRoster1).sort((a, b) => (b.eff ?? -1) - (a.eff ?? -1));
+  const extPlayers2 = normalizeExtRoster(extRoster2).sort((a, b) => (b.eff ?? -1) - (a.eff ?? -1));
+
+  if (extLoading) return <ExtLoadingOverlay />;
+  if (extPlayers1.length === 0 && extPlayers2.length === 0) {
+    return <p className="text-qw-muted text-xs italic">No global roster data available.</p>;
+  }
+
+  const localByName = {};
+  for (const p of allPlayers) localByName[(p.name || '').toLowerCase().trim()] = p;
+
+  const renderColumn = (team, extPlayers) => (
+    <div>
+      <div className="text-xs text-qw-muted font-display uppercase tracking-wider mb-1.5 truncate">
+        {team} <span className="font-normal normal-case">(3mo global)</span>
+      </div>
+      {extPlayers.length === 0
+        ? <p className="text-qw-muted text-xs italic">No global roster data for {team}.</p>
+        : extPlayers.map((ep, i) => {
+            const localP = localByName[(ep.name || '').toLowerCase().trim()] ?? null;
+            return <MergedPlayerRow key={`${ep.name}-${i}`} extPlayer={ep} localPlayer={localP} />;
+          })
+      }
+    </div>
+  );
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {renderColumn(team1, extPlayers1)}
+      {renderColumn(team2, extPlayers2)}
     </div>
   );
 }
@@ -216,6 +468,10 @@ export default function DivisionCasterView({ division }) {
   const [extData,    setExtData]    = useState(null);
   const [extLoading, setExtLoading] = useState(false);
   const [extError,   setExtError]   = useState(null);
+
+  const [mapView1,   setMapView1]   = useState('tournament');
+  const [mapView2,   setMapView2]   = useState('tournament');
+  const [playerView, setPlayerView] = useState('tournament');
 
   const ready = !!(team1 && team2 && team1 !== team2);
 
@@ -255,6 +511,7 @@ export default function DivisionCasterView({ division }) {
   );
 
   // Spotlight: rank within the two selected teams only
+  // allPlayers included for global mode fuzzy matching
   const spotlight = useMemo(() => {
     if (!ready) return null;
     const allStats = calculatePlayerStats(rawMaps);
@@ -262,7 +519,7 @@ export default function DivisionCasterView({ division }) {
     const t2n = normalizeTeam(team2);
     const teamPlayers = Object.values(allStats)
       .filter(p => normalizeTeam(p.team) === t1n || normalizeTeam(p.team) === t2n);
-    return getPlayerSpotlight(teamPlayers, 2);
+    return { ...getPlayerSpotlight(teamPlayers, 2), allPlayers: teamPlayers };
   }, [team1, team2, rawMaps, ready]);
 
   const insights = useMemo(
@@ -290,11 +547,18 @@ export default function DivisionCasterView({ division }) {
 
   // ─── External API fetch ───────────────────────────────────────────────────
 
+  const resetToggleViews = () => {
+    setMapView1('tournament');
+    setMapView2('tournament');
+    setPlayerView('tournament');
+  };
+
   const loadExtData = async () => {
     if (!ready) return;
     setExtLoading(true);
     setExtError(null);
     setExtData(null);
+    resetToggleViews();
     const tag1 = getTag(team1);
     const tag2 = getTag(team2);
     try {
@@ -330,7 +594,10 @@ export default function DivisionCasterView({ division }) {
     }
   };
 
-  const clearSelection = () => { setTeam1(''); setTeam2(''); setExtData(null); setExtError(null); };
+  const clearSelection = () => {
+    setTeam1(''); setTeam2(''); setExtData(null); setExtError(null);
+    resetToggleViews();
+  };
 
   // ─── Team selector ────────────────────────────────────────────────────────
 
@@ -375,8 +642,8 @@ export default function DivisionCasterView({ division }) {
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {[
-              { label: 'Team 1', value: team1, set: v => { setTeam1(v); setExtData(null); }, other: team2 },
-              { label: 'Team 2', value: team2, set: v => { setTeam2(v); setExtData(null); }, other: team1 },
+              { label: 'Team 1', value: team1, set: v => { setTeam1(v); setExtData(null); resetToggleViews(); }, other: team2 },
+              { label: 'Team 2', value: team2, set: v => { setTeam2(v); setExtData(null); resetToggleViews(); }, other: team1 },
             ].map(({ label, value, set, other }) => (
               <div key={label}>
                 <label className="block text-qw-muted text-sm mb-1">{label}</label>
@@ -420,6 +687,11 @@ export default function DivisionCasterView({ division }) {
   // ─── Analysis view ────────────────────────────────────────────────────────
 
   const extButtonLabel = extLoading ? 'Loading…' : extError ? 'Retry' : extData ? 'Refresh QW Stats' : 'Load QW Stats';
+
+  const hasMapData = Object.keys(mapStats1 || {}).length > 0
+    || Object.keys(mapStats2 || {}).length > 0
+    || extData?.maps1
+    || extData?.maps2;
 
   return (
     <div className="space-y-4">
@@ -581,12 +853,13 @@ export default function DivisionCasterView({ division }) {
                 </div>
               )}
 
-              {/* Momentum */}
+              {/* Momentum + inline global delta badge */}
               <div className="mt-2 text-xs text-qw-muted">
                 Momentum:{' '}
                 <span className={getMomentumColor(form.momentum)}>
                   {getMomentumLabel(form.momentum)}
                 </span>
+                <FormDeltaBadge localForm={form} extFormData={extForm} extLoading={extLoading} />
                 {form.streak >= 2 && form.streak < 3 && (
                   <span className="ml-3">
                     {form.streakType === 'W'
@@ -599,10 +872,6 @@ export default function DivisionCasterView({ division }) {
 
               {/* Prominent streak badge for 3+ */}
               <StreakBadge streak={form.streak} type={form.streakType} />
-
-              {/* Global form */}
-              {extLoading && <ExtLoadingOverlay />}
-              {extForm && <ExtFormSummary data={extForm} />}
             </div>
           ))}
         </div>
@@ -653,47 +922,31 @@ export default function DivisionCasterView({ division }) {
       )}
 
       {/* Map Performance */}
-      {(Object.keys(mapStats1 || {}).length > 0 || Object.keys(mapStats2 || {}).length > 0) && (
+      {hasMapData && (
         <div className="qw-panel p-5">
           <h3 className="font-display font-bold text-white mb-4">Map Performance</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {[
-              { stats: mapStats1, team: team1 },
-              { stats: mapStats2, team: team2 },
-            ].map(({ stats, team }) => (
+              { stats: mapStats1, extMaps: extData?.maps1, team: team1, view: mapView1, setView: setMapView1 },
+              { stats: mapStats2, extMaps: extData?.maps2, team: team2, view: mapView2, setView: setMapView2 },
+            ].map(({ stats, extMaps, team, view, setView }) => (
               <div key={team}>
-                <div className="font-semibold text-white text-sm mb-2 truncate" title={team}>{team}</div>
-                {Object.keys(stats).length === 0 ? (
-                  <p className="text-qw-muted text-xs italic">No map data.</p>
-                ) : (
-                  <div className="space-y-2">
-                    {Object.entries(stats)
-                      .sort((a, b) => b[1].played - a[1].played)
-                      .map(([mapName, s]) => (
-                        <div key={`${team}-${mapName}`} className="space-y-0.5">
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="font-mono text-qw-text" title={mapName}>{mapName}</span>
-                            <div className="flex items-center gap-3 font-mono flex-shrink-0">
-                              <span className="text-qw-muted">{s.wins}W–{s.losses}L</span>
-                              <span className={`w-8 text-right ${s.winRate >= 0.5 ? 'text-qw-win' : 'text-qw-loss'}`}>
-                                {Math.round(s.winRate * 100)}%
-                              </span>
-                              <span className={`w-10 text-right ${s.avgFragDiff >= 0 ? 'text-qw-win' : 'text-qw-loss'}`}
-                                title="Average frag differential">
-                                {s.avgFragDiff >= 0 ? '+' : ''}{s.avgFragDiff}
-                              </span>
-                            </div>
-                          </div>
-                          <div className="h-1.5 bg-qw-border rounded-full overflow-hidden">
-                            <div
-                              className={`h-full rounded-full transition-all ${s.winRate >= 0.5 ? 'bg-qw-win' : 'bg-qw-loss'}`}
-                              style={{ width: `${Math.round(s.winRate * 100)}%` }}
-                            />
-                          </div>
-                        </div>
-                      ))}
-                  </div>
-                )}
+                <div className="flex items-center justify-between mb-2 gap-2">
+                  <div className="font-semibold text-white text-sm truncate" title={team}>{team}</div>
+                  {(extData || extLoading) && (
+                    <TabToggle
+                      value={view}
+                      onChange={setView}
+                      disabled={!extData}
+                    />
+                  )}
+                </div>
+                <MapStatsPanel
+                  stats={stats}
+                  extMapsData={extMaps}
+                  extLoading={extLoading}
+                  showGlobal={view === 'global'}
+                />
               </div>
             ))}
           </div>
@@ -701,43 +954,27 @@ export default function DivisionCasterView({ division }) {
       )}
 
       {/* Player Spotlight */}
-      {spotlight && (spotlight.hotHands.length > 0 || spotlight.struggling.length > 0) && (
+      {spotlight && (spotlight.hotHands.length > 0 || spotlight.struggling.length > 0 || extData?.roster1 || extData?.roster2) && (
         <div className="qw-panel p-5">
-          <h3 className="font-display font-bold text-white mb-4">Player Spotlight</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <div className="text-xs text-qw-win font-display uppercase tracking-wider mb-2">Hot Hands</div>
-              {spotlight.hotHands.length === 0
-                ? <p className="text-qw-muted text-xs italic">Not enough data</p>
-                : spotlight.hotHands.map(p => <PlayerRow key={p.name} player={p} />)
-              }
-            </div>
-            <div>
-              <div className="text-xs text-qw-loss font-display uppercase tracking-wider mb-2">Under Pressure</div>
-              {spotlight.struggling.length === 0
-                ? <p className="text-qw-muted text-xs italic">Not enough data</p>
-                : spotlight.struggling.map(p => <PlayerRow key={p.name} player={p} />)
-              }
-            </div>
+          <div className="flex items-center justify-between mb-4 gap-2">
+            <h3 className="font-display font-bold text-white">Player Spotlight</h3>
+            {(extData || extLoading) && (
+              <TabToggle
+                value={playerView}
+                onChange={setPlayerView}
+                disabled={!extData}
+              />
+            )}
           </div>
-
-          {(extLoading || extData?.roster1 || extData?.roster2) && (
-            <div className="mt-4 pt-4 border-t border-qw-border">
-              <div className="text-xs text-qw-muted font-display uppercase tracking-wider mb-3">
-                Roster Stats <GlobalBadge /> (3 months)
-              </div>
-              {extLoading ? <ExtLoadingOverlay /> : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {[
-                    { roster: extData?.roster1, team: team1 },
-                    { roster: extData?.roster2, team: team2 },
-                  ].map(({ roster, team }) => roster && (
-                    <ExtRosterPanel key={team} data={roster} team={team} />
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
+          <PlayerSpotlightCard
+            spotlight={spotlight}
+            team1={team1}
+            team2={team2}
+            extRoster1={extData?.roster1}
+            extRoster2={extData?.roster2}
+            extLoading={extLoading}
+            showGlobal={playerView === 'global'}
+          />
         </div>
       )}
 
