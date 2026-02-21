@@ -227,13 +227,6 @@ function normalizeExtRoster(data) {
   }));
 }
 
-// Returns first extPlayers entry whose name matches localName case-insensitively, or null
-function fuzzyMatchPlayer(localName, extPlayers) {
-  const norm = (s) => (s || '').toLowerCase().trim();
-  const target = norm(localName);
-  return extPlayers.find(p => norm(p.name) === target) ?? null;
-}
-
 // ─── Comparison sub-components ────────────────────────────────────────────────
 
 // Inline delta badge appended to the Momentum line in Recent Form
@@ -954,7 +947,7 @@ export default function DivisionCasterView({ division }) {
       )}
 
       {/* Player Spotlight */}
-      {spotlight && (spotlight.hotHands.length > 0 || spotlight.struggling.length > 0 || extData?.roster1 || extData?.roster2) && (
+      {spotlight && (spotlight.hotHands.length > 0 || spotlight.struggling.length > 0 || extData?.roster1 || extData?.roster2 || extLoading) && (
         <div className="qw-panel p-5">
           <div className="flex items-center justify-between mb-4 gap-2">
             <h3 className="font-display font-bold text-white">Player Spotlight</h3>
