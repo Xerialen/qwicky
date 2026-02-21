@@ -147,6 +147,91 @@ const PlayerRow = ({ player }) => {
   );
 };
 
+// ─── Detailed player stats sub-components ────────────────────────────────────
+
+function StatCell({ label, value, suffix, color }) {
+  return (
+    <div>
+      <div className="text-qw-muted text-[9px] uppercase tracking-wide">{label}</div>
+      <div className={`font-mono font-bold ${color || 'text-white'}`}>
+        {value}{suffix && <span className="text-qw-muted font-normal text-[9px]">{suffix}</span>}
+      </div>
+    </div>
+  );
+}
+
+function WeaponRow({ label, taken, kills, dropped, acc }) {
+  return (
+    <div className="flex items-center gap-1 text-[11px] font-mono">
+      <span className="text-qw-accent font-display font-bold w-6">{label}</span>
+      <span className="text-qw-muted" title="Taken (weapon pickups)">T:</span>
+      <span className="text-white w-6">{taken}</span>
+      <span className="text-qw-muted" title="Kills (enemies killed holding this weapon)">K:</span>
+      <span className="text-qw-win w-6">{kills}</span>
+      <span className="text-qw-muted" title="Dropped (died while holding)">D:</span>
+      <span className="text-qw-loss w-6">{dropped}</span>
+      {acc !== undefined && acc > 0 && (
+        <>
+          <span className="text-qw-muted ml-1">Acc:</span>
+          <span className={acc >= 25 ? 'text-qw-win' : acc >= 18 ? 'text-yellow-400' : 'text-qw-muted'}>{acc}%</span>
+        </>
+      )}
+    </div>
+  );
+}
+
+function DetailedPlayerCard({ player }) {
+  const trendColor =
+    player.trend === 'hot'  ? 'text-qw-win'  :
+    player.trend === 'cold' ? 'text-qw-loss' :
+    'text-qw-muted';
+  const trendLabel = player.trend === 'hot' ? 'HOT' : player.trend === 'cold' ? 'COLD' : null;
+  const trendIcon = player.trend === 'hot' ? '▲' : player.trend === 'cold' ? '▼' : null;
+
+  return (
+    <div className="rounded border border-qw-border/30 bg-qw-dark/40 p-3 space-y-2">
+      {/* Header: name + trend + maps */}
+      <div className="flex items-center justify-between">
+        <div className="font-semibold text-white text-sm truncate">{player.name}</div>
+        <div className="flex items-center gap-1.5 flex-shrink-0">
+          {trendLabel && (
+            <span className={`text-[10px] font-display font-bold ${trendColor}`}>
+              {trendIcon} {trendLabel}
+            </span>
+          )}
+          <span className="text-qw-muted text-[10px]">{player.mapsPlayed} maps</span>
+        </div>
+      </div>
+
+      {/* Core stats */}
+      <div className="grid grid-cols-3 gap-x-3 gap-y-1 text-[11px]">
+        <StatCell label="Frags" value={player.fragsPerMap} suffix="/map" />
+        <StatCell label="K/D" value={player.kdRatio} color={player.kdRatio >= 1 ? 'text-qw-win' : 'text-qw-loss'} />
+        <StatCell label="Eff" value={`${player.effPct}%`} color={player.effPct >= 50 ? 'text-qw-win' : player.effPct >= 40 ? 'text-yellow-400' : 'text-qw-loss'} />
+        <StatCell label="Damage" value={player.avgDmg} />
+        <StatCell label="ToDie" value={player.avgToDie} />
+        <StatCell label="Speed" value={player.avgSpeed} />
+      </div>
+
+      {/* Weapon stats: RL & LG Taken / Kills / Dropped */}
+      {player.hasDetailedStats && (
+        <div className="border-t border-qw-border/20 pt-2 space-y-1">
+          <WeaponRow label="RL" taken={player.rlTaken} kills={player.rlKills} dropped={player.rlDrop} />
+          <WeaponRow label="LG" taken={player.lgTaken} kills={player.lgKills} dropped={player.lgDrop} acc={player.lgAcc} />
+        </div>
+      )}
+
+      {/* Map control items */}
+      {(player.ra > 0 || player.quad > 0) && (
+        <div className="flex gap-3 text-[10px] text-qw-muted border-t border-qw-border/20 pt-1.5">
+          {player.ra > 0 && <span>RA: <span className="text-white font-mono">{player.ra}</span>/opp</span>}
+          {player.quad > 0 && <span>Quad: <span className="text-qw-accent font-mono">{player.quad}</span>/opp</span>}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── External API panels (defensive — API shape is not guaranteed) ────────────
 
 const GlobalBadge = () => (
@@ -390,21 +475,66 @@ function MergedPlayerRow({ extPlayer, localPlayer }) {
 // Player spotlight card — tournament mode shows hot/struggling, global shows roster eff
 function PlayerSpotlightCard({ spotlight, team1, team2, extRoster1, extRoster2, extLoading, showGlobal }) {
   if (!showGlobal) {
-    return (
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div>
-          <div className="text-xs text-qw-win font-display uppercase tracking-wider mb-2">Hot Hands</div>
-          {spotlight.hotHands.length === 0
-            ? <p className="text-qw-muted text-xs italic">Not enough data</p>
-            : spotlight.hotHands.map(p => <PlayerRow key={p.name} player={p} />)
-          }
+    const allPlayers = spotlight.allPlayers || [];
+    const hasDetailed = allPlayers.some(p => p.hasDetailedStats);
+
+    // If no detailed ktxstats data, fall back to the simple Hot Hands / Under Pressure view
+    if (!hasDetailed) {
+      return (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <div className="text-xs text-qw-win font-display uppercase tracking-wider mb-2">Hot Hands</div>
+            {spotlight.hotHands.length === 0
+              ? <p className="text-qw-muted text-xs italic">Not enough data</p>
+              : spotlight.hotHands.map(p => <PlayerRow key={p.name} player={p} />)
+            }
+          </div>
+          <div>
+            <div className="text-xs text-qw-loss font-display uppercase tracking-wider mb-2">Under Pressure</div>
+            {spotlight.struggling.length === 0
+              ? <p className="text-qw-muted text-xs italic">Not enough data</p>
+              : spotlight.struggling.map(p => <PlayerRow key={p.name} player={p} />)
+            }
+          </div>
         </div>
-        <div>
-          <div className="text-xs text-qw-loss font-display uppercase tracking-wider mb-2">Under Pressure</div>
-          {spotlight.struggling.length === 0
-            ? <p className="text-qw-muted text-xs italic">Not enough data</p>
-            : spotlight.struggling.map(p => <PlayerRow key={p.name} player={p} />)
-          }
+      );
+    }
+
+    // Detailed view: per-team columns with full weapon/damage/item stats
+    const t1n = normalizeTeam(team1);
+    const t2n = normalizeTeam(team2);
+    const team1Players = allPlayers
+      .filter(p => normalizeTeam(p.team) === t1n)
+      .sort((a, b) => b.fragsPerMap - a.fragsPerMap);
+    const team2Players = allPlayers
+      .filter(p => normalizeTeam(p.team) === t2n)
+      .sort((a, b) => b.fragsPerMap - a.fragsPerMap);
+
+    return (
+      <div>
+        {/* Weapon legend */}
+        <div className="text-[10px] text-qw-muted mb-3 font-mono">
+          T = Taken · K = Kills (enemy holding weapon) · D = Dropped
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <div className="text-xs text-qw-muted font-display uppercase tracking-wider mb-2 truncate" title={team1}>{team1}</div>
+            <div className="space-y-2">
+              {team1Players.length === 0
+                ? <p className="text-qw-muted text-xs italic">No player data</p>
+                : team1Players.map(p => <DetailedPlayerCard key={p.name} player={p} />)
+              }
+            </div>
+          </div>
+          <div>
+            <div className="text-xs text-qw-muted font-display uppercase tracking-wider mb-2 truncate" title={team2}>{team2}</div>
+            <div className="space-y-2">
+              {team2Players.length === 0
+                ? <p className="text-qw-muted text-xs italic">No player data</p>
+                : team2Players.map(p => <DetailedPlayerCard key={p.name} player={p} />)
+              }
+            </div>
+          </div>
         </div>
       </div>
     );

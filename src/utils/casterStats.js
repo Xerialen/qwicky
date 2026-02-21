@@ -294,8 +294,11 @@ export const calculateMapStats = (team, rawMaps) => {
 
 // ─── Player Statistics ────────────────────────────────────────────────────────
 
+const safeDiv = (n, d) => (d > 0 ? n / d : 0);
+
 /**
- * Aggregate per-player K/D and trend from rawMaps.
+ * Aggregate per-player stats from rawMaps — includes K/D, trend, weapon T/K/D,
+ * damage, efficiency, speed, item pickups, and LG accuracy.
  * Player data lives at rawMap.originalData.players (ktxstats format).
  * @param {Object[]} rawMaps
  * @returns {Object} lowercaseName → player stats
@@ -306,34 +309,138 @@ export const calculatePlayerStats = (rawMaps) => {
   for (const m of rawMaps) {
     const rawPlayers = m.originalData?.players;
     if (!Array.isArray(rawPlayers)) continue;
+
     for (const p of rawPlayers) {
       const name = p.name || p.nick;
       if (!name) continue;
       const key = name.toLowerCase();
+
       if (!players[key]) {
-        players[key] = { name, team: p.team || '', mapsPlayed: 0, totalFrags: 0, totalDeaths: 0, recentFrags: [] };
+        players[key] = {
+          name,
+          team: p.team || '',
+          mapsPlayed: 0,
+          totalFrags: 0,
+          totalDeaths: 0,
+          totalKills: 0,
+          recentFrags: [],
+          // Damage
+          totalDmgGiven: 0,
+          totalDmgToDie: 0,
+          // Speed
+          totalSpeed: 0,
+          // RL (always available)
+          rl: { t: 0, k: 0, d: 0 },
+          // LG (map-dependent)
+          lg: { t: 0, k: 0, d: 0, accHits: 0, accAtk: 0 },
+          lgMaps: 0,
+          // Items
+          raTotal: 0, raMaps: 0,
+          quadTotal: 0, quadMaps: 0,
+        };
       }
-      const frags  = p.stats?.frags  ?? p.frags  ?? 0;
-      const deaths = p.stats?.deaths ?? p.deaths ?? 0;
-      players[key].mapsPlayed++;
-      players[key].totalFrags  += frags;
-      players[key].totalDeaths += deaths;
-      players[key].recentFrags.push(frags);
-      if (p.team) players[key].team = p.team;
+
+      const pl = players[key];
+      pl.mapsPlayed++;
+
+      const stats = p.stats || {};
+      const frags  = stats.frags  ?? p.frags  ?? 0;
+      const deaths = stats.deaths ?? p.deaths ?? 0;
+      const kills  = stats.kills  ?? 0;
+
+      pl.totalFrags  += frags;
+      pl.totalDeaths += deaths;
+      pl.totalKills  += kills;
+      pl.recentFrags.push(frags);
+      if (p.team) pl.team = p.team;
+
+      // Damage
+      const dmg = p.dmg || {};
+      pl.totalDmgGiven += dmg.given || 0;
+      pl.totalDmgToDie += dmg['taken-to-die'] || dmg['taken_to_die'] || 0;
+
+      // Speed
+      pl.totalSpeed += (p.speed?.avg || 0);
+
+      // Weapons
+      const weap = p.weapons || {};
+
+      // RL
+      if (weap.rl) {
+        const rl = weap.rl;
+        pl.rl.t += rl.pickups?.['total-taken'] || 0;
+        pl.rl.k += rl.kills?.enemy || 0;
+        pl.rl.d += rl.pickups?.dropped || 0;
+      }
+
+      // LG (opportunity-tracked — only on maps with LG)
+      if (weap.lg) {
+        pl.lgMaps++;
+        const lg = weap.lg;
+        pl.lg.t += lg.pickups?.['total-taken'] || 0;
+        pl.lg.k += lg.kills?.enemy || 0;
+        pl.lg.d += lg.pickups?.dropped || 0;
+        pl.lg.accHits += lg.acc?.hits || 0;
+        pl.lg.accAtk  += lg.acc?.attacks || 0;
+      }
+
+      // Items
+      const items = p.items || {};
+      if (items.ra) {
+        pl.raMaps++;
+        pl.raTotal += items.ra.took || items.ra.taken || 0;
+      }
+      if (items.q) {
+        pl.quadMaps++;
+        pl.quadTotal += items.q.took || items.q.taken || 0;
+      }
     }
   }
 
+  // Calculate derived metrics
   for (const p of Object.values(players)) {
+    const g = p.mapsPlayed;
+
+    // K/D and frags/map
     p.kdRatio = p.totalDeaths > 0
       ? parseFloat((p.totalFrags / p.totalDeaths).toFixed(2))
       : p.totalFrags;
-    p.fragsPerMap = p.mapsPlayed > 0
-      ? parseFloat((p.totalFrags / p.mapsPlayed).toFixed(1))
+    p.fragsPerMap = g > 0
+      ? parseFloat((p.totalFrags / g).toFixed(1))
       : 0;
+
     // Hot/cold: compare last 3 maps vs tournament average
     const last3 = p.recentFrags.slice(-3);
     const last3Avg = last3.length > 0 ? last3.reduce((s, f) => s + f, 0) / last3.length : p.fragsPerMap;
     p.trend = last3Avg > p.fragsPerMap * 1.1 ? 'hot' : last3Avg < p.fragsPerMap * 0.9 ? 'cold' : 'steady';
+
+    // Efficiency (kills / (kills + deaths))
+    const engagements = p.totalKills + p.totalDeaths;
+    p.effPct = engagements > 0 ? parseFloat((p.totalKills / engagements * 100).toFixed(1)) : 0;
+
+    // Averages per game
+    p.avgDmg   = g > 0 ? Math.round(p.totalDmgGiven / g) : 0;
+    p.avgToDie = g > 0 ? Math.round(p.totalDmgToDie / g) : 0;
+    p.avgSpeed = g > 0 ? Math.round(p.totalSpeed / g) : 0;
+
+    // RL per game (always available)
+    p.rlTaken = parseFloat(safeDiv(p.rl.t, g).toFixed(1));
+    p.rlKills = parseFloat(safeDiv(p.rl.k, g).toFixed(1));
+    p.rlDrop  = parseFloat(safeDiv(p.rl.d, g).toFixed(1));
+
+    // LG per opportunity (maps where LG existed)
+    const lgO = p.lgMaps;
+    p.lgTaken = parseFloat(safeDiv(p.lg.t, lgO).toFixed(1));
+    p.lgKills = parseFloat(safeDiv(p.lg.k, lgO).toFixed(1));
+    p.lgDrop  = parseFloat(safeDiv(p.lg.d, lgO).toFixed(1));
+    p.lgAcc   = p.lg.accAtk > 0 ? parseFloat((p.lg.accHits / p.lg.accAtk * 100).toFixed(1)) : 0;
+
+    // Items per opportunity
+    p.ra   = parseFloat(safeDiv(p.raTotal, p.raMaps).toFixed(1));
+    p.quad = parseFloat(safeDiv(p.quadTotal, p.quadMaps).toFixed(1));
+
+    // Flag: does this player have detailed ktxstats weapon/damage data?
+    p.hasDetailedStats = p.totalDmgGiven > 0 || p.rl.t > 0 || p.rl.k > 0 || p.lg.t > 0;
   }
 
   return players;
