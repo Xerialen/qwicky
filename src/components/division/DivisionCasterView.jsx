@@ -180,7 +180,7 @@ function WeaponRow({ label, taken, kills, dropped, acc }) {
   );
 }
 
-function DetailedPlayerCard({ player }) {
+function DetailedPlayerCard({ player, globalStats }) {
   const trendColor =
     player.trend === 'hot'  ? 'text-qw-win'  :
     player.trend === 'cold' ? 'text-qw-loss' :
@@ -202,6 +202,27 @@ function DetailedPlayerCard({ player }) {
           <span className="text-qw-muted text-[10px]">{player.mapsPlayed} maps</span>
         </div>
       </div>
+
+      {/* Global stats overlay — shown when global API data is available */}
+      {globalStats && (
+        <div className="flex items-center gap-3 text-[10px] bg-qw-border/10 rounded px-2 py-1">
+          <span className="text-qw-muted">🌍</span>
+          {globalStats.eff != null && (
+            <span className="text-qw-muted">Eff: <span className={
+              globalStats.eff >= 50 ? 'text-qw-win font-bold' :
+              globalStats.eff < 40  ? 'text-qw-loss' :
+              'text-yellow-400'
+            }>{globalStats.eff.toFixed(1)}%</span></span>
+          )}
+          {globalStats.avgDmg != null && (
+            <span className="text-qw-muted">Dmg: <span className="text-white">{globalStats.avgDmg}</span></span>
+          )}
+          {globalStats.winRatePct != null && (
+            <span className="text-qw-muted">Win: <span className="text-white">{globalStats.winRatePct}%</span></span>
+          )}
+          <span className="text-qw-muted">{globalStats.games}G</span>
+        </div>
+      )}
 
       {/* Core stats */}
       <div className="grid grid-cols-3 gap-x-3 gap-y-1 text-[11px]">
@@ -241,18 +262,65 @@ const GlobalBadge = () => (
 function ExtH2HPanel({ data, tag1 }) {
   const rows = Array.isArray(data) ? data : (data?.matches || data?.games || []);
   if (rows.length === 0) return <p className="text-qw-muted text-xs italic">No global H2H data found.</p>;
+  const tag1Lower = tag1.toLowerCase();
   let wins1 = 0;
-  for (const r of rows) {
+
+  const matches = rows.map(r => {
     const team = (r.team || r.teamA || '').toLowerCase();
-    if (team === tag1.toLowerCase() && (r.result || '').toUpperCase() === 'W') wins1++;
-  }
+    const result = (r.result || '').toUpperCase();
+    const tag1Won = team === tag1Lower ? result === 'W' : result === 'L';
+    if (tag1Won) wins1++;
+
+    // Defensive: try common field names for map, date, scores
+    const map = r.map || r.mapName || '';
+    const rawDate = r.date || r.played_at || r.timestamp || '';
+    const dateMatch = typeof rawDate === 'string' ? rawDate.match(/(\d{4}-\d{2}-\d{2})/) : null;
+    const date = dateMatch ? dateMatch[1] : (typeof rawDate === 'string' ? rawDate.slice(0, 10) : '');
+
+    return {
+      map,
+      date,
+      score1: r.score1 ?? r.frags_for ?? r.scoreFor ?? null,
+      score2: r.score2 ?? r.frags_against ?? r.scoreAgainst ?? null,
+      tag1Won,
+    };
+  });
+
   const wins2 = rows.length - wins1;
+  const hasMapInfo = matches.some(m => m.map);
+
   return (
-    <div className="text-xs font-mono">
-      <span className={wins1 > wins2 ? 'text-qw-win font-bold' : 'text-white'}>{wins1}</span>
-      <span className="text-qw-muted"> – </span>
-      <span className={wins2 > wins1 ? 'text-qw-win font-bold' : 'text-white'}>{wins2}</span>
-      <span className="text-qw-muted ml-2">({rows.length} maps, 12 months)</span>
+    <div>
+      {/* Summary score */}
+      <div className="text-xs font-mono mb-2">
+        <span className={wins1 > wins2 ? 'text-qw-win font-bold' : 'text-white'}>{wins1}</span>
+        <span className="text-qw-muted"> – </span>
+        <span className={wins2 > wins1 ? 'text-qw-win font-bold' : 'text-white'}>{wins2}</span>
+        <span className="text-qw-muted ml-2">({rows.length} maps, 12 months)</span>
+      </div>
+
+      {/* Per-match breakdown */}
+      {hasMapInfo && (
+        <div className="space-y-0.5 max-h-48 overflow-y-auto">
+          {matches.map((m, i) => (
+            <div key={i} className="flex items-center gap-2 text-xs font-mono text-qw-muted">
+              {m.date && (
+                <span className="w-20 text-[10px] opacity-50 flex-shrink-0">{m.date}</span>
+              )}
+              <span className="w-12 text-qw-text flex-shrink-0" title={m.map}>{m.map || '—'}</span>
+              {m.score1 != null && m.score2 != null ? (
+                <>
+                  <span className={m.tag1Won ? 'text-qw-win font-bold' : ''}>{m.score1}</span>
+                  <span>–</span>
+                  <span className={!m.tag1Won ? 'text-qw-win font-bold' : ''}>{m.score2}</span>
+                </>
+              ) : (
+                <span className={m.tag1Won ? 'text-qw-win' : 'text-qw-loss'}>{m.tag1Won ? 'W' : 'L'}</span>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -540,12 +608,61 @@ function PlayerSpotlightCard({ spotlight, team1, team2, extRoster1, extRoster2, 
     );
   }
 
-  // Global mode
+  // Global mode — show DetailedPlayerCards with global stats overlaid
   const allPlayers = spotlight.allPlayers || [];
-  const extPlayers1 = normalizeExtRoster(extRoster1).sort((a, b) => (b.eff ?? -1) - (a.eff ?? -1));
-  const extPlayers2 = normalizeExtRoster(extRoster2).sort((a, b) => (b.eff ?? -1) - (a.eff ?? -1));
+  const hasDetailed = allPlayers.some(p => p.hasDetailedStats);
+  const t1n = normalizeTeam(team1);
+  const t2n = normalizeTeam(team2);
+
+  const extPlayers1 = normalizeExtRoster(extRoster1);
+  const extPlayers2 = normalizeExtRoster(extRoster2);
 
   if (extLoading) return <ExtLoadingOverlay />;
+
+  // When local detailed stats exist, show DetailedPlayerCards with global overlay
+  if (hasDetailed) {
+    const team1Local = allPlayers.filter(p => normalizeTeam(p.team) === t1n).sort((a, b) => b.fragsPerMap - a.fragsPerMap);
+    const team2Local = allPlayers.filter(p => normalizeTeam(p.team) === t2n).sort((a, b) => b.fragsPerMap - a.fragsPerMap);
+
+    const extByName1 = {};
+    for (const ep of extPlayers1) extByName1[(ep.name || '').toLowerCase().trim()] = ep;
+    const extByName2 = {};
+    for (const ep of extPlayers2) extByName2[(ep.name || '').toLowerCase().trim()] = ep;
+
+    return (
+      <div>
+        <div className="text-[10px] text-qw-muted mb-3 font-mono">
+          T = Taken · K = Kills (enemy holding weapon) · D = Dropped
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {[
+            { team: team1, players: team1Local, extMap: extByName1 },
+            { team: team2, players: team2Local, extMap: extByName2 },
+          ].map(({ team, players, extMap }) => (
+            <div key={team}>
+              <div className="text-xs text-qw-muted font-display uppercase tracking-wider mb-2 truncate" title={team}>
+                {team} <span className="font-normal normal-case">(+ global)</span>
+              </div>
+              <div className="space-y-2">
+                {players.length === 0
+                  ? <p className="text-qw-muted text-xs italic">No player data</p>
+                  : players.map(p => (
+                      <DetailedPlayerCard
+                        key={p.name}
+                        player={p}
+                        globalStats={extMap[(p.name || '').toLowerCase().trim()]}
+                      />
+                    ))
+                }
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // Fallback: no local detailed stats — show MergedPlayerRow (global eff + local K/D)
   if (extPlayers1.length === 0 && extPlayers2.length === 0) {
     return <p className="text-qw-muted text-xs italic">No global roster data available.</p>;
   }
@@ -570,8 +687,8 @@ function PlayerSpotlightCard({ spotlight, team1, team2, extRoster1, extRoster2, 
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      {renderColumn(team1, extPlayers1)}
-      {renderColumn(team2, extPlayers2)}
+      {renderColumn(team1, extPlayers1.sort((a, b) => (b.eff ?? -1) - (a.eff ?? -1)))}
+      {renderColumn(team2, extPlayers2.sort((a, b) => (b.eff ?? -1) - (a.eff ?? -1)))}
     </div>
   );
 }
