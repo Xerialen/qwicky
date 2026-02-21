@@ -10,6 +10,7 @@ import {
   getPlayerSpotlight,
   generateCasterInsights,
   getMomentumLabel,
+  getMomentumColor,
 } from '../../utils/casterStats';
 import QWStatsService from '../../services/QWStatsService';
 
@@ -26,12 +27,12 @@ const TrendArrow = ({ trend }) => (
 );
 
 const MapResultCard = ({ result }) => {
-  const bg =
+  const cls =
     result.result === 'W' ? 'bg-qw-win/20 text-qw-win border-qw-win/30' :
     result.result === 'L' ? 'bg-qw-loss/20 text-qw-loss border-qw-loss/30' :
     'bg-qw-border/20 text-qw-muted border-qw-border/30';
   return (
-    <div className={`flex flex-col items-center justify-center rounded p-1.5 text-xs font-mono border ${bg}`}>
+    <div className={`flex flex-col items-center justify-center rounded p-1.5 text-xs font-mono border ${cls}`}>
       <span className="font-bold">{result.result}</span>
       <span className="text-[10px] opacity-80 truncate max-w-full">{result.map}</span>
       <span className="text-[10px] opacity-60">{result.sf}–{result.sa}</span>
@@ -60,20 +61,17 @@ const PlayerRow = ({ player }) => {
   );
 };
 
-// ─── External API display helpers ─────────────────────────────────────────────
+// External data panels — rendered defensively since API shape is not guaranteed
 
-function ExtH2HPanel({ data, tag1, tag2 }) {
+function ExtH2HPanel({ data, tag1 }) {
   const rows = Array.isArray(data) ? data : (data?.matches || data?.games || []);
   if (rows.length === 0) return <p className="text-qw-muted text-xs italic">No global H2H data found.</p>;
-
   let wins1 = 0;
   for (const r of rows) {
     const team = (r.team || r.teamA || '').toLowerCase();
-    const res  = (r.result || '').toUpperCase();
-    if (team === tag1.toLowerCase() && res === 'W') wins1++;
+    if (team === tag1.toLowerCase() && (r.result || '').toUpperCase() === 'W') wins1++;
   }
   const wins2 = rows.length - wins1;
-
   return (
     <div className="text-xs font-mono">
       <span className={wins1 > wins2 ? 'text-qw-win font-bold' : 'text-white'}>{wins1}</span>
@@ -93,7 +91,7 @@ function ExtFormSummary({ data }) {
     <div className="mt-1.5 text-xs text-qw-muted font-mono">
       Global (6mo):{' '}
       <span className="text-qw-win">{wins}W</span>–<span className="text-qw-loss">{losses}L</span>
-      <span className="text-qw-muted ml-1">of {rows.length} maps</span>
+      <span className="ml-1">of {rows.length} maps</span>
     </div>
   );
 }
@@ -109,7 +107,7 @@ function ExtRosterPanel({ data, team }) {
           const name = p.name || p.nick || p.player || '?';
           const kd   = p.kd ?? p.kdRatio ?? p.efficiency ?? null;
           return (
-            <div key={i} className="flex items-center gap-2 text-xs font-mono">
+            <div key={`${name}-${i}`} className="flex items-center gap-2 text-xs font-mono">
               <span className="text-qw-text truncate flex-1">{name}</span>
               {kd !== null && (
                 <span className={`flex-shrink-0 ${parseFloat(kd) >= 1 ? 'text-qw-win' : 'text-qw-loss'}`}>
@@ -124,7 +122,19 @@ function ExtRosterPanel({ data, team }) {
   );
 }
 
+function ExtLoadingOverlay() {
+  return (
+    <div className="mt-3 flex items-center gap-2 text-qw-muted text-xs">
+      <span className="inline-block w-3 h-3 border border-qw-accent border-t-transparent rounded-full animate-spin flex-shrink-0" />
+      Loading global stats…
+    </div>
+  );
+}
+
 // ─── Main component ───────────────────────────────────────────────────────────
+
+const INSIGHT_ICONS = { advantage: '🎯', consistency: '📊', momentum: '🔥', history: '📜' };
+const INSIGHT_LABELS = { advantage: 'Advantage', consistency: 'Consistency', momentum: 'Momentum', history: 'History' };
 
 export default function DivisionCasterView({ division }) {
   const rawMaps = division.rawMaps || [];
@@ -133,14 +143,12 @@ export default function DivisionCasterView({ division }) {
   const [team1, setTeam1] = useState('');
   const [team2, setTeam2] = useState('');
 
-  // External API state
   const [extData,    setExtData]    = useState(null);
   const [extLoading, setExtLoading] = useState(false);
   const [extError,   setExtError]   = useState(null);
 
   const ready = !!(team1 && team2 && team1 !== team2);
 
-  // Resolve team tag from division.teams for the external API
   const getTag = (teamName) => {
     const t = teams.find(t => t.name === teamName);
     return t?.tag || teamName;
@@ -176,21 +184,16 @@ export default function DivisionCasterView({ division }) {
     [team2, rawMaps, ready]
   );
 
-  const allPlayerStats = useMemo(
-    () => ready ? calculatePlayerStats(rawMaps) : null,
-    [rawMaps, ready]
-  );
-
+  // Spotlight: rank players within the two selected teams only, not globally
   const spotlight = useMemo(() => {
-    if (!allPlayerStats || !ready) return null;
-    const all = getPlayerSpotlight(allPlayerStats, 2);
+    if (!ready) return null;
+    const allStats = calculatePlayerStats(rawMaps);
     const t1n = normalizeTeam(team1);
     const t2n = normalizeTeam(team2);
-    return {
-      hotHands:   all.hotHands.filter(p => normalizeTeam(p.team) === t1n || normalizeTeam(p.team) === t2n),
-      struggling: all.struggling.filter(p => normalizeTeam(p.team) === t1n || normalizeTeam(p.team) === t2n),
-    };
-  }, [allPlayerStats, team1, team2, ready]);
+    const teamPlayers = Object.values(allStats)
+      .filter(p => normalizeTeam(p.team) === t1n || normalizeTeam(p.team) === t2n);
+    return getPlayerSpotlight(teamPlayers, 2);
+  }, [team1, team2, rawMaps, ready]);
 
   const insights = useMemo(
     () => ready ? generateCasterInsights(team1, team2, rawMaps) : [],
@@ -203,18 +206,15 @@ export default function DivisionCasterView({ division }) {
     const matches = [];
     const bracket = division.bracket;
     if (!bracket) return matches;
-
     const addRound = (round) => {
       if (!round) return;
       const arr = Array.isArray(round) ? round : [round];
       arr.forEach(m => { if (m.team1 && m.team2) matches.push({ team1: m.team1, team2: m.team2, id: m.id }); });
     };
-
     const w = bracket.winners || {};
     [w.round32, w.round16, w.round12, w.quarterFinals, w.semiFinals, w.final,
      bracket.thirdPlace, bracket.grandFinal].forEach(addRound);
     if (bracket.losers) Object.values(bracket.losers).forEach(addRound);
-
     return matches;
   }, [division.bracket]);
 
@@ -228,7 +228,7 @@ export default function DivisionCasterView({ division }) {
     const tag1 = getTag(team1);
     const tag2 = getTag(team2);
     try {
-      const [h2h, ef1, ef2, em1, em2, er1, er2] = await Promise.allSettled([
+      const [rH2H, rF1, rF2, rM1, rM2, rR1, rR2] = await Promise.allSettled([
         QWStatsService.getH2H(tag1, tag2, { months: 12 }),
         QWStatsService.getForm(tag1, { months: 6 }),
         QWStatsService.getForm(tag2, { months: 6 }),
@@ -237,14 +237,23 @@ export default function DivisionCasterView({ division }) {
         QWStatsService.getRoster(tag1, { months: 3 }),
         QWStatsService.getRoster(tag2, { months: 3 }),
       ]);
+
+      const fulfilled = [rH2H, rF1, rF2, rM1, rM2, rR1, rR2].filter(r => r.status === 'fulfilled');
+      if (fulfilled.length === 0) {
+        const firstErr = [rH2H, rF1, rF2].find(r => r.status === 'rejected');
+        setExtError(firstErr?.reason?.message || 'All global stats requests failed');
+        setExtLoading(false);
+        return;
+      }
+
       setExtData({
-        h2h:    h2h.status === 'fulfilled' ? h2h.value : null,
-        form1:  ef1.status === 'fulfilled' ? ef1.value : null,
-        form2:  ef2.status === 'fulfilled' ? ef2.value : null,
-        maps1:  em1.status === 'fulfilled' ? em1.value : null,
-        maps2:  em2.status === 'fulfilled' ? em2.value : null,
-        roster1: er1.status === 'fulfilled' ? er1.value : null,
-        roster2: er2.status === 'fulfilled' ? er2.value : null,
+        h2h:    rH2H.status === 'fulfilled' ? rH2H.value : null,
+        form1:  rF1.status  === 'fulfilled' ? rF1.value  : null,
+        form2:  rF2.status  === 'fulfilled' ? rF2.value  : null,
+        maps1:  rM1.status  === 'fulfilled' ? rM1.value  : null,
+        maps2:  rM2.status  === 'fulfilled' ? rM2.value  : null,
+        roster1: rR1.status === 'fulfilled' ? rR1.value  : null,
+        roster2: rR2.status === 'fulfilled' ? rR2.value  : null,
       });
     } catch (err) {
       setExtError(err.message);
@@ -266,12 +275,9 @@ export default function DivisionCasterView({ division }) {
             Select two teams to generate pre-match analysis and talking points.
           </p>
 
-          {/* Quick-select from bracket */}
           {bracketMatchups.length > 0 && (
             <div className="mb-6">
-              <h3 className="text-xs text-qw-muted font-display uppercase tracking-wider mb-2">
-                Bracket Matchups
-              </h3>
+              <h3 className="text-xs text-qw-muted font-display uppercase tracking-wider mb-2">Bracket Matchups</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {bracketMatchups.map(m => (
                   <button
@@ -288,7 +294,6 @@ export default function DivisionCasterView({ division }) {
             </div>
           )}
 
-          {/* Manual selection */}
           <h3 className="text-xs text-qw-muted font-display uppercase tracking-wider mb-2">
             {bracketMatchups.length > 0 ? 'Or select manually' : 'Select teams'}
           </h3>
@@ -306,7 +311,7 @@ export default function DivisionCasterView({ division }) {
                 >
                   <option value="">— Select team —</option>
                   {teams.map(t => (
-                    <option key={t.id} value={t.name} disabled={t.name === other}>
+                    <option key={t.id ?? t.name} value={t.name} disabled={t.name === other}>
                       {t.name}
                     </option>
                   ))}
@@ -320,10 +325,9 @@ export default function DivisionCasterView({ division }) {
               No teams in this division yet. Add teams in the Teams tab first.
             </p>
           )}
-
           {rawMaps.length === 0 && teams.length > 0 && (
             <p className="mt-4 text-yellow-400/80 text-sm">
-              No map data imported yet. Import results to unlock local stats. Global stats (via QW Stats API) are still available after selecting teams.
+              No map data imported yet — local stats will be empty. Import results to unlock analysis. Global stats (via QW Stats API) are still available after selecting teams.
             </p>
           )}
         </div>
@@ -332,8 +336,6 @@ export default function DivisionCasterView({ division }) {
   }
 
   // ─── Analysis view ────────────────────────────────────────────────────────
-
-  const insightIcons = { advantage: '🎯', consistency: '📊', momentum: '🔥', history: '📜' };
 
   return (
     <div className="space-y-4">
@@ -368,10 +370,13 @@ export default function DivisionCasterView({ division }) {
           </div>
         </div>
         {extError && (
-          <p className="mt-2 text-qw-loss text-xs font-mono">External API error: {extError}</p>
+          <p className="mt-2 text-qw-loss text-xs">
+            Global stats unavailable — local data only.{' '}
+            <span className="font-mono opacity-70">{extError}</span>
+          </p>
         )}
         {extData && !extError && (
-          <p className="mt-2 text-qw-muted text-xs">Global stats loaded from QW Stats API (6–12 month window)</p>
+          <p className="mt-2 text-qw-muted text-xs">Global stats loaded (6–12 month window)</p>
         )}
       </div>
 
@@ -380,9 +385,15 @@ export default function DivisionCasterView({ division }) {
         <div className="qw-panel p-5 border border-qw-accent/25 bg-qw-accent/5">
           <h3 className="font-display font-bold text-qw-accent mb-3">💡 Key Talking Points</h3>
           <ul className="space-y-2">
-            {insights.map((ins, i) => (
-              <li key={i} className="flex items-start gap-2 text-sm text-qw-text">
-                <span className="flex-shrink-0 mt-0.5">{insightIcons[ins.type] || '•'}</span>
+            {insights.map((ins) => (
+              <li key={`${ins.type}-${ins.text.slice(0, 30)}`} className="flex items-start gap-2 text-sm text-qw-text">
+                <span
+                  className="flex-shrink-0 mt-0.5"
+                  role="img"
+                  aria-label={INSIGHT_LABELS[ins.type] || 'Note'}
+                >
+                  {INSIGHT_ICONS[ins.type] || '•'}
+                </span>
                 <span>{ins.text}</span>
               </li>
             ))}
@@ -408,7 +419,7 @@ export default function DivisionCasterView({ division }) {
                 </div>
                 <div className="text-xs text-qw-muted truncate">{team1}</div>
               </div>
-              <div className="text-center">
+              <div>
                 <div className="text-lg font-mono text-qw-muted mt-1">{localH2H.totalMaps}</div>
                 <div className="text-xs text-qw-muted">maps</div>
               </div>
@@ -421,7 +432,7 @@ export default function DivisionCasterView({ division }) {
             </div>
             <div className="space-y-1">
               {localH2H.maps.map((m, i) => (
-                <div key={i} className="flex items-center gap-2 text-xs font-mono text-qw-muted">
+                <div key={`h2h-${i}-${m.map}`} className="flex items-center gap-2 text-xs font-mono text-qw-muted">
                   <span className="w-16 text-qw-text flex-shrink-0">{m.map}</span>
                   <span className={m.score1 > m.score2 ? 'text-qw-win font-bold' : ''}>{m.score1}</span>
                   <span>–</span>
@@ -433,12 +444,11 @@ export default function DivisionCasterView({ division }) {
           </>
         )}
 
+        {extLoading && <ExtLoadingOverlay />}
         {extData?.h2h && (
           <div className="mt-4 pt-4 border-t border-qw-border">
-            <div className="text-xs text-qw-muted font-display uppercase tracking-wider mb-2">
-              Global H2H (12 months)
-            </div>
-            <ExtH2HPanel data={extData.h2h} tag1={getTag(team1)} tag2={getTag(team2)} />
+            <div className="text-xs text-qw-muted font-display uppercase tracking-wider mb-2">Global H2H (12 months)</div>
+            <ExtH2HPanel data={extData.h2h} tag1={getTag(team1)} />
           </div>
         )}
       </div>
@@ -470,17 +480,15 @@ export default function DivisionCasterView({ division }) {
                   className="grid gap-1"
                   style={{ gridTemplateColumns: `repeat(${form.last5Maps.length}, 1fr)` }}
                 >
-                  {form.last5Maps.map((r, i) => <MapResultCard key={i} result={r} />)}
+                  {form.last5Maps.map((r, i) => (
+                    <MapResultCard key={`form-${team}-${i}-${r.map}`} result={r} />
+                  ))}
                 </div>
               )}
 
               <div className="mt-2 text-xs text-qw-muted">
                 Momentum:{' '}
-                <span className={
-                  form.momentum > 0.7 ? 'text-qw-win' :
-                  form.momentum > 0.4 ? 'text-yellow-400' :
-                  'text-qw-loss'
-                }>
+                <span className={getMomentumColor(form.momentum)}>
                   {getMomentumLabel(form.momentum)}
                 </span>
                 {form.streak >= 2 && (
@@ -493,6 +501,7 @@ export default function DivisionCasterView({ division }) {
                 )}
               </div>
 
+              {extLoading && <ExtLoadingOverlay />}
               {extForm && <ExtFormSummary data={extForm} />}
             </div>
           ))}
@@ -511,31 +520,22 @@ export default function DivisionCasterView({ division }) {
           <div className="space-y-3">
             {commonOpp.breakdown.map(({ opponent, team1Result, team2Result, advantage }) => (
               <div key={opponent} className="grid grid-cols-[1fr_auto_1fr] gap-2 items-center text-xs">
-                {/* Team 1 result */}
                 <div className={`p-2.5 rounded border ${advantage === 'team1' ? 'border-qw-win/40 bg-qw-win/10' : 'border-qw-border/40 bg-qw-dark/50'}`}>
                   <div className="flex justify-between items-center mb-1">
                     <span className="font-mono font-bold">{team1Result.wins}W–{team1Result.losses}L</span>
                     {advantage === 'team1' && <span className="text-qw-win text-[10px] font-display">ADV</span>}
                   </div>
-                  <div className="text-qw-muted">
-                    {team1Result.fragDiff >= 0 ? '+' : ''}{team1Result.fragDiff} frags
-                  </div>
+                  <div className="text-qw-muted">{team1Result.fragDiff >= 0 ? '+' : ''}{team1Result.fragDiff} frags</div>
                 </div>
-
-                {/* Opponent name */}
                 <div className="text-center px-1">
                   <div className="text-[10px] text-qw-muted font-mono break-all">{opponent}</div>
                 </div>
-
-                {/* Team 2 result */}
                 <div className={`p-2.5 rounded border ${advantage === 'team2' ? 'border-qw-win/40 bg-qw-win/10' : 'border-qw-border/40 bg-qw-dark/50'}`}>
                   <div className="flex justify-between items-center mb-1">
                     {advantage === 'team2' && <span className="text-qw-win text-[10px] font-display">ADV</span>}
                     <span className="font-mono font-bold ml-auto">{team2Result.wins}W–{team2Result.losses}L</span>
                   </div>
-                  <div className="text-qw-muted text-right">
-                    {team2Result.fragDiff >= 0 ? '+' : ''}{team2Result.fragDiff} frags
-                  </div>
+                  <div className="text-qw-muted text-right">{team2Result.fragDiff >= 0 ? '+' : ''}{team2Result.fragDiff} frags</div>
                 </div>
               </div>
             ))}
@@ -561,7 +561,7 @@ export default function DivisionCasterView({ division }) {
                     {Object.entries(stats)
                       .sort((a, b) => b[1].played - a[1].played)
                       .map(([mapName, s]) => (
-                        <div key={mapName} className="flex items-center gap-2 text-xs font-mono">
+                        <div key={`${team}-${mapName}`} className="flex items-center gap-2 text-xs font-mono">
                           <span className="w-14 text-qw-text flex-shrink-0">{mapName}</span>
                           <div className="flex-1 h-1.5 bg-qw-border rounded-full overflow-hidden">
                             <div
@@ -609,20 +609,21 @@ export default function DivisionCasterView({ division }) {
             </div>
           </div>
 
-          {/* Global roster from API */}
-          {(extData?.roster1 || extData?.roster2) && (
+          {(extLoading || extData?.roster1 || extData?.roster2) && (
             <div className="mt-4 pt-4 border-t border-qw-border">
               <div className="text-xs text-qw-muted font-display uppercase tracking-wider mb-3">
                 Global Roster Stats (3 months)
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {[
-                  { roster: extData.roster1, team: team1 },
-                  { roster: extData.roster2, team: team2 },
-                ].map(({ roster, team }) => roster && (
-                  <ExtRosterPanel key={team} data={roster} team={team} />
-                ))}
-              </div>
+              {extLoading ? <ExtLoadingOverlay /> : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {[
+                    { roster: extData?.roster1, team: team1 },
+                    { roster: extData?.roster2, team: team2 },
+                  ].map(({ roster, team }) => roster && (
+                    <ExtRosterPanel key={team} data={roster} team={team} />
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>

@@ -1,12 +1,52 @@
 // src/utils/casterStats.js
 // Statistical calculations for the Caster View, operating on division.rawMaps.
+//
+// rawMaps items are produced by parseMatch() in matchLogic.js and have the shape:
+// {
+//   id: string,
+//   date: string,         // "2026-01-15 20:00:00 +0000"
+//   timestamp: number | null,
+//   map: string,          // "dm3"
+//   teams: string[],      // [teamA, teamB] — Unicode-cleaned, alphabetically sorted
+//   scores: { [teamName]: number },  // keyed by original team name
+//   originalData: object  // raw ktxstats JSON (contains .players array)
+// }
+//
 // All team comparisons are case-insensitive via normalizeTeam().
 
 /**
- * Normalize a team name for case-insensitive comparison.
+ * Lowercase + trim for safe team name comparison.
  * @param {string} name
  */
 export const normalizeTeam = (name) => (name || '').toString().toLowerCase().trim();
+
+/**
+ * Extract the score for a specific team from a rawMap entry.
+ * rawMap.scores is keyed by original team name, so we find the matching key
+ * case-insensitively.
+ * @param {Object} rawMap
+ * @param {string} team - normalized team name
+ * @returns {number}
+ */
+const getScore = (rawMap, team) => {
+  if (!rawMap.scores) return 0;
+  const key = Object.keys(rawMap.scores).find(k => normalizeTeam(k) === team);
+  return key !== undefined ? (rawMap.scores[key] ?? 0) : 0;
+};
+
+/**
+ * Find maps that involve both teams (in either slot).
+ * @param {string} t1 - normalized team name
+ * @param {string} t2 - normalized team name
+ * @param {Object[]} rawMaps
+ */
+const findH2HMaps = (t1, t2, rawMaps) =>
+  rawMaps.filter(m => {
+    if (!Array.isArray(m.teams) || m.teams.length < 2) return false;
+    const a = normalizeTeam(m.teams[0]);
+    const b = normalizeTeam(m.teams[1]);
+    return (a === t1 && b === t2) || (a === t2 && b === t1);
+  });
 
 // ─── Head to Head ─────────────────────────────────────────────────────────────
 
@@ -19,40 +59,20 @@ export const normalizeTeam = (name) => (name || '').toString().toLowerCase().tri
 export const calculateHeadToHead = (team1, team2, rawMaps) => {
   const t1 = normalizeTeam(team1);
   const t2 = normalizeTeam(team2);
-
-  const maps = rawMaps.filter(m => {
-    const a = normalizeTeam(m.team1);
-    const b = normalizeTeam(m.team2);
-    return (a === t1 && b === t2) || (a === t2 && b === t1);
-  });
+  const maps = findH2HMaps(t1, t2, rawMaps);
 
   let team1Wins = 0, team2Wins = 0, team1Frags = 0, team2Frags = 0;
-  for (const m of maps) {
-    const flipped = normalizeTeam(m.team1) === t2;
-    const s1 = flipped ? (m.score2 ?? 0) : (m.score1 ?? 0);
-    const s2 = flipped ? (m.score1 ?? 0) : (m.score2 ?? 0);
+  const mapRows = maps.map(m => {
+    const s1 = getScore(m, t1);
+    const s2 = getScore(m, t2);
     team1Frags += s1;
     team2Frags += s2;
     if (s1 > s2) team1Wins++;
     else if (s2 > s1) team2Wins++;
-  }
+    return { map: m.map, date: m.date, score1: s1, score2: s2 };
+  });
 
-  return {
-    totalMaps: maps.length,
-    team1Wins,
-    team2Wins,
-    team1Frags,
-    team2Frags,
-    maps: maps.map(m => {
-      const flipped = normalizeTeam(m.team1) === t2;
-      return {
-        map: m.map,
-        date: m.date,
-        score1: flipped ? (m.score2 ?? 0) : (m.score1 ?? 0),
-        score2: flipped ? (m.score1 ?? 0) : (m.score2 ?? 0),
-      };
-    }),
-  };
+  return { totalMaps: maps.length, team1Wins, team2Wins, team1Frags, team2Frags, maps: mapRows };
 };
 
 // ─── Common Opponents ─────────────────────────────────────────────────────────
@@ -67,8 +87,9 @@ const getOpponents = (team, rawMaps) => {
   const t = normalizeTeam(team);
   const opp = new Set();
   for (const m of rawMaps) {
-    const a = normalizeTeam(m.team1);
-    const b = normalizeTeam(m.team2);
+    if (!Array.isArray(m.teams) || m.teams.length < 2) continue;
+    const a = normalizeTeam(m.teams[0]);
+    const b = normalizeTeam(m.teams[1]);
     if (a === t) opp.add(b);
     else if (b === t) opp.add(a);
   }
@@ -78,25 +99,22 @@ const getOpponents = (team, rawMaps) => {
 /**
  * Calculate performance metrics for one team vs a specific opponent.
  * @param {string} team
- * @param {string} opponent
+ * @param {string} opponent - normalized opponent name
  * @param {Object[]} rawMaps
- * @returns {{ wins, losses, total, winRate, fragDiff, avgScore, dominance }}
  */
 const getPerformanceVsOpponent = (team, opponent, rawMaps) => {
   const t = normalizeTeam(team);
-  const o = normalizeTeam(opponent);
-
   const maps = rawMaps.filter(m => {
-    const a = normalizeTeam(m.team1);
-    const b = normalizeTeam(m.team2);
-    return (a === t && b === o) || (a === o && b === t);
+    if (!Array.isArray(m.teams) || m.teams.length < 2) return false;
+    const a = normalizeTeam(m.teams[0]);
+    const b = normalizeTeam(m.teams[1]);
+    return (a === t && b === opponent) || (a === opponent && b === t);
   });
 
   let wins = 0, losses = 0, fragsFor = 0, fragsAgainst = 0;
   for (const m of maps) {
-    const flipped = normalizeTeam(m.team1) === o;
-    const sf = flipped ? (m.score2 ?? 0) : (m.score1 ?? 0);
-    const sa = flipped ? (m.score1 ?? 0) : (m.score2 ?? 0);
+    const sf = getScore(m, t);
+    const sa = getScore(m, opponent);
     fragsFor += sf;
     fragsAgainst += sa;
     if (sf > sa) wins++;
@@ -115,47 +133,42 @@ const getPerformanceVsOpponent = (team, opponent, rawMaps) => {
   };
 };
 
+// Minimum dominance gap to declare an advantage (15%)
+const ADVANTAGE_THRESHOLD = 0.15;
+
 /**
  * Full common-opponent analysis with advantage detection.
- * Advantage threshold: ≥15% dominance difference.
  * @param {string} team1
  * @param {string} team2
  * @param {Object[]} rawMaps
  */
 export const analyzeCommonOpponents = (team1, team2, rawMaps) => {
-  const opp1 = getOpponents(team1, rawMaps);
-  const opp2 = getOpponents(team2, rawMaps);
   const t1 = normalizeTeam(team1);
   const t2 = normalizeTeam(team2);
-
+  const opp1 = getOpponents(team1, rawMaps);
+  const opp2 = getOpponents(team2, rawMaps);
   const common = [...opp1].filter(o => opp2.has(o) && o !== t1 && o !== t2);
 
   const breakdown = common.map(opponent => {
     const r1 = getPerformanceVsOpponent(team1, opponent, rawMaps);
     const r2 = getPerformanceVsOpponent(team2, opponent, rawMaps);
     const diff = r1.dominance - r2.dominance;
-    const advantage = Math.abs(diff) >= 0.15 ? (diff > 0 ? 'team1' : 'team2') : 'even';
+    const advantage = Math.abs(diff) >= ADVANTAGE_THRESHOLD
+      ? (diff > 0 ? 'team1' : 'team2')
+      : 'even';
     return { opponent, team1Result: r1, team2Result: r2, advantage };
   });
 
   const team1Advantages = breakdown.filter(b => b.advantage === 'team1').length;
   const team2Advantages = breakdown.filter(b => b.advantage === 'team2').length;
   const team1AvgDom = breakdown.length > 0
-    ? breakdown.reduce((s, b) => s + b.team1Result.dominance, 0) / breakdown.length
-    : 0.5;
+    ? breakdown.reduce((s, b) => s + b.team1Result.dominance, 0) / breakdown.length : 0.5;
   const team2AvgDom = breakdown.length > 0
-    ? breakdown.reduce((s, b) => s + b.team2Result.dominance, 0) / breakdown.length
-    : 0.5;
+    ? breakdown.reduce((s, b) => s + b.team2Result.dominance, 0) / breakdown.length : 0.5;
 
   return {
     breakdown,
-    summary: {
-      commonCount: common.length,
-      team1Advantages,
-      team2Advantages,
-      team1AvgDominance: team1AvgDom,
-      team2AvgDominance: team2AvgDom,
-    },
+    summary: { commonCount: common.length, team1Advantages, team2Advantages, team1AvgDominance: team1AvgDom, team2AvgDominance: team2AvgDom },
   };
 };
 
@@ -171,23 +184,28 @@ export const analyzeRecentForm = (team, rawMaps, lastN = 5) => {
   const t = normalizeTeam(team);
 
   const teamMaps = rawMaps
-    .filter(m => normalizeTeam(m.team1) === t || normalizeTeam(m.team2) === t)
+    .filter(m => {
+      if (!Array.isArray(m.teams) || m.teams.length < 2) return false;
+      return normalizeTeam(m.teams[0]) === t || normalizeTeam(m.teams[1]) === t;
+    })
     .sort((a, b) => {
-      const da = a.date ? new Date(a.date).getTime() : 0;
-      const db = b.date ? new Date(b.date).getTime() : 0;
-      return da - db;
+      // Undated maps treated as oldest (epoch 0) so they don't pollute recent slice
+      const da = a.timestamp ?? (a.date ? new Date(a.date).getTime() : 0);
+      const db = b.timestamp ?? (b.date ? new Date(b.date).getTime() : 0);
+      return da - db; // ascending: oldest first, recent at end
     });
 
   const recent = teamMaps.slice(-lastN);
 
   const results = recent.map(m => {
-    const flipped = normalizeTeam(m.team1) !== t;
-    const sf = flipped ? (m.score2 ?? 0) : (m.score1 ?? 0);
-    const sa = flipped ? (m.score1 ?? 0) : (m.score2 ?? 0);
+    const sf = getScore(m, t);
+    // Opponent is whichever team is not us
+    const opponentRaw = normalizeTeam(m.teams[0]) === t ? m.teams[1] : m.teams[0];
+    const sa = getScore(m, normalizeTeam(opponentRaw));
     return {
       map: m.map,
       date: m.date,
-      opponent: flipped ? m.team1 : m.team2,
+      opponent: opponentRaw,
       sf,
       sa,
       result: sf > sa ? 'W' : sf < sa ? 'L' : 'D',
@@ -198,7 +216,8 @@ export const analyzeRecentForm = (team, rawMaps, lastN = 5) => {
   const losses = results.filter(r => r.result === 'L').length;
   const draws  = results.filter(r => r.result === 'D').length;
 
-  // Weighted momentum — most recent maps carry more weight
+  // Weighted momentum: later maps carry more weight (linear ramp)
+  // e.g. 5 maps → weights [0.2, 0.4, 0.6, 0.8, 1.0], normalised to sum=1
   const weights = results.map((_, i) => (i + 1) / results.length);
   const weightSum = weights.reduce((s, w) => s + w, 0);
   const momentum = weightSum > 0
@@ -208,7 +227,7 @@ export const analyzeRecentForm = (team, rawMaps, lastN = 5) => {
       }, 0) / weightSum
     : 0.5;
 
-  // Trend: compare first half vs second half of recent maps
+  // Trend: compare first half vs second half win counts
   const half = Math.floor(results.length / 2);
   const firstHalfWins  = results.slice(0, half).filter(r => r.result === 'W').length;
   const secondHalfWins = results.slice(half).filter(r => r.result === 'W').length;
@@ -227,17 +246,9 @@ export const analyzeRecentForm = (team, rawMaps, lastN = 5) => {
   }
 
   return {
-    team,
-    totalMaps: teamMaps.length,
-    last5Maps: results,
+    team, totalMaps: teamMaps.length, last5Maps: results,
     record: `${wins}W-${losses}L${draws > 0 ? `-${draws}D` : ''}`,
-    wins,
-    losses,
-    draws,
-    momentum,
-    trend,
-    streak,
-    streakType,
+    wins, losses, draws, momentum, trend, streak, streakType,
   };
 };
 
@@ -254,17 +265,18 @@ export const calculateMapStats = (team, rawMaps) => {
   const stats = {};
 
   for (const m of rawMaps) {
-    const isT1 = normalizeTeam(m.team1) === t;
-    const isT2 = normalizeTeam(m.team2) === t;
+    if (!Array.isArray(m.teams) || m.teams.length < 2) continue;
+    const isT1 = normalizeTeam(m.teams[0]) === t;
+    const isT2 = normalizeTeam(m.teams[1]) === t;
     if (!isT1 && !isT2) continue;
 
     const mapName = m.map || 'unknown';
-    if (!stats[mapName]) {
-      stats[mapName] = { wins: 0, losses: 0, fragsFor: 0, fragsAgainst: 0, played: 0 };
-    }
+    if (!stats[mapName]) stats[mapName] = { wins: 0, losses: 0, fragsFor: 0, fragsAgainst: 0, played: 0 };
 
-    const sf = isT1 ? (m.score1 ?? 0) : (m.score2 ?? 0);
-    const sa = isT1 ? (m.score2 ?? 0) : (m.score1 ?? 0);
+    const sf = isT1 ? getScore(m, t) : getScore(m, t);
+    const opponentNorm = isT1 ? normalizeTeam(m.teams[1]) : normalizeTeam(m.teams[0]);
+    const sa = getScore(m, opponentNorm);
+
     stats[mapName].fragsFor += sf;
     stats[mapName].fragsAgainst += sa;
     stats[mapName].played++;
@@ -274,9 +286,7 @@ export const calculateMapStats = (team, rawMaps) => {
 
   for (const s of Object.values(stats)) {
     s.winRate = s.played > 0 ? s.wins / s.played : 0;
-    s.avgFragDiff = s.played > 0
-      ? Math.round((s.fragsFor - s.fragsAgainst) / s.played)
-      : 0;
+    s.avgFragDiff = s.played > 0 ? Math.round((s.fragsFor - s.fragsAgainst) / s.played) : 0;
   }
 
   return stats;
@@ -286,6 +296,7 @@ export const calculateMapStats = (team, rawMaps) => {
 
 /**
  * Aggregate per-player K/D and trend from rawMaps.
+ * Player data lives at rawMap.originalData.players (ktxstats format).
  * @param {Object[]} rawMaps
  * @returns {Object} lowercaseName → player stats
  */
@@ -293,8 +304,9 @@ export const calculatePlayerStats = (rawMaps) => {
   const players = {};
 
   for (const m of rawMaps) {
-    if (!Array.isArray(m.players)) continue;
-    for (const p of m.players) {
+    const rawPlayers = m.originalData?.players;
+    if (!Array.isArray(rawPlayers)) continue;
+    for (const p of rawPlayers) {
       const name = p.name || p.nick;
       if (!name) continue;
       const key = name.toLowerCase();
@@ -328,16 +340,16 @@ export const calculatePlayerStats = (rawMaps) => {
 };
 
 /**
- * Pick top and bottom performers by K/D.
- * @param {Object} playerStats  - output of calculatePlayerStats
+ * Pick top and bottom performers by K/D from a pre-filtered player set.
+ * @param {Object[]} playerList - array of player stat objects (already filtered to relevant teams)
  * @param {number} [minMaps=2]
  */
-export const getPlayerSpotlight = (playerStats, minMaps = 2) => {
-  const eligible = Object.values(playerStats).filter(p => p.mapsPlayed >= minMaps);
+export const getPlayerSpotlight = (playerList, minMaps = 2) => {
+  const eligible = playerList.filter(p => p.mapsPlayed >= minMaps);
   const sorted = [...eligible].sort((a, b) => b.kdRatio - a.kdRatio);
   return {
-    hotHands: sorted.slice(0, 3),
-    struggling: sorted.slice(-3).reverse(),
+    hotHands:   sorted.slice(0, 3),
+    struggling: sorted.length > 0 ? sorted.slice(-3).reverse() : [],
   };
 };
 
@@ -353,9 +365,7 @@ export const getPlayerSpotlight = (playerStats, minMaps = 2) => {
 export const generateCasterInsights = (team1, team2, rawMaps) => {
   const insights = [];
 
-  // Common opponent advantage
-  const commonOpp = analyzeCommonOpponents(team1, team2, rawMaps);
-  const { summary, breakdown } = commonOpp;
+  const { summary, breakdown } = analyzeCommonOpponents(team1, team2, rawMaps);
 
   if (summary.commonCount > 0) {
     if (summary.team1Advantages > summary.team2Advantages) {
@@ -370,27 +380,19 @@ export const generateCasterInsights = (team1, team2, rawMaps) => {
       });
     }
 
-    // Consistency gap (standard deviation of win rates)
     if (breakdown.length >= 2) {
       const t1Std = Math.sqrt(breakdown.reduce((s, b) =>
         s + Math.pow(b.team1Result.winRate - summary.team1AvgDominance, 2), 0) / breakdown.length);
       const t2Std = Math.sqrt(breakdown.reduce((s, b) =>
         s + Math.pow(b.team2Result.winRate - summary.team2AvgDominance, 2), 0) / breakdown.length);
       if (t1Std < t2Std - 0.15) {
-        insights.push({
-          type: 'consistency',
-          text: `${team1} brings higher consistency — their results vs common opponents show less variance than ${team2}'s.`,
-        });
+        insights.push({ type: 'consistency', text: `${team1} brings higher consistency — their results vs common opponents show less variance than ${team2}'s.` });
       } else if (t2Std < t1Std - 0.15) {
-        insights.push({
-          type: 'consistency',
-          text: `${team2} are the more consistent side based on common-opponent data; ${team1}'s form has been more unpredictable.`,
-        });
+        insights.push({ type: 'consistency', text: `${team2} are the more consistent side; ${team1}'s form has been more unpredictable.` });
       }
     }
   }
 
-  // Momentum and streaks
   const form1 = analyzeRecentForm(team1, rawMaps);
   const form2 = analyzeRecentForm(team2, rawMaps);
 
@@ -418,7 +420,6 @@ export const generateCasterInsights = (team1, team2, rawMaps) => {
     }
   }
 
-  // H2H history
   const h2h = calculateHeadToHead(team1, team2, rawMaps);
   if (h2h.totalMaps > 0) {
     if (h2h.team1Wins > h2h.team2Wins) {
@@ -441,4 +442,11 @@ export const getMomentumLabel = (momentum) => {
   if (momentum > 0.5) return 'Moderate';
   if (momentum > 0.3) return 'Weak';
   return 'Poor';
+};
+
+/** Tailwind colour class for a momentum score. */
+export const getMomentumColor = (momentum) => {
+  if (momentum > 0.7) return 'text-qw-win';
+  if (momentum > 0.4) return 'text-yellow-400';
+  return 'text-qw-loss';
 };
