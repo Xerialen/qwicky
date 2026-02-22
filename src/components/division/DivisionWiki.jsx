@@ -32,6 +32,11 @@ function calculateStandings(schedule, division) {
 
   // Initialize ALL teams from division.teams first
   const teams = division.teams || [];
+
+  // Build alias lookup for resolving team names (matches DivisionStandings.jsx behavior)
+  const aliasLookup = buildAliasLookup(teams);
+  const resolveTeamName = (name) => resolveViaAliases(name, aliasLookup);
+
   teams.forEach(team => {
     standings[team.name] = {
       name: team.name,
@@ -48,7 +53,12 @@ function calculateStandings(schedule, division) {
   const groupMatches = schedule.filter(m => m.round === 'group' && m.maps?.length > 0);
 
   groupMatches.forEach(match => {
-    const { team1, team2, maps, group } = match;
+    const { maps, group } = match;
+
+    // Resolve team names via aliases
+    const team1 = resolveTeamName(match.team1);
+    const team2 = resolveTeamName(match.team2);
+
     // Ensure teams exist (in case schedule has teams not in teams list)
     [team1, team2].forEach(t => {
       if (!standings[t]) standings[t] = {
@@ -345,9 +355,9 @@ function generateMultiTierBracketWiki(tiers, schedule, teams, division, options)
 
 // Tier-specific bracket generators (without section headers)
 function generateTier4SEBracket(bracket, schedule, teams, tier, options) {
-  const getMatchResult = (t1, t2, roundHint) => getMatchResultHelper(t1, t2, schedule, roundHint);
+  const getMatchResult = (t1, t2, roundHint) => getMatchResultHelper(t1, t2, schedule, roundHint, teams);
   const formatTeamData = (t, score, isWinner) => formatTeamHelper(t, teams, score, isWinner);
-  const getDetails = (t1, t2, roundHint) => generateMatchDetailsHelper(t1, t2, schedule, roundHint);
+  const getDetails = (t1, t2, roundHint) => generateMatchDetailsHelper(t1, t2, schedule, roundHint, teams);
 
   let wiki = `{{4SEBracket\n`;
   wiki += `|game=quake\n`;
@@ -409,9 +419,9 @@ function generateTier4SEBracket(bracket, schedule, teams, tier, options) {
 }
 
 function generateTier8SEBracket(bracket, schedule, teams, tier, options) {
-  const getMatchResult = (t1, t2, roundHint) => getMatchResultHelper(t1, t2, schedule, roundHint);
+  const getMatchResult = (t1, t2, roundHint) => getMatchResultHelper(t1, t2, schedule, roundHint, teams);
   const formatTeamData = (t, score, isWinner) => formatTeamHelper(t, teams, score, isWinner);
-  const getDetails = (t1, t2, roundHint) => generateMatchDetailsHelper(t1, t2, schedule, roundHint);
+  const getDetails = (t1, t2, roundHint) => generateMatchDetailsHelper(t1, t2, schedule, roundHint, teams);
 
   let wiki = `{{8SEBracket\n`;
   wiki += `|game=quake\n`;
@@ -484,9 +494,9 @@ function generateTier8SEBracket(bracket, schedule, teams, tier, options) {
 }
 
 function generateTier16SEBracket(bracket, schedule, teams, tier, options) {
-  const getMatchResult = (t1, t2, roundHint) => getMatchResultHelper(t1, t2, schedule, roundHint);
+  const getMatchResult = (t1, t2, roundHint) => getMatchResultHelper(t1, t2, schedule, roundHint, teams);
   const formatTeamData = (t, score, isWinner) => formatTeamHelper(t, teams, score, isWinner);
-  const getDetails = (t1, t2, roundHint) => generateMatchDetailsHelper(t1, t2, schedule, roundHint);
+  const getDetails = (t1, t2, roundHint) => generateMatchDetailsHelper(t1, t2, schedule, roundHint, teams);
 
   let wiki = `{{16SEBracket\n`;
   wiki += `|game=quake\n`;
@@ -589,28 +599,29 @@ function generateTier32SEBracket(bracket, schedule, teams, tier, options) {
 
 function generateTierDoubleElimBracket(bracket, schedule, teams, tier, options) {
   // For double elim tiers, output a structured list
+  const clean = (name) => name ? unicodeToAscii(name).trim() : 'TBD';
   let wiki = `\n`;
   wiki += `'''Winners Bracket'''\n`;
 
   if (bracket.winners?.quarterFinals) {
     wiki += `* Quarter Finals:\n`;
     bracket.winners.quarterFinals.forEach((m, i) => {
-      wiki += `** Match ${i + 1}: ${m.team1 || 'TBD'} vs ${m.team2 || 'TBD'}\n`;
+      wiki += `** Match ${i + 1}: ${clean(m.team1)} vs ${clean(m.team2)}\n`;
     });
   }
 
   wiki += `* Semi Finals:\n`;
   bracket.winners?.semiFinals?.forEach((m, i) => {
-    wiki += `** Match ${i + 1}: ${m.team1 || 'TBD'} vs ${m.team2 || 'TBD'}\n`;
+    wiki += `** Match ${i + 1}: ${clean(m.team1)} vs ${clean(m.team2)}\n`;
   });
 
-  wiki += `* Winners Final: ${bracket.winners?.final?.team1 || 'TBD'} vs ${bracket.winners?.final?.team2 || 'TBD'}\n\n`;
+  wiki += `* Winners Final: ${clean(bracket.winners?.final?.team1)} vs ${clean(bracket.winners?.final?.team2)}\n\n`;
 
   wiki += `'''Losers Bracket'''\n`;
   wiki += `* (Losers bracket matches configured per tournament)\n\n`;
 
   wiki += `'''Grand Final'''\n`;
-  wiki += `* ${bracket.grandFinal?.team1 || 'TBD'} vs ${bracket.grandFinal?.team2 || 'TBD'}\n`;
+  wiki += `* ${clean(bracket.grandFinal?.team1)} vs ${clean(bracket.grandFinal?.team2)}\n`;
 
   if (tier.bracketReset !== false) {
     wiki += `* (Bracket reset available if losers bracket winner wins Grand Final)\n`;
@@ -629,15 +640,44 @@ const ROUND_HINT_TO_SCHEDULE = {
   'grand-final': 'grand', 'bracket-reset': 'bracket-reset', 'third': 'third',
 };
 
+// Build alias lookup from division teams for resolving team names in schedule lookups
+function buildAliasLookup(teams) {
+  const lookup = {};
+  (teams || []).forEach(team => {
+    lookup[team.name.toLowerCase()] = team.name;
+    if (team.aliases && Array.isArray(team.aliases)) {
+      team.aliases.forEach(alias => {
+        if (alias && alias.trim()) {
+          lookup[alias.toLowerCase().trim()] = team.name;
+        }
+      });
+    }
+  });
+  return lookup;
+}
+
+function resolveViaAliases(name, aliasLookup) {
+  if (!name) return name;
+  return aliasLookup[name.toLowerCase()] || name;
+}
+
 // Helper functions for bracket generation
-function getMatchResultHelper(team1, team2, schedule, roundHint) {
+function getMatchResultHelper(team1, team2, schedule, roundHint, teams) {
   if (!team1 || !team2) return { maps: [], s1: 0, s2: 0 };
 
-  const t1Lower = team1.toLowerCase();
-  const t2Lower = team2.toLowerCase();
-  const teamMatch = (m) =>
-    (m.team1.toLowerCase() === t1Lower && m.team2.toLowerCase() === t2Lower) ||
-    (m.team1.toLowerCase() === t2Lower && m.team2.toLowerCase() === t1Lower);
+  // Build alias lookup for resolving team names (matches DivisionBracket.jsx behavior)
+  const aliasLookup = buildAliasLookup(teams);
+  const t1Resolved = resolveViaAliases(team1, aliasLookup);
+  const t2Resolved = resolveViaAliases(team2, aliasLookup);
+  const t1Lower = t1Resolved.toLowerCase();
+  const t2Lower = t2Resolved.toLowerCase();
+
+  const teamMatch = (m) => {
+    const schedT1 = resolveViaAliases(m.team1, aliasLookup).toLowerCase();
+    const schedT2 = resolveViaAliases(m.team2, aliasLookup).toLowerCase();
+    return (schedT1 === t1Lower && schedT2 === t2Lower) ||
+           (schedT1 === t2Lower && schedT2 === t1Lower);
+  };
 
   // Round-aware disambiguation
   let match = null;
@@ -660,7 +700,8 @@ function getMatchResultHelper(team1, team2, schedule, roundHint) {
   if (!match?.maps?.length) return { maps: [], s1: 0, s2: 0 };
 
   let s1 = 0, s2 = 0;
-  const isNormal = match.team1.toLowerCase() === t1Lower;
+  const schedT1Resolved = resolveViaAliases(match.team1, aliasLookup);
+  const isNormal = schedT1Resolved.toLowerCase() === t1Lower;
   
   match.maps.forEach(map => {
     // Handle forfeit - team that forfeited loses the map
@@ -725,13 +766,22 @@ function formatTeamHelper(teamName, teams, score, isWinner) {
   };
 }
 
-function generateMatchDetailsHelper(team1, team2, schedule, roundHint) {
-  const result = getMatchResultHelper(team1, team2, schedule, roundHint);
-  const t1Lower = team1.toLowerCase();
-  const t2Lower = team2.toLowerCase();
-  const teamMatch = (m) =>
-    (m.team1.toLowerCase() === t1Lower && m.team2.toLowerCase() === t2Lower) ||
-    (m.team1.toLowerCase() === t2Lower && m.team2.toLowerCase() === t1Lower);
+function generateMatchDetailsHelper(team1, team2, schedule, roundHint, teams) {
+  const result = getMatchResultHelper(team1, team2, schedule, roundHint, teams);
+
+  // Build alias lookup for resolving team names (matches getMatchResultHelper)
+  const aliasLookup = buildAliasLookup(teams);
+  const t1Resolved = resolveViaAliases(team1, aliasLookup);
+  const t2Resolved = resolveViaAliases(team2, aliasLookup);
+  const t1Lower = t1Resolved.toLowerCase();
+  const t2Lower = t2Resolved.toLowerCase();
+
+  const teamMatch = (m) => {
+    const schedT1 = resolveViaAliases(m.team1, aliasLookup).toLowerCase();
+    const schedT2 = resolveViaAliases(m.team2, aliasLookup).toLowerCase();
+    return (schedT1 === t1Lower && schedT2 === t2Lower) ||
+           (schedT1 === t2Lower && schedT2 === t1Lower);
+  };
 
   // Use same round-aware lookup as getMatchResultHelper
   let match = null;
@@ -808,9 +858,9 @@ function generateMatchDetailsHelper(team1, team2, schedule, roundHint) {
 
 // Generate 4-team bracket (Semi-Finals → Final)
 function generate4SEBracket(bracket, schedule, teams, division, options) {
-  const getMatchResult = (t1, t2, roundHint) => getMatchResultHelper(t1, t2, schedule, roundHint);
+  const getMatchResult = (t1, t2, roundHint) => getMatchResultHelper(t1, t2, schedule, roundHint, teams);
   const formatTeamData = (t, score, isWinner) => formatTeamHelper(t, teams, score, isWinner);
-  const getDetails = (t1, t2, roundHint) => generateMatchDetailsHelper(t1, t2, schedule, roundHint);
+  const getDetails = (t1, t2, roundHint) => generateMatchDetailsHelper(t1, t2, schedule, roundHint, teams);
 
   let wiki = `== ${options.title || 'Playoffs'} ==\n`;
   wiki += `{{4SEBracket\n`;
@@ -873,9 +923,9 @@ function generate4SEBracket(bracket, schedule, teams, division, options) {
 
 // Generate 8-team bracket (Quarter-Finals → Semi-Finals → Final)
 function generate8SEBracket(bracket, schedule, teams, division, options) {
-  const getMatchResult = (t1, t2, roundHint) => getMatchResultHelper(t1, t2, schedule, roundHint);
+  const getMatchResult = (t1, t2, roundHint) => getMatchResultHelper(t1, t2, schedule, roundHint, teams);
   const formatTeamData = (t, score, isWinner) => formatTeamHelper(t, teams, score, isWinner);
-  const getDetails = (t1, t2, roundHint) => generateMatchDetailsHelper(t1, t2, schedule, roundHint);
+  const getDetails = (t1, t2, roundHint) => generateMatchDetailsHelper(t1, t2, schedule, roundHint, teams);
 
   let wiki = `== ${options.title || 'Playoffs'} ==\n`;
   wiki += `{{8SEBracket\n`;
@@ -950,9 +1000,9 @@ function generate8SEBracket(bracket, schedule, teams, division, options) {
 
 // Generate 16-team bracket (R16 → QF → SF → F)
 function generate16SEBracket(bracket, schedule, teams, division, options) {
-  const getMatchResult = (t1, t2, roundHint) => getMatchResultHelper(t1, t2, schedule, roundHint);
+  const getMatchResult = (t1, t2, roundHint) => getMatchResultHelper(t1, t2, schedule, roundHint, teams);
   const formatTeamData = (t, score, isWinner) => formatTeamHelper(t, teams, score, isWinner);
-  const getDetails = (t1, t2, roundHint) => generateMatchDetailsHelper(t1, t2, schedule, roundHint);
+  const getDetails = (t1, t2, roundHint) => generateMatchDetailsHelper(t1, t2, schedule, roundHint, teams);
 
   let wiki = `== ${options.title || 'Playoffs'} ==\n`;
   wiki += `{{16SEBracket\n`;
@@ -1046,9 +1096,9 @@ function generate16SEBracket(bracket, schedule, teams, division, options) {
 
 // Generate 32-team bracket (R32 → R16 → QF → SF → F)
 function generate32SEBracket(bracket, schedule, teams, division, options) {
-  const getMatchResult = (t1, t2, roundHint) => getMatchResultHelper(t1, t2, schedule, roundHint);
+  const getMatchResult = (t1, t2, roundHint) => getMatchResultHelper(t1, t2, schedule, roundHint, teams);
   const formatTeamData = (t, score, isWinner) => formatTeamHelper(t, teams, score, isWinner);
-  const getDetails = (t1, t2, roundHint) => generateMatchDetailsHelper(t1, t2, schedule, roundHint);
+  const getDetails = (t1, t2, roundHint) => generateMatchDetailsHelper(t1, t2, schedule, roundHint, teams);
 
   let wiki = `== ${options.title || 'Playoffs'} ==\n`;
   wiki += `{{32SEBracket\n`;
@@ -1163,32 +1213,33 @@ function generate32SEBracket(bracket, schedule, teams, division, options) {
 function generateDoubleElimBracket(bracket, schedule, teams, division, options) {
   // For now, return a note that double elim is complex
   // Full implementation would require specific Liquipedia double elim templates
+  const clean = (name) => name ? unicodeToAscii(name).trim() : 'TBD';
   let wiki = `== ${options.title || 'Playoffs'} ==\n`;
   wiki += `\n`;
   wiki += `\n`;
   wiki += `\n`;
   wiki += `\n\n`;
-  
+
   // List teams for manual formatting
   wiki += `=== Winners Bracket ===\n`;
   if (bracket.winners?.quarterFinals) {
     wiki += `Quarter Finals:\n`;
     bracket.winners.quarterFinals.forEach((m, i) => {
-      wiki += `  Match ${i + 1}: ${m.team1 || 'TBD'} vs ${m.team2 || 'TBD'}\n`;
+      wiki += `  Match ${i + 1}: ${clean(m.team1)} vs ${clean(m.team2)}\n`;
     });
   }
   wiki += `Semi Finals:\n`;
   bracket.winners?.semiFinals?.forEach((m, i) => {
-    wiki += `  Match ${i + 1}: ${m.team1 || 'TBD'} vs ${m.team2 || 'TBD'}\n`;
+    wiki += `  Match ${i + 1}: ${clean(m.team1)} vs ${clean(m.team2)}\n`;
   });
-  wiki += `Final: ${bracket.winners?.final?.team1 || 'TBD'} vs ${bracket.winners?.final?.team2 || 'TBD'}\n\n`;
-  
+  wiki += `Final: ${clean(bracket.winners?.final?.team1)} vs ${clean(bracket.winners?.final?.team2)}\n\n`;
+
   wiki += `=== Losers Bracket ===\n`;
   wiki += `(Losers bracket structure varies by tournament size)\n\n`;
-  
+
   wiki += `=== Grand Final ===\n`;
-  wiki += `${bracket.grandFinal?.team1 || 'TBD'} vs ${bracket.grandFinal?.team2 || 'TBD'}\n`;
-  
+  wiki += `${clean(bracket.grandFinal?.team1)} vs ${clean(bracket.grandFinal?.team2)}\n`;
+
   return wiki;
 }
 

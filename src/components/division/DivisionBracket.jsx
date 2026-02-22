@@ -1,6 +1,7 @@
 // src/components/division/DivisionBracket.jsx
 import React, { useMemo, useState } from 'react';
 import { createDefaultBracket } from '../../App';
+import { unicodeToAscii } from '../../utils/matchLogic';
 import EmptyState from '../EmptyState';
 import DivisionStandings from './DivisionStandings';
 
@@ -21,21 +22,35 @@ function BracketMatch({ match, schedule, teams = [], onUpdateTeam, onUpdateScore
   const autoResult = useMemo(() => {
     if (!match?.team1 || !match?.team2) return null;
 
-    // Build alias lookup
+    // Build alias lookup (also index by unicodeToAscii-cleaned names for robustness)
     const aliasLookup = {};
     teams.forEach(team => {
       aliasLookup[team.name.toLowerCase()] = team.name;
+      const cleanedName = unicodeToAscii(team.name).toLowerCase().trim();
+      if (cleanedName !== team.name.toLowerCase()) {
+        aliasLookup[cleanedName] = team.name;
+      }
       if (team.aliases && Array.isArray(team.aliases)) {
         team.aliases.forEach(alias => {
           if (alias && alias.trim()) {
             aliasLookup[alias.toLowerCase().trim()] = team.name;
+            const cleanedAlias = unicodeToAscii(alias).toLowerCase().trim();
+            if (cleanedAlias !== alias.toLowerCase().trim()) {
+              aliasLookup[cleanedAlias] = team.name;
+            }
           }
         });
       }
     });
 
-    // Resolve team names via aliases
-    const resolveTeam = (name) => aliasLookup[name.toLowerCase()] || name;
+    // Resolve team names via aliases (clean with unicodeToAscii as fallback)
+    const resolveTeam = (name) => {
+      const lower = name.toLowerCase();
+      if (aliasLookup[lower]) return aliasLookup[lower];
+      const cleaned = unicodeToAscii(name).toLowerCase().trim();
+      if (aliasLookup[cleaned]) return aliasLookup[cleaned];
+      return name;
+    };
     const t1Resolved = resolveTeam(match.team1);
     const t2Resolved = resolveTeam(match.team2);
 

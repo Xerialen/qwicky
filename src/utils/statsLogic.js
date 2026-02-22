@@ -1,21 +1,6 @@
 // src/utils/statsLogic.js - QuakeWorld Player Stats Calculator
 
-// Clean Quake's special character encoding
-function unicodeToAscii(name) {
-  if (typeof name !== 'string') return name;
-  const lookupTable = {
-    0: "=", 2: "=", 5: "•", 10: " ", 14: "•", 15: "•",
-    16: "[", 17: "]", 18: "0", 19: "1", 20: "2", 21: "3",
-    22: "4", 23: "5", 24: "6", 25: "7", 26: "8", 27: "9",
-    28: "•", 29: "=", 30: "=", 31: "="
-  };
-  return name.split('').map(char => {
-    const code = char.charCodeAt(0);
-    const normalized = code >= 128 ? code - 128 : code;
-    if (normalized < 32) return lookupTable[normalized] || '?';
-    return String.fromCharCode(normalized);
-  }).join('');
-}
+import { unicodeToAscii } from './matchLogic';
 
 // Standard Quake Colors
 const QUAKE_COLORS = {
