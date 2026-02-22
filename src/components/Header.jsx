@@ -114,6 +114,21 @@ export default function Header({
               )}
             </button>
 
+            {/* Analytics Tab */}
+            <button
+              onClick={() => setActiveTab('analytics')}
+              className={`
+                px-4 py-2 font-display font-semibold text-xs uppercase
+                transition-all duration-200 rounded
+                ${activeTab === 'analytics'
+                  ? 'bg-qw-accent text-qw-dark tab-active'
+                  : 'bg-qw-border text-qw-muted hover:text-white'
+                }
+              `}
+            >
+              Analytics
+            </button>
+
             {/* Division Selector Dropdown */}
             {divisions.length > 0 && (
               <>

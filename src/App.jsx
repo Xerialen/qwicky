@@ -4,11 +4,21 @@ import Header from './components/Header';
 import TournamentInfo from './components/TournamentInfo';
 import DivisionManager from './components/DivisionManager';
 import DivisionView from './components/DivisionView';
+import UsageAnalytics from './components/UsageAnalytics';
 
 const STORAGE_KEY = 'qw-tournament-data';
 
+// Generate a unique tournament ID for analytics tracking
+const generateTournamentId = () => {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  return `t-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+};
+
 // Default tournament structure
 const createDefaultTournament = () => ({
+  id: generateTournamentId(),
   name: '',
   mode: '4on4',
   startDate: '',
@@ -305,6 +315,10 @@ function App() {
         if (!parsed.divisions) {
           parsed.divisions = [];
         }
+        // Migration: ensure tournament has a unique ID for analytics
+        if (!parsed.id) {
+          parsed.id = generateTournamentId();
+        }
         return parsed;
       }
       return createDefaultTournament();
@@ -328,6 +342,39 @@ function App() {
       console.error('Failed to save tournament:', err);
     }
   }, [tournament, activeDivisionId]);
+
+  // Send analytics heartbeat
+  useEffect(() => {
+    // Only send if tournament has a name (real tournament, not default)
+    if (!tournament.name || !tournament.id) return;
+
+    const sendHeartbeat = async () => {
+      try {
+        await fetch('/api/analytics/heartbeat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            tournament_id: tournament.id,
+            tournament_name: tournament.name,
+            mode: tournament.mode,
+            start_date: tournament.startDate,
+            end_date: tournament.endDate,
+            division_count: tournament.divisions.length,
+            total_teams: tournament.divisions.reduce((sum, d) => sum + (d.teams?.length || 0), 0),
+            total_matches: tournament.divisions.reduce((sum, d) => sum + (d.schedule?.length || 0), 0),
+            completed_matches: tournament.divisions.reduce((sum, d) =>
+              sum + (d.schedule?.filter(m => m.status === 'completed')?.length || 0), 0)
+          })
+        });
+      } catch {
+        // Silently fail — analytics should never block the app
+      }
+    };
+
+    sendHeartbeat();
+    const interval = setInterval(sendHeartbeat, 30 * 60 * 1000); // Every 30 minutes
+    return () => clearInterval(interval);
+  }, [tournament.id, tournament.name]);
 
   // Get active division
   const activeDivision = tournament.divisions.find(d => d.id === activeDivisionId);
@@ -482,6 +529,8 @@ function App() {
             tournamentId={(tournament.name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}
           />
         );
+      case 'analytics':
+        return <UsageAnalytics />;
       default:
         return (
           <TournamentInfo
