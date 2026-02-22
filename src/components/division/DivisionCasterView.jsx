@@ -190,22 +190,24 @@ function DetailedPlayerCard({ player, globalStats }) {
 function ExtH2HPanel({ data, tag1, tag2 }) {
   const rows = Array.isArray(data) ? data : (data?.matches || data?.games || []);
   if (rows.length === 0) return <p className="text-qw-muted text-xs italic">No global H2H data found.</p>;
-  const tag1Lower = tag1.toLowerCase();
   let wins1 = 0;
 
+  // The H2H API returns results from teamA's perspective:
+  //   result: "W" means teamA won, "L" means teamA lost
+  //   teamAFrags / teamBFrags for scores
+  // tag1 corresponds to teamA (the first team passed to getH2H).
   const matches = rows.map(r => {
-    const team = (r.team || r.teamA || '').toLowerCase();
     const result = (r.result || '').toUpperCase();
-    const tag1Won = team === tag1Lower ? result === 'W' : result === 'L';
+    const tag1Won = result === 'W';
     if (tag1Won) wins1++;
 
     const map = r.map || r.mapName || '';
-    const rawDate = r.date || r.played_at || r.timestamp || '';
+    const rawDate = r.date || r.playedAt || r.played_at || r.timestamp || '';
     const dateMatch = typeof rawDate === 'string' ? rawDate.match(/(\d{4}-\d{2}-\d{2})/) : null;
     const date = dateMatch ? dateMatch[1] : (typeof rawDate === 'string' ? rawDate.slice(0, 10) : '');
 
-    const score1 = r.score1 ?? r.frags_for ?? r.scoreFor ?? r.frags ?? r.score ?? null;
-    const score2 = r.score2 ?? r.frags_against ?? r.scoreAgainst ?? r.opponent_frags ?? r.opponentFrags ?? r.opponent_score ?? r.opponentScore ?? null;
+    const score1 = r.teamAFrags ?? r.score1 ?? r.frags_for ?? r.scoreFor ?? null;
+    const score2 = r.teamBFrags ?? r.score2 ?? r.frags_against ?? r.scoreAgainst ?? null;
 
     return { map, date, score1, score2, tag1Won };
   });
