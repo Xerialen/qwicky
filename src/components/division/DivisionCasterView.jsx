@@ -2,6 +2,8 @@
 import React, { useState, useMemo } from 'react';
 import {
   normalizeTeam,
+  buildTeamLookup,
+  resolveRawMapsTeams,
   calculateHeadToHead,
   analyzeCommonOpponents,
   analyzeRecentForm,
@@ -534,29 +536,34 @@ export default function DivisionCasterView({ division }) {
     return t?.tag || teamName;
   };
 
+  // ─── Resolve rawMaps team names to admin-entered canonical names ─────────
+
+  const teamLookup = useMemo(() => buildTeamLookup(division), [division]);
+  const resolvedMaps = useMemo(() => resolveRawMapsTeams(rawMaps, teamLookup), [rawMaps, teamLookup]);
+
   // ─── Local stats ──────────────────────────────────────────────────────────
 
   const localH2H = useMemo(
-    () => ready ? calculateHeadToHead(team1, team2, rawMaps) : null,
-    [team1, team2, rawMaps, ready]
+    () => ready ? calculateHeadToHead(team1, team2, resolvedMaps) : null,
+    [team1, team2, resolvedMaps, ready]
   );
 
-  const form1 = useMemo(() => ready ? analyzeRecentForm(team1, rawMaps) : null, [team1, rawMaps, ready]);
-  const form2 = useMemo(() => ready ? analyzeRecentForm(team2, rawMaps) : null, [team2, rawMaps, ready]);
+  const form1 = useMemo(() => ready ? analyzeRecentForm(team1, resolvedMaps) : null, [team1, resolvedMaps, ready]);
+  const form2 = useMemo(() => ready ? analyzeRecentForm(team2, resolvedMaps) : null, [team2, resolvedMaps, ready]);
 
   const commonOpp = useMemo(
-    () => ready ? analyzeCommonOpponents(team1, team2, rawMaps) : null,
-    [team1, team2, rawMaps, ready]
+    () => ready ? analyzeCommonOpponents(team1, team2, resolvedMaps) : null,
+    [team1, team2, resolvedMaps, ready]
   );
 
-  const mapStats1 = useMemo(() => ready ? calculateMapStats(team1, rawMaps) : null, [team1, rawMaps, ready]);
-  const mapStats2 = useMemo(() => ready ? calculateMapStats(team2, rawMaps) : null, [team2, rawMaps, ready]);
+  const mapStats1 = useMemo(() => ready ? calculateMapStats(team1, resolvedMaps) : null, [team1, resolvedMaps, ready]);
+  const mapStats2 = useMemo(() => ready ? calculateMapStats(team2, resolvedMaps) : null, [team2, resolvedMaps, ready]);
 
   const MIN_GAMES_FOR_ROSTER = 5;
 
   const spotlight = useMemo(() => {
     if (!ready) return null;
-    const allStats = calculatePlayerStats(rawMaps);
+    const allStats = calculatePlayerStats(resolvedMaps, teamLookup);
     const t1n = normalizeTeam(team1);
     const t2n = normalizeTeam(team2);
     // Filter players who have played 5+ games with one of the selected teams
@@ -578,11 +585,11 @@ export default function DivisionCasterView({ division }) {
       return { ...p, team: t1Games >= t2Games ? team1 : team2 };
     });
     return { ...getPlayerSpotlight(teamPlayers, 2), allPlayers: teamPlayers };
-  }, [team1, team2, rawMaps, ready]);
+  }, [team1, team2, resolvedMaps, ready]);
 
   const insights = useMemo(
-    () => ready ? generateCasterInsights(team1, team2, rawMaps) : [],
-    [team1, team2, rawMaps, ready]
+    () => ready ? generateCasterInsights(team1, team2, resolvedMaps) : [],
+    [team1, team2, resolvedMaps, ready]
   );
 
   // ─── Bracket quick-picks ──────────────────────────────────────────────────
