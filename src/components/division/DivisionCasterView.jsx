@@ -1,5 +1,5 @@
 // src/components/division/DivisionCasterView.jsx
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import {
   normalizeTeam,
   buildTeamLookup,
@@ -72,13 +72,13 @@ const MapResultCard = ({ result }) => {
   return (
     <div
       title={`vs ${result.opponent || '?'} · ${result.map} · ${result.sf} – ${result.sa}`}
-      className={`flex flex-col items-center justify-center rounded p-2 text-xs font-mono border cursor-default ${cls}`}
+      className={`flex flex-col items-center justify-center rounded p-2.5 text-sm font-mono border cursor-default ${cls}`}
     >
-      <span className="font-bold text-sm">{result.result}</span>
-      <span className="text-[10px] opacity-80 truncate max-w-full" title={result.map}>{result.map}</span>
-      <span className="text-[10px] opacity-60">{result.sf} – {result.sa}</span>
+      <span className="font-bold text-base">{result.result}</span>
+      <span className="text-[11.5px] opacity-80 truncate max-w-full" title={result.map}>{result.map}</span>
+      <span className="text-[11.5px] opacity-60">{result.sf} – {result.sa}</span>
       {result.opponent && (
-        <span className="text-[9px] opacity-50 truncate max-w-full">vs {result.opponent}</span>
+        <span className="text-[10px] opacity-50 truncate max-w-full">vs {result.opponent}</span>
       )}
     </div>
   );
@@ -559,29 +559,35 @@ export default function DivisionCasterView({ division }) {
   const mapStats1 = useMemo(() => ready ? calculateMapStats(team1, resolvedMaps) : null, [team1, resolvedMaps, ready]);
   const mapStats2 = useMemo(() => ready ? calculateMapStats(team2, resolvedMaps) : null, [team2, resolvedMaps, ready]);
 
-  const MIN_GAMES_FOR_ROSTER = 5;
-
   const spotlight = useMemo(() => {
     if (!ready) return null;
     const allStats = calculatePlayerStats(resolvedMaps, teamLookup);
     const t1n = normalizeTeam(team1);
     const t2n = normalizeTeam(team2);
-    // Filter players who have played 5+ games with one of the selected teams
+
+    // Count total maps each team has played to set a relative standin threshold
+    const t1Total = resolvedMaps.filter(m =>
+      (m.teams || []).some(t => normalizeTeam(t) === t1n)
+    ).length;
+    const t2Total = resolvedMaps.filter(m =>
+      (m.teams || []).some(t => normalizeTeam(t) === t2n)
+    ).length;
+
+    // Standin threshold: at least 30% of the team's maps, minimum 2 games
+    const t1Min = Math.max(2, Math.ceil(t1Total * 0.3));
+    const t2Min = Math.max(2, Math.ceil(t2Total * 0.3));
+
+    // Filter out standins — players must meet the threshold for their team
     const teamPlayers = Object.values(allStats).filter(p => {
       const gpt = p.gamesPerTeam || {};
-      return (gpt[t1n] || 0) >= MIN_GAMES_FOR_ROSTER
-          || (gpt[t2n] || 0) >= MIN_GAMES_FOR_ROSTER;
+      return (gpt[t1n] || 0) >= t1Min || (gpt[t2n] || 0) >= t2Min;
     }).map(p => {
       // Assign player to the team they played the most games for
       const gpt = p.gamesPerTeam || {};
       const t1Games = gpt[t1n] || 0;
       const t2Games = gpt[t2n] || 0;
-      if (t1Games >= MIN_GAMES_FOR_ROSTER && t2Games < MIN_GAMES_FOR_ROSTER) {
-        return { ...p, team: team1 };
-      } else if (t2Games >= MIN_GAMES_FOR_ROSTER && t1Games < MIN_GAMES_FOR_ROSTER) {
-        return { ...p, team: team2 };
-      }
-      // Both qualify — assign to the team with more games
+      if (t1Games > 0 && t2Games === 0) return { ...p, team: team1 };
+      if (t2Games > 0 && t1Games === 0) return { ...p, team: team2 };
       return { ...p, team: t1Games >= t2Games ? team1 : team2 };
     });
     return { ...getPlayerSpotlight(teamPlayers, 2), allPlayers: teamPlayers };
@@ -652,9 +658,21 @@ export default function DivisionCasterView({ division }) {
     }
   };
 
+  // Auto-load global stats when both teams are selected
+  const autoLoadRef = useRef('');
+  useEffect(() => {
+    if (!ready) return;
+    const pairKey = `${team1}|${team2}`;
+    if (autoLoadRef.current !== pairKey) {
+      autoLoadRef.current = pairKey;
+      loadExtData();
+    }
+  }, [ready, team1, team2]);
+
   const clearSelection = () => {
     setTeam1(''); setTeam2(''); setExtData(null); setExtError(null);
     setViewMode('tournament');
+    autoLoadRef.current = '';
   };
 
   // ─── Team selector (not yet ready) ─────────────────────────────────────────
@@ -737,7 +755,7 @@ export default function DivisionCasterView({ division }) {
 
   // ─── Analysis view ─────────────────────────────────────────────────────────
 
-  const extButtonLabel = extLoading ? 'Loading…' : extError ? 'Retry' : extData ? 'Refresh' : 'Load QW Stats';
+  const extButtonLabel = extLoading ? 'Loading…' : extError ? 'Retry' : 'Refresh';
 
   const hasMapData = Object.keys(mapStats1 || {}).length > 0
     || Object.keys(mapStats2 || {}).length > 0
@@ -774,24 +792,22 @@ export default function DivisionCasterView({ division }) {
           {/* Global toggle + Load button */}
           <div className="flex items-center gap-2 flex-shrink-0">
             {/* Single Tournament / Global toggle */}
-            {(extData || extLoading) && (
-              <div className="flex rounded overflow-hidden border border-qw-border text-xs font-display">
-                {['tournament', 'global'].map(v => (
-                  <button
-                    key={v}
-                    onClick={() => !extLoading && setViewMode(v)}
-                    disabled={extLoading || !extData}
-                    className={`px-2.5 py-1 transition-colors capitalize ${
-                      viewMode === v
-                        ? 'bg-qw-accent text-qw-dark font-bold'
-                        : 'bg-qw-border text-qw-muted hover:text-white'
-                    } disabled:opacity-40 disabled:cursor-not-allowed`}
-                  >
-                    {v === 'global' ? '🌍 Global' : 'Tournament'}
-                  </button>
-                ))}
-              </div>
-            )}
+            <div className="flex rounded overflow-hidden border border-qw-border text-xs font-display">
+              {['tournament', 'global'].map(v => (
+                <button
+                  key={v}
+                  onClick={() => !extLoading && setViewMode(v)}
+                  disabled={extLoading || !extData}
+                  className={`px-2.5 py-1 transition-colors capitalize ${
+                    viewMode === v
+                      ? 'bg-qw-accent text-qw-dark font-bold'
+                      : 'bg-qw-border text-qw-muted hover:text-white'
+                  } disabled:opacity-40 disabled:cursor-not-allowed`}
+                >
+                  {v === 'global' ? '🌍 Global' : 'Tournament'}
+                </button>
+              ))}
+            </div>
             <button
               onClick={loadExtData}
               disabled={extLoading}
@@ -987,24 +1003,24 @@ export default function DivisionCasterView({ division }) {
             ].map(({ form, team }) => (
               <div key={team}>
                 <div className="flex items-center justify-between mb-2">
-                  <span className="font-semibold text-white text-sm truncate" title={team}>{team}</span>
+                  <span className="font-semibold text-white text-base truncate" title={team}>{team}</span>
                   <div className="flex items-center gap-2 flex-shrink-0">
                     <TrendArrow trend={form.trend} />
-                    <span className="font-mono text-qw-muted text-xs">{form.record}</span>
+                    <span className="font-mono text-qw-muted text-sm">{form.record}</span>
                   </div>
                 </div>
 
                 {form.last5Maps.length === 0 ? (
-                  <p className="text-qw-muted text-xs italic">No map data yet.</p>
+                  <p className="text-qw-muted text-sm italic">No map data yet.</p>
                 ) : (
-                  <div className="grid gap-1" style={{ gridTemplateColumns: `repeat(${form.last5Maps.length}, 1fr)` }}>
+                  <div className="grid gap-1.5" style={{ gridTemplateColumns: `repeat(${form.last5Maps.length}, 1fr)` }}>
                     {form.last5Maps.map((r, i) => (
                       <MapResultCard key={`form-${team}-${i}-${r.map}`} result={r} />
                     ))}
                   </div>
                 )}
 
-                <div className="mt-2 text-xs text-qw-muted">
+                <div className="mt-2 text-sm text-qw-muted">
                   Momentum:{' '}
                   <span className={getMomentumColor(form.momentum)}>{getMomentumLabel(form.momentum)}</span>
                   {form.streak >= 2 && form.streak < 3 && (
@@ -1048,6 +1064,36 @@ export default function DivisionCasterView({ division }) {
       {/* ── Player Spotlight ── */}
       {hasPlayerData && spotlight && (
         <CollapsibleSection title="Player Spotlight" badge={showGlobal ? '🌍 + global' : null}>
+          {/* Hot/cold player summary */}
+          {(() => {
+            const hotPlayers = (spotlight.allPlayers || []).filter(p => p.trend === 'hot');
+            const coldPlayers = (spotlight.allPlayers || []).filter(p => p.trend === 'cold');
+            if (hotPlayers.length === 0 && coldPlayers.length === 0) return null;
+            return (
+              <div className="mb-4 space-y-1.5 text-sm">
+                {hotPlayers.map(p => (
+                  <div key={`hot-${p.name}`} className="flex items-center gap-2">
+                    <span className="text-qw-win font-display font-bold text-xs">▲ HOT</span>
+                    <span className="text-white font-semibold">{p.name}</span>
+                    <span className="text-qw-muted">—</span>
+                    <span className="text-qw-muted">
+                      averaging <span className="text-qw-win font-mono">{p.fragsPerMap}</span> frags/map in recent games, above their {p.mapsPlayed}-map tournament average
+                    </span>
+                  </div>
+                ))}
+                {coldPlayers.map(p => (
+                  <div key={`cold-${p.name}`} className="flex items-center gap-2">
+                    <span className="text-qw-loss font-display font-bold text-xs">▼ COLD</span>
+                    <span className="text-white font-semibold">{p.name}</span>
+                    <span className="text-qw-muted">—</span>
+                    <span className="text-qw-muted">
+                      recent output below their <span className="text-white font-mono">{p.fragsPerMap}</span> frags/map tournament average
+                    </span>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
           <PlayerSpotlightCard
             spotlight={spotlight}
             team1={team1}
