@@ -1,5 +1,6 @@
 // src/utils/casterStats.js
 // Statistical calculations for the Caster View, operating on division.rawMaps.
+import { unicodeToAscii } from './matchLogic';
 //
 // rawMaps items are produced by parseMatch() in matchLogic.js and have the shape:
 // {
@@ -311,14 +312,18 @@ export const calculatePlayerStats = (rawMaps) => {
     if (!Array.isArray(rawPlayers)) continue;
 
     for (const p of rawPlayers) {
-      const name = p.name || p.nick;
-      if (!name) continue;
+      const rawName = p.name || p.nick;
+      if (!rawName) continue;
+      const name = unicodeToAscii(rawName);
       const key = name.toLowerCase();
+
+      const cleanTeam = unicodeToAscii(p.team || '');
 
       if (!players[key]) {
         players[key] = {
           name,
-          team: p.team || '',
+          team: cleanTeam,
+          gamesPerTeam: {},        // { normalizedTeamName: count }
           mapsPlayed: 0,
           totalFrags: 0,
           totalDeaths: 0,
@@ -343,6 +348,12 @@ export const calculatePlayerStats = (rawMaps) => {
       const pl = players[key];
       pl.mapsPlayed++;
 
+      // Track games played per team (for standin detection)
+      if (cleanTeam) {
+        const teamKey = normalizeTeam(cleanTeam);
+        pl.gamesPerTeam[teamKey] = (pl.gamesPerTeam[teamKey] || 0) + 1;
+      }
+
       const stats = p.stats || {};
       const frags  = stats.frags  ?? p.frags  ?? 0;
       const deaths = stats.deaths ?? p.deaths ?? 0;
@@ -352,7 +363,7 @@ export const calculatePlayerStats = (rawMaps) => {
       pl.totalDeaths += deaths;
       pl.totalKills  += kills;
       pl.recentFrags.push(frags);
-      if (p.team) pl.team = p.team;
+      if (cleanTeam) pl.team = cleanTeam;
 
       // Damage
       const dmg = p.dmg || {};

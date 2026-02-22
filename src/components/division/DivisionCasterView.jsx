@@ -524,6 +524,9 @@ export default function DivisionCasterView({ division }) {
   const [viewMode, setViewMode] = useState('tournament');
   const showGlobal = viewMode === 'global';
 
+  // Local toggle for H2H section (independent of global toggle)
+  const [h2hMode, setH2hMode] = useState('tournament');
+
   const ready = !!(team1 && team2 && team1 !== team2);
 
   const getTag = (teamName) => {
@@ -549,13 +552,31 @@ export default function DivisionCasterView({ division }) {
   const mapStats1 = useMemo(() => ready ? calculateMapStats(team1, rawMaps) : null, [team1, rawMaps, ready]);
   const mapStats2 = useMemo(() => ready ? calculateMapStats(team2, rawMaps) : null, [team2, rawMaps, ready]);
 
+  const MIN_GAMES_FOR_ROSTER = 5;
+
   const spotlight = useMemo(() => {
     if (!ready) return null;
     const allStats = calculatePlayerStats(rawMaps);
     const t1n = normalizeTeam(team1);
     const t2n = normalizeTeam(team2);
-    const teamPlayers = Object.values(allStats)
-      .filter(p => normalizeTeam(p.team) === t1n || normalizeTeam(p.team) === t2n);
+    // Filter players who have played 5+ games with one of the selected teams
+    const teamPlayers = Object.values(allStats).filter(p => {
+      const gpt = p.gamesPerTeam || {};
+      return (gpt[t1n] || 0) >= MIN_GAMES_FOR_ROSTER
+          || (gpt[t2n] || 0) >= MIN_GAMES_FOR_ROSTER;
+    }).map(p => {
+      // Assign player to the team they played the most games for
+      const gpt = p.gamesPerTeam || {};
+      const t1Games = gpt[t1n] || 0;
+      const t2Games = gpt[t2n] || 0;
+      if (t1Games >= MIN_GAMES_FOR_ROSTER && t2Games < MIN_GAMES_FOR_ROSTER) {
+        return { ...p, team: team1 };
+      } else if (t2Games >= MIN_GAMES_FOR_ROSTER && t1Games < MIN_GAMES_FOR_ROSTER) {
+        return { ...p, team: team2 };
+      }
+      // Both qualify — assign to the team with more games
+      return { ...p, team: t1Games >= t2Games ? team1 : team2 };
+    });
     return { ...getPlayerSpotlight(teamPlayers, 2), allPlayers: teamPlayers };
   }, [team1, team2, rawMaps, ready]);
 
@@ -808,11 +829,33 @@ export default function DivisionCasterView({ division }) {
       )}
 
       {/* ── Head to Head ── */}
-      <CollapsibleSection
-        title="Head to Head"
-        badge={showGlobal ? '🌍 Global (12mo)' : 'Tournament'}
-      >
-        {showGlobal ? (
+      <CollapsibleSection title="Head to Head">
+        {/* Toggle buttons */}
+        <div className="flex rounded overflow-hidden border border-qw-border text-xs font-display mb-4">
+          <button
+            onClick={() => setH2hMode('tournament')}
+            className={`flex-1 px-3 py-1.5 transition-colors ${
+              h2hMode === 'tournament'
+                ? 'bg-qw-accent text-qw-dark font-bold'
+                : 'bg-qw-border text-qw-muted hover:text-white'
+            }`}
+          >
+            Tournament Record
+          </button>
+          <button
+            onClick={() => setH2hMode('global')}
+            disabled={!extData && !extLoading}
+            className={`flex-1 px-3 py-1.5 transition-colors ${
+              h2hMode === 'global'
+                ? 'bg-qw-accent text-qw-dark font-bold'
+                : 'bg-qw-border text-qw-muted hover:text-white'
+            } disabled:opacity-40 disabled:cursor-not-allowed`}
+          >
+            🌍 Global H2H
+          </button>
+        </div>
+
+        {h2hMode === 'global' ? (
           // Global H2H view
           extLoading ? <ExtLoadingOverlay /> :
           extData?.h2h ? <ExtH2HPanel data={extData.h2h} tag1={getTag(team1)} tag2={getTag(team2)} />
@@ -975,7 +1018,7 @@ export default function DivisionCasterView({ division }) {
 
       {/* ── Map Performance ── */}
       {hasMapData && (
-        <CollapsibleSection title={showGlobal ? 'General Map Performance' : 'Map Performance'} badge={showGlobal ? '🌍 Global 6mo' : null}>
+        <CollapsibleSection title="General Map Performance" badge={showGlobal ? '🌍 Global 6mo' : null}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {[
               { stats: mapStats1, extMaps: extData?.maps1, team: team1 },
