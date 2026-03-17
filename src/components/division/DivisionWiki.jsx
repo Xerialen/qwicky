@@ -1197,6 +1197,13 @@ export default function DivisionWiki({ division, tournamentName }) {
   const [copied, setCopied] = useState(false);
   const [viewMode, setViewMode] = useState('code');
   const [showPreview, setShowPreview] = useState(true);
+  const [showPublishModal, setShowPublishModal] = useState(false);
+  const [publishState, setPublishState] = useState({ status: 'idle', message: '' });
+  const [publishFields, setPublishFields] = useState({
+    pageTitle: '',
+    section: '',
+    summary: 'Updated via QWICKY',
+  });
   const [options, setOptions] = useState({
     title: division.name || 'Division'
   });
@@ -1314,6 +1321,37 @@ const handleCopy = async () => {
     URL.revokeObjectURL(url);
   };
 
+  const handlePublishToWiki = async () => {
+    if (!publishFields.pageTitle.trim()) {
+      setPublishState({ status: 'error', message: 'Page title is required' });
+      return;
+    }
+    setPublishState({ status: 'publishing', message: 'Publishing to wiki...' });
+    try {
+      const payload = {
+        pageTitle: publishFields.pageTitle.trim(),
+        content: wikiContent,
+        summary: publishFields.summary || 'Updated via QWICKY',
+      };
+      if (publishFields.section && publishFields.section !== '') {
+        payload.section = parseInt(publishFields.section, 10);
+      }
+      const res = await fetch('/api/wiki/publish', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        setPublishState({ status: 'success', message: `Published! ${data.pageUrl || ''}` });
+      } else {
+        setPublishState({ status: 'error', message: data.error || 'Unknown error' });
+      }
+    } catch (err) {
+      setPublishState({ status: 'error', message: `Request failed: ${err.message}` });
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex gap-2 flex-wrap">
@@ -1374,6 +1412,12 @@ const handleCopy = async () => {
             <button onClick={handleDownload} className="px-3 py-1.5 rounded text-xs bg-qw-accent text-qw-dark hover:bg-qw-accent-dim transition-colors">
               ⬇ Download
             </button>
+            <button
+              onClick={() => { setShowPublishModal(true); setPublishState({ status: 'idle', message: '' }); }}
+              className="px-3 py-1.5 rounded text-xs bg-blue-600 text-white hover:bg-blue-500 transition-colors"
+            >
+              Publish to Wiki
+            </button>
           </div>
         </div>
         <div className="p-4 max-h-[500px] overflow-auto">
@@ -1425,6 +1469,83 @@ const handleCopy = async () => {
           </div>
         )}
       </div>
+
+      {/* Publish to Wiki Modal */}
+      {showPublishModal && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={() => setShowPublishModal(false)}>
+          <div className="bg-qw-panel border border-qw-border rounded-lg w-full max-w-md p-6 space-y-4" onClick={e => e.stopPropagation()}>
+            <h3 className="font-display text-sm text-qw-accent">PUBLISH TO WIKI</h3>
+
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs text-qw-muted mb-1">Page Title *</label>
+                <input
+                  type="text"
+                  value={publishFields.pageTitle}
+                  onChange={e => setPublishFields(f => ({ ...f, pageTitle: e.target.value }))}
+                  placeholder="QW_Champions_League/Season_5/Division_1"
+                  className="w-full bg-qw-dark border border-qw-border rounded px-3 py-2 text-sm text-qw-text placeholder-zinc-600 focus:outline-none focus:border-qw-accent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs text-qw-muted mb-1">Section (optional)</label>
+                <input
+                  type="text"
+                  value={publishFields.section}
+                  onChange={e => setPublishFields(f => ({ ...f, section: e.target.value }))}
+                  placeholder="Leave empty to edit entire page"
+                  className="w-full bg-qw-dark border border-qw-border rounded px-3 py-2 text-sm text-qw-text placeholder-zinc-600 focus:outline-none focus:border-qw-accent"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs text-qw-muted mb-1">Edit Summary</label>
+                <input
+                  type="text"
+                  value={publishFields.summary}
+                  onChange={e => setPublishFields(f => ({ ...f, summary: e.target.value }))}
+                  className="w-full bg-qw-dark border border-qw-border rounded px-3 py-2 text-sm text-qw-text placeholder-zinc-600 focus:outline-none focus:border-qw-accent"
+                />
+              </div>
+
+              <div className="text-xs text-zinc-500">
+                Content: {activeExport} export ({wikiContent.length.toLocaleString()} chars)
+              </div>
+            </div>
+
+            {publishState.status !== 'idle' && (
+              <div className={`text-xs px-3 py-2 rounded ${
+                publishState.status === 'publishing' ? 'bg-blue-900/30 text-blue-300' :
+                publishState.status === 'success' ? 'bg-qw-win/10 text-qw-win' :
+                'bg-qw-loss/10 text-qw-loss'
+              }`}>
+                {publishState.message}
+              </div>
+            )}
+
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                onClick={() => setShowPublishModal(false)}
+                className="px-4 py-2 rounded text-xs bg-zinc-800 text-zinc-400 hover:text-zinc-200 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handlePublishToWiki}
+                disabled={publishState.status === 'publishing'}
+                className={`px-4 py-2 rounded text-xs font-semibold transition-colors ${
+                  publishState.status === 'publishing'
+                    ? 'bg-blue-800 text-blue-300 cursor-wait'
+                    : 'bg-blue-600 text-white hover:bg-blue-500'
+                }`}
+              >
+                {publishState.status === 'publishing' ? 'Publishing...' : 'Publish'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

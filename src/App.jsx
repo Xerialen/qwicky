@@ -1,13 +1,14 @@
 // src/App.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Header from './components/Header';
 import TournamentInfo from './components/TournamentInfo';
 import DivisionManager from './components/DivisionManager';
 import DivisionView from './components/DivisionView';
 import LandingScreen from './components/LandingScreen';
 import SetupWizard from './components/SetupWizard';
-
-const STORAGE_KEY = 'qw-tournament-data';
+import PublicTournament from './pages/PublicTournament';
+import { useTournamentState } from './hooks/useTournamentState.js';
+import { syncTournament } from './services/tournamentService.js';
 
 // Default tournament structure
 const createDefaultTournament = () => ({
@@ -297,43 +298,33 @@ function createDoubleElimBracket(teamCount) {
 }
 
 function App() {
-  // Main tournament state
-  const [tournament, setTournament] = useState(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        // Migration: ensure divisions array exists
-        if (!parsed.divisions) {
-          parsed.divisions = [];
-        }
-        return parsed;
-      }
-      return createDefaultTournament();
-    } catch {
-      return createDefaultTournament();
-    }
-  });
+  // Public route: #/t/tournament-slug
+  const [hashRoute, setHashRoute] = useState(window.location.hash);
+
+  useEffect(() => {
+    const handler = () => setHashRoute(window.location.hash);
+    window.addEventListener('hashchange', handler);
+    return () => window.removeEventListener('hashchange', handler);
+  }, []);
+
+  if (hashRoute.startsWith('#/t/')) {
+    return <PublicTournament slug={hashRoute.replace('#/t/', '')} />;
+  }
+
+  // Main tournament state — localStorage + Supabase (Phase 2)
+  const {
+    tournament, setTournament,
+    activeDivisionId, setActiveDivisionId,
+    isLoading, isSyncing, lastSyncStatus,
+    loadFromCloud, cloudTournaments,
+  } = useTournamentState();
 
   // App mode: 'landing' | 'wizard' | 'app'
   const [appMode, setAppMode] = useState('landing');
 
   // UI state
   const [activeTab, setActiveTab] = useState('info'); // info, divisions, division
-  const [activeDivisionId, setActiveDivisionId] = useState(tournament.activeDivisionId);
   const [initialSubTab, setInitialSubTab] = useState(null);
-
-  // Persist to localStorage
-  useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({
-        ...tournament,
-        activeDivisionId
-      }));
-    } catch (err) {
-      console.error('Failed to save tournament:', err);
-    }
-  }, [tournament, activeDivisionId]);
 
   // Get active division
   const activeDivision = tournament.divisions.find(d => d.id === activeDivisionId);
@@ -542,6 +533,13 @@ function App() {
         }}
         onContinue={() => setAppMode('app')}
         onLoadFile={(data) => importTournament(data)}
+        onSyncToCloud={() => syncTournament(tournament, activeDivisionId)}
+        cloudTournaments={cloudTournaments}
+        onLoadFromCloud={async (id) => {
+          const loaded = await loadFromCloud(id);
+          if (loaded) setAppMode('app');
+        }}
+        isLoading={isLoading}
       />
     );
   }

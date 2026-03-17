@@ -258,6 +258,100 @@ export default function TournamentInfo({ tournament, updateTournament, onNavigat
             </div>
           </div>
 
+          {/* Auto-Approve Settings */}
+          <div className="qw-panel p-6">
+            <h3 className="font-display text-lg text-qw-accent mb-4">AUTO-APPROVE</h3>
+            <p className="text-qw-muted text-sm mb-4">
+              When the Discord bot receives a match submission, it can auto-approve if both teams are confidently matched to a scheduled match within the approval window.
+            </p>
+
+            <div className="space-y-4">
+              {/* Enable toggle */}
+              <div className="flex items-center justify-between p-4 bg-qw-dark rounded border border-qw-border">
+                <div>
+                  <label className="text-white text-sm font-display font-semibold">Enable Auto-Approve</label>
+                  <p className="text-qw-muted text-xs mt-0.5">Automatically approve high-confidence submissions</p>
+                </div>
+                <button
+                  onClick={() => updateTournament({
+                    settings: {
+                      ...(tournament.settings || {}),
+                      autoApproveEnabled: !(tournament.settings?.autoApproveEnabled ?? true),
+                    }
+                  })}
+                  className={`relative w-11 h-6 rounded-full transition-colors ${
+                    (tournament.settings?.autoApproveEnabled ?? true) ? 'bg-qw-win' : 'bg-qw-border'
+                  }`}
+                >
+                  <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${
+                    (tournament.settings?.autoApproveEnabled ?? true) ? 'translate-x-5' : 'translate-x-0.5'
+                  }`} />
+                </button>
+              </div>
+
+              {/* Confidence threshold */}
+              <div className="p-4 bg-qw-dark rounded border border-qw-border">
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-white text-sm font-display font-semibold">Confidence Threshold</label>
+                  <span className="font-mono text-sm text-qw-accent">
+                    {tournament.settings?.minAutoApproveConfidence ?? 80}%
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min="50"
+                  max="100"
+                  step="5"
+                  value={tournament.settings?.minAutoApproveConfidence ?? 80}
+                  onChange={(e) => updateTournament({
+                    settings: {
+                      ...(tournament.settings || {}),
+                      minAutoApproveConfidence: parseInt(e.target.value),
+                    }
+                  })}
+                  className="w-full accent-qw-accent"
+                />
+                <div className="flex justify-between text-[10px] text-qw-muted font-mono mt-1">
+                  <span>50% (aggressive)</span>
+                  <span>80% (default)</span>
+                  <span>100% (exact only)</span>
+                </div>
+              </div>
+
+              {/* Approval window */}
+              <div className="p-4 bg-qw-dark rounded border border-qw-border">
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-white text-sm font-display font-semibold">Approval Window</label>
+                  <span className="font-mono text-sm text-qw-accent">
+                    {tournament.settings?.approvalWindowDays ?? 3} days
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min="1"
+                  max="14"
+                  step="1"
+                  value={tournament.settings?.approvalWindowDays ?? 3}
+                  onChange={(e) => updateTournament({
+                    settings: {
+                      ...(tournament.settings || {}),
+                      approvalWindowDays: parseInt(e.target.value),
+                    }
+                  })}
+                  className="w-full accent-qw-accent"
+                />
+                <div className="flex justify-between text-[10px] text-qw-muted font-mono mt-1">
+                  <span>1 day</span>
+                  <span>7 days</span>
+                  <span>14 days</span>
+                </div>
+                <p className="text-qw-muted text-xs mt-2">
+                  Only match submissions to scheduled matches within this many days of the match date.
+                </p>
+              </div>
+            </div>
+          </div>
+
           {/* Discord Integration */}
           <div className="qw-panel p-6">
             <h3 className="font-display text-lg text-qw-accent mb-4">DISCORD INTEGRATION</h3>
@@ -280,6 +374,25 @@ export default function TournamentInfo({ tournament, updateTournament, onNavigat
                     {copiedField === 'slug' ? 'Copied!' : 'Copy'}
                   </button>
                 </div>
+              </div>
+
+              {/* Public Link */}
+              <div className="p-4 bg-qw-dark rounded border border-qw-border">
+                <label className="block text-qw-muted text-sm mb-1">Public Link (read-only tournament page)</label>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 bg-qw-darker px-4 py-2 rounded font-mono text-white text-sm truncate">
+                    {window.location.origin}/#/t/{tournamentSlug}
+                  </code>
+                  <button
+                    onClick={() => copyToClipboard(`${window.location.origin}/#/t/${tournamentSlug}`, 'public-link')}
+                    className="px-3 py-2 rounded bg-qw-accent text-qw-dark text-sm font-semibold hover:bg-qw-accent/80"
+                  >
+                    {copiedField === 'public-link' ? 'Copied!' : 'Copy'}
+                  </button>
+                </div>
+                <p className="text-qw-muted text-xs mt-1">
+                  Share this link for read-only tournament standings
+                </p>
               </div>
 
               {/* Register command */}

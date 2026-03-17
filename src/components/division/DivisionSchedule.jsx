@@ -1,5 +1,6 @@
 // src/components/division/DivisionSchedule.jsx
 import React, { useState, useMemo, useRef } from 'react';
+import { findConflicts, getMatchConflicts } from '../../utils/scheduleValidator';
 
 // Polygon (circle) method: produces N-1 rounds (N even) where every team
 // plays exactly once per round. Odd team counts get a null bye placeholder.
@@ -45,7 +46,7 @@ function dateForRound(startDate, roundIndex, pace) {
   return d.toISOString().split('T')[0];
 }
 
-export default function DivisionSchedule({ division, updateDivision, tournamentStartDate }) {
+export default function DivisionSchedule({ division, updateDivision, tournamentStartDate, allDivisions = [] }) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingMatch, setEditingMatch] = useState(null);
   const [newMatch, setNewMatch] = useState({
@@ -57,6 +58,11 @@ export default function DivisionSchedule({ division, updateDivision, tournamentS
 
   const teams = division.teams || [];
   const schedule = division.schedule || [];
+
+  const conflicts = useMemo(
+    () => findConflicts(schedule, allDivisions.length > 1 ? allDivisions : []),
+    [schedule, allDivisions]
+  );
 
   const groups = useMemo(() => {
     return Array.from({ length: division.numGroups }, (_, i) => String.fromCharCode(65 + i));
@@ -390,6 +396,12 @@ export default function DivisionSchedule({ division, updateDivision, tournamentS
                 <span className="text-qw-win">{schedule.filter(m => m.status === 'completed').length}</span> played
                 {' • '}
                 {schedule.filter(m => m.status !== 'completed').length} pending
+                {conflicts.length > 0 && (
+                  <>
+                    {' • '}
+                    <span className="text-yellow-400 font-semibold">{conflicts.length} conflict{conflicts.length !== 1 ? 's' : ''}</span>
+                  </>
+                )}
               </span>
             )}
           </span>
@@ -508,6 +520,7 @@ export default function DivisionSchedule({ division, updateDivision, tournamentS
                                     onDragEnd={handleDragEnd}
                                     division={division}
                                     renderRoundOptions={renderRoundOptions}
+                                    conflicts={getMatchConflicts(match.id, conflicts)}
                                   />
                                 ))}
                               </div>
@@ -528,7 +541,7 @@ export default function DivisionSchedule({ division, updateDivision, tournamentS
               <div className="qw-panel overflow-hidden">
                 <div className="divide-y divide-qw-border">
                   {groupedMatches.playoffs.map(match => (
-                    <MatchRow key={match.id} match={match} onUpdate={handleUpdateMatch} onRemove={handleRemoveMatch} isEditing={editingMatch === match.id} setEditing={setEditingMatch} showRound division={division} renderRoundOptions={renderRoundOptions} />
+                    <MatchRow key={match.id} match={match} onUpdate={handleUpdateMatch} onRemove={handleRemoveMatch} isEditing={editingMatch === match.id} setEditing={setEditingMatch} showRound division={division} renderRoundOptions={renderRoundOptions} conflicts={getMatchConflicts(match.id, conflicts)} />
                   ))}
                 </div>
               </div>
@@ -541,7 +554,7 @@ export default function DivisionSchedule({ division, updateDivision, tournamentS
   );
 }
 
-function MatchRow({ match, onUpdate, onRemove, isEditing, setEditing, showRound, showDragHandle, isDragging, onDragStart, onDragEnd, division, renderRoundOptions }) {
+function MatchRow({ match, onUpdate, onRemove, isEditing, setEditing, showRound, showDragHandle, isDragging, onDragStart, onDragEnd, division, renderRoundOptions, conflicts = [] }) {
   const score = (() => {
     if (!match.maps || match.maps.length === 0) return null;
     let t1 = 0, t2 = 0;
@@ -596,6 +609,14 @@ function MatchRow({ match, onUpdate, onRemove, isEditing, setEditing, showRound,
             )}
             {!match.forfeit && match.maps?.some(m => m.forfeit) && (
               <span className="px-1.5 py-0.5 bg-orange-900/30 border border-orange-500/50 text-orange-300 text-xs rounded font-semibold">Map FF</span>
+            )}
+            {conflicts.length > 0 && (
+              <span
+                className="px-1.5 py-0.5 bg-yellow-900/30 border border-yellow-500/50 text-yellow-400 text-xs rounded font-semibold cursor-help"
+                title={conflicts.map(c => `Conflict: ${c.team} also plays on ${c.date}${c.type === 'cross-division' ? ' (cross-division)' : ''}`).join('\n')}
+              >
+                {conflicts.length > 1 ? `${conflicts.length} conflicts` : `${conflicts[0].team} double-booked`}
+              </span>
             )}
           </div>
           {match.status === 'scheduled' && (

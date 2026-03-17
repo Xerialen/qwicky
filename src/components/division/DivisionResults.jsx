@@ -1,7 +1,10 @@
 // src/components/division/DivisionResults.jsx
 import React, { useState, useRef, useMemo, useCallback, useEffect } from 'react';
 import { parseMatch, unicodeToAscii } from '../../utils/matchLogic';
+import { resolveTeamName as resolveTeamNameFromResolver } from '../../utils/teamResolver';
+import { confidenceLabel, confidenceColor } from '../../utils/matchConfidence';
 import DivisionStats from './DivisionStats';
+import QWStatsService from '../../services/QWStatsService';
 
 export default function DivisionResults({ division, updateDivision, updateAnyDivision, tournamentId, tournament }) {
   const [mode, setMode] = useState('discord');
@@ -25,57 +28,41 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
   const [showApproved, setShowApproved] = useState(false);
   const [filterByDivision, setFilterByDivision] = useState(true);
 
+  // Browse states
+  const [browseTeamTag, setBrowseTeamTag] = useState('');
+  const [browseDateFrom, setBrowseDateFrom] = useState('');
+  const [browseDateTo, setBrowseDateTo] = useState('');
+  const [browseMapFilter, setBrowseMapFilter] = useState('');
+  const [browseResults, setBrowseResults] = useState([]);
+  const [browseLoading, setBrowseLoading] = useState(false);
+  const [browseError, setBrowseError] = useState(null);
+  const [browseSelected, setBrowseSelected] = useState(new Set());
+
   // Helper function to detect which division(s) a submission belongs to
   const detectSubmissionDivision = useCallback((submission) => {
     if (!submission?.game_data?.teams || !tournament?.divisions) return null;
 
-    // Extract and clean team names from submission (handle QuakeWorld characters)
+    // Extract raw team names from submission
     const gameTeams = submission.game_data.teams.map(t => {
       const name = typeof t === 'object' ? t.name : t;
-      return unicodeToAscii(name || '');
+      return name || '';
     }).filter(Boolean);
 
     if (gameTeams.length === 0) return null;
 
-    // Check each division to see if it contains these teams
+    // Check each division to see if it contains these teams (using teamResolver)
     const matchingDivisions = [];
     tournament.divisions.forEach(div => {
-      // Build lookup map including team names, tags, and aliases
-      const teamNameLookup = new Set();
-      (div.teams || []).forEach(team => {
-        // Clean team name for comparison (handles QuakeWorld characters)
-        teamNameLookup.add(unicodeToAscii(team.name).toLowerCase());
+      const divTeams = div.teams || [];
+      if (divTeams.length === 0) return;
 
-        // Add team tag variants — ktxstats often uses clan tags (with or without brackets) as team names
-        if (team.tag) {
-          const tagLower = team.tag.toLowerCase();
-          teamNameLookup.add(tagLower);
-          const cleanTag = tagLower.replace(/[\[\]]/g, '');
-          if (cleanTag !== tagLower) teamNameLookup.add(cleanTag);
-          if (!tagLower.startsWith('[')) teamNameLookup.add(`[${cleanTag}]`);
-        }
-
-        // Also add aliases (clean them too!)
-        if (team.aliases && Array.isArray(team.aliases)) {
-          team.aliases.forEach(alias => {
-            if (alias && alias.trim()) {
-              // Clean alias before adding to lookup (in case user entered it with special chars)
-              teamNameLookup.add(unicodeToAscii(alias).toLowerCase().trim());
-            }
-          });
-        }
-      });
-
-      // Count how many game teams are found in this division
-      // Try both exact and bracket-stripped versions of game team names
+      // Count how many game teams resolve to a known team in this division
       const matchCount = gameTeams.filter(gt => {
-        const gtLower = gt.toLowerCase();
-        if (teamNameLookup.has(gtLower)) return true;
-        const gtStripped = gtLower.replace(/[\[\]]/g, '');
-        return gtStripped !== gtLower && teamNameLookup.has(gtStripped);
+        const result = resolveTeamNameFromResolver(gt, divTeams);
+        return result.match !== null;
       }).length;
 
-      // If both teams are in this division, it's a match
+      // If all teams are in this division, it's a match
       if (matchCount === gameTeams.length) {
         matchingDivisions.push(div);
       }
@@ -253,44 +240,16 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
 
   // --- TEAM LOOKUP & SERIES LOGIC ---
 
-  // Standalone helpers (usable for any division, not just the active one)
-  function buildTeamLookupForDiv(div) {
-    const byTag = {};
-    const byName = {};
-    const byNameLower = {};
-    (div.teams || []).forEach(team => {
-      if (team.tag) {
-        const tagLower = team.tag.toLowerCase();
-        byTag[tagLower] = team;
-        // Add bracket-stripped variant (e.g., "[sr]" → "sr")
-        const cleanTag = tagLower.replace(/[\[\]]/g, '');
-        if (cleanTag !== tagLower) byTag[cleanTag] = team;
-        // Add bracket-wrapped variant (e.g., "sr" → "[sr]") — ktxstats often wraps clan tags in brackets
-        if (!tagLower.startsWith('[')) byTag[`[${cleanTag}]`] = team;
-      }
-      byName[team.name] = team;
-      byNameLower[team.name.toLowerCase()] = team;
-      if (team.aliases && Array.isArray(team.aliases)) {
-        team.aliases.forEach(alias => {
-          if (alias && alias.trim()) {
-            byNameLower[alias.toLowerCase().trim()] = team;
-          }
-        });
-      }
-    });
-    return { byTag, byName, byNameLower };
+  // Standalone helper: resolve a team name against any division's teams using teamResolver
+  function resolveTeamNameWithLookup(jsonTeamName, divTeams) {
+    if (!jsonTeamName) return jsonTeamName;
+    const result = resolveTeamNameFromResolver(jsonTeamName, divTeams);
+    return result.match ? result.match.name : jsonTeamName;
   }
 
-  function resolveTeamNameWithLookup(jsonTeamName, lookup) {
-    if (!jsonTeamName) return jsonTeamName;
-    const lower = jsonTeamName.toLowerCase().trim();
-    if (lookup.byName[jsonTeamName]) return lookup.byName[jsonTeamName].name;
-    if (lookup.byNameLower[lower]) return lookup.byNameLower[lower].name;
-    if (lookup.byTag[lower]) return lookup.byTag[lower].name;
-    // Try bracket-stripped version (e.g., "[SR]" → "sr") in case tag stored without brackets
-    const stripped = lower.replace(/[\[\]]/g, '');
-    if (stripped !== lower && lookup.byTag[stripped]) return lookup.byTag[stripped].name;
-    return jsonTeamName;
+  // For backward compatibility: buildTeamLookupForDiv now returns the teams array directly
+  function buildTeamLookupForDiv(div) {
+    return div.teams || [];
   }
 
   // Memoized lookup for the current (active) division
@@ -933,6 +892,9 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
           <button onClick={() => setMode('json')} className={`px-4 py-2 rounded font-body font-semibold ${mode === 'json' ? 'bg-qw-accent text-qw-dark' : 'bg-qw-panel border border-qw-border text-qw-muted hover:text-white'}`}>
             📄 JSON Import
           </button>
+          <button onClick={() => setMode('browse')} className={`px-4 py-2 rounded font-body font-semibold ${mode === 'browse' ? 'bg-qw-accent text-qw-dark' : 'bg-qw-panel border border-qw-border text-qw-muted hover:text-white'}`}>
+            🔍 Browse
+          </button>
         </div>
         {rawMaps.length > 0 && (
           <button onClick={handleClearResults} className="text-sm text-red-400 hover:text-red-300">Clear All</button>
@@ -1038,6 +1000,14 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
                           <span className="font-body font-semibold text-white">{t2Name}</span>
                           <span className="text-qw-muted text-xs bg-qw-darker px-2 py-0.5 rounded">{mapName}</span>
                           <span className="text-qw-muted text-xs bg-qw-darker px-2 py-0.5 rounded">{gameData.mode || '?'}</span>
+                          {sub.flags?.confidence != null && (
+                            <span
+                              className={`text-xs font-semibold px-2 py-0.5 rounded bg-qw-darker ${confidenceColor(sub.flags.confidence)}`}
+                              title={sub.flags.breakdown ? `Team: ${sub.flags.breakdown.teamMatch}/40, Schedule: ${sub.flags.breakdown.scheduleProximity}/30, BestOf: ${sub.flags.breakdown.bestOfFit}/15, Series: ${sub.flags.breakdown.seriesAffinity}/15` : `Confidence: ${sub.flags.confidence}%`}
+                            >
+                              {confidenceLabel(sub.flags.confidence)} {sub.flags.confidence}%
+                            </span>
+                          )}
                         </div>
                         <div className="text-xs text-qw-muted mt-1 flex items-center gap-2 flex-wrap">
                           <span>
@@ -1117,6 +1087,212 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
             <textarea value={jsonInput} onChange={(e) => setJsonInput(e.target.value)} placeholder='{"teams": [...], "players": [...]}' rows={4} className="w-full bg-qw-dark border border-qw-border rounded px-4 py-2 font-mono text-white text-sm resize-none" />
             <button onClick={handleJsonPaste} disabled={!jsonInput.trim()} className="qw-btn mt-2 disabled:opacity-50">Import</button>
           </div>
+        </div>
+      ) : mode === 'browse' ? (
+        // --- BROWSE / SEARCH UI ---
+        <div className="qw-panel p-6 space-y-4">
+          <h3 className="font-display text-lg text-qw-accent">BROWSE GAMES</h3>
+          <p className="text-sm text-qw-muted">Search recent 4on4 games by team tag from the QW Stats API. Import basic match data (teams, score, map, date) directly.</p>
+
+          <div className="flex flex-wrap gap-3 items-end">
+            <div className="flex-1 min-w-[140px]">
+              <label className="block text-qw-muted text-xs mb-1">Team Tag *</label>
+              <input
+                type="text"
+                value={browseTeamTag}
+                onChange={(e) => setBrowseTeamTag(e.target.value)}
+                placeholder="e.g. sr, def, fi"
+                className="w-full bg-qw-darker border border-qw-border rounded px-3 py-2 text-white text-sm focus:border-qw-accent outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-qw-muted text-xs mb-1">From</label>
+              <input
+                type="date"
+                value={browseDateFrom}
+                onChange={(e) => setBrowseDateFrom(e.target.value)}
+                className="bg-qw-darker border border-qw-border rounded px-3 py-2 text-white text-sm focus:border-qw-accent outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-qw-muted text-xs mb-1">To</label>
+              <input
+                type="date"
+                value={browseDateTo}
+                onChange={(e) => setBrowseDateTo(e.target.value)}
+                className="bg-qw-darker border border-qw-border rounded px-3 py-2 text-white text-sm focus:border-qw-accent outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-qw-muted text-xs mb-1">Map</label>
+              <select
+                value={browseMapFilter}
+                onChange={(e) => setBrowseMapFilter(e.target.value)}
+                className="bg-qw-darker border border-qw-border rounded px-3 py-2 text-white text-sm focus:border-qw-accent outline-none"
+              >
+                <option value="">All Maps</option>
+                {['dm2', 'dm3', 'dm4', 'dm6', 'e1m2', 'aerowalk', 'ztndm3', 'skull'].map(m => (
+                  <option key={m} value={m}>{m}</option>
+                ))}
+              </select>
+            </div>
+            <button
+              onClick={async () => {
+                if (!browseTeamTag.trim()) return;
+                setBrowseLoading(true);
+                setBrowseError(null);
+                setBrowseResults([]);
+                setBrowseSelected(new Set());
+                try {
+                  const opts = { limit: 30 };
+                  if (browseMapFilter) opts.map = browseMapFilter;
+                  if (browseDateFrom) {
+                    const monthsAgo = Math.ceil((Date.now() - new Date(browseDateFrom).getTime()) / (30 * 24 * 60 * 60 * 1000));
+                    if (monthsAgo > 0) opts.months = Math.min(monthsAgo + 1, 24);
+                  }
+                  const result = await QWStatsService.getForm(browseTeamTag.trim(), opts);
+                  let games = result.games || [];
+                  if (browseDateFrom) {
+                    const from = new Date(browseDateFrom).getTime();
+                    games = games.filter(g => new Date(g.playedAt).getTime() >= from);
+                  }
+                  if (browseDateTo) {
+                    const to = new Date(browseDateTo + 'T23:59:59').getTime();
+                    games = games.filter(g => new Date(g.playedAt).getTime() <= to);
+                  }
+                  setBrowseResults(games);
+                } catch (err) {
+                  setBrowseError(err.message);
+                }
+                setBrowseLoading(false);
+              }}
+              disabled={browseLoading || !browseTeamTag.trim()}
+              className="qw-btn px-6 py-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {browseLoading ? 'Searching...' : 'SEARCH'}
+            </button>
+          </div>
+
+          {browseError && (
+            <div className="p-3 bg-red-900/30 border border-red-500/50 rounded text-red-300 text-sm">{browseError}</div>
+          )}
+
+          {browseResults.length > 0 && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-qw-muted text-sm">{browseResults.length} game(s) found</span>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => {
+                      if (browseSelected.size === browseResults.length) {
+                        setBrowseSelected(new Set());
+                      } else {
+                        setBrowseSelected(new Set(browseResults.map((_, i) => i)));
+                      }
+                    }}
+                    className="text-sm text-qw-accent hover:text-white"
+                  >
+                    {browseSelected.size === browseResults.length ? 'Deselect All' : 'Select All'}
+                  </button>
+                  {browseSelected.size > 0 && (
+                    <button
+                      onClick={() => {
+                        const selectedGames = browseResults.filter((_, i) => browseSelected.has(i));
+                        const teamTag = browseTeamTag.trim().toLowerCase();
+                        const newMaps = selectedGames.map(game => {
+                          const team1 = teamTag;
+                          const team2 = (game.opponent || 'unknown').toLowerCase();
+                          const scores = {};
+                          scores[team1] = game.teamFrags ?? 0;
+                          scores[team2] = game.oppFrags ?? 0;
+                          let timestamp = null;
+                          if (game.playedAt) {
+                            try { timestamp = new Date(game.playedAt).getTime(); } catch (e) { /* ignore */ }
+                          }
+                          return {
+                            id: `browse-${game.id || game.demoSha256 || Date.now()}-${game.map}`,
+                            date: game.playedAt || null,
+                            timestamp,
+                            map: game.map || 'unknown',
+                            mode: '4on4',
+                            duration: null,
+                            teams: [team1, team2],
+                            matchupId: [team1, team2].sort().join('vs'),
+                            scores,
+                            originalData: game
+                          };
+                        });
+                        const added = addMapsInBatch(newMaps);
+                        if (added && added.length > 0) {
+                          setLastImported(added);
+                          setBrowseSelected(new Set());
+                        }
+                      }}
+                      className="qw-btn px-4 py-1.5 text-sm"
+                    >
+                      Import Selected ({browseSelected.size})
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-2 max-h-[500px] overflow-y-auto">
+                {browseResults.map((game, idx) => {
+                  const isSelected = browseSelected.has(idx);
+                  const isWin = game.result === 'win';
+                  const isLoss = game.result === 'loss';
+                  const dateStr = game.playedAt ? new Date(game.playedAt).toLocaleDateString('sv-SE') : '\u2014';
+                  return (
+                    <div
+                      key={game.id || idx}
+                      onClick={() => {
+                        const next = new Set(browseSelected);
+                        if (next.has(idx)) next.delete(idx);
+                        else next.add(idx);
+                        setBrowseSelected(next);
+                      }}
+                      className={`p-3 rounded border cursor-pointer transition-colors ${
+                        isSelected
+                          ? 'bg-qw-accent/10 border-qw-accent'
+                          : 'bg-qw-dark border-qw-border hover:border-qw-muted'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            readOnly
+                            className="accent-qw-accent flex-shrink-0"
+                          />
+                          <span className="text-qw-muted text-xs font-mono w-20 flex-shrink-0">{dateStr}</span>
+                          <span className="px-2 py-0.5 bg-qw-darker rounded text-xs font-mono text-qw-accent flex-shrink-0">{game.map || '?'}</span>
+                          <span className="font-body font-semibold text-white truncate">{browseTeamTag.trim().toLowerCase()}</span>
+                          <span className="px-2 py-0.5 bg-qw-darker rounded font-mono text-sm flex-shrink-0">
+                            <span className={isWin ? 'text-qw-win font-bold' : ''}>{game.teamFrags ?? '?'}</span>
+                            <span className="text-qw-muted mx-1">-</span>
+                            <span className={isLoss ? 'text-qw-win font-bold' : ''}>{game.oppFrags ?? '?'}</span>
+                          </span>
+                          <span className="font-body font-semibold text-white truncate">{game.opponent || '?'}</span>
+                        </div>
+                        <span className={`text-xs font-semibold px-2 py-0.5 rounded flex-shrink-0 ${
+                          isWin ? 'bg-qw-win/20 text-qw-win' :
+                          isLoss ? 'bg-qw-loss/20 text-qw-loss' :
+                          'bg-qw-darker text-qw-muted'
+                        }`}>
+                          {isWin ? 'W' : isLoss ? 'L' : 'D'}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {browseResults.length === 0 && !browseLoading && !browseError && browseTeamTag && (
+            <p className="text-qw-muted text-sm">Enter a team tag and click Search to find recent 4on4 games.</p>
+          )}
         </div>
       ) : (
         // --- API FETCH UI (UPDATED) ---

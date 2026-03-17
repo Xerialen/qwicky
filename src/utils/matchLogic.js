@@ -1,18 +1,24 @@
 // src/utils/matchLogic.js
+import { stripColorCodes, normalize as normalizeName } from './nameNormalizer.js';
 
-// 1. Clean weird Quake characters
+// 1. Clean weird Quake characters (display-safe: strips color codes + high-bit decode)
+// All callers get color code stripping automatically now.
 export function unicodeToAscii(name) {
   if (typeof name !== 'string') return name;
+  // Strip QW color codes first (^0-^9, ^h, ^d, etc.)
+  const colorStripped = stripColorCodes(name);
   const lookupTable = {
-    0: "=", 2: "=", 5: "•", 10: " ", 14: "•", 15: "•",
+    0: "", 1: "_", 2: "_", 3: "_", 4: "_",
+    5: ".", 6: "*", 7: ".", 8: "=", 9: "=",
+    10: " ", 11: " ", 12: " ", 13: ".", 14: ".", 15: ".",
     16: "[", 17: "]", 18: "0", 19: "1", 20: "2", 21: "3",
     22: "4", 23: "5", 24: "6", 25: "7", 26: "8", 27: "9",
-    28: "•", 29: "=", 30: "=", 31: "="
+    28: ".", 29: "-", 30: "^", 31: "v",
   };
-  return name.split('').map(char => {
+  return colorStripped.split('').map(char => {
     const code = char.charCodeAt(0);
     const normalized = code >= 128 ? code - 128 : code;
-    if (normalized < 32) return lookupTable[normalized] || '?';
+    if (normalized < 32) return lookupTable[normalized] ?? '';
     return String.fromCharCode(normalized);
   }).join('');
 }
@@ -36,7 +42,9 @@ export function parseMatch(gameId, jsonData) {
   }
   
   const cleanTeams = rawTeams.map(t => unicodeToAscii(t).trim());
-  const sortedTeams = [...cleanTeams].sort((a, b) => a.localeCompare(b));
+  // Use full normalization pipeline for the matchup key so color-coded names,
+  // diacritics, and bracket variants all resolve to the same key.
+  const sortedTeams = [...cleanTeams].map(t => normalizeName(t)).sort((a, b) => a.localeCompare(b));
   const matchupKey = sortedTeams.join("vs");
 
   const teamScores = {};
