@@ -8,18 +8,12 @@
 // Some clients also emit ^{hex3} extended codes — strip those too.
 const QW_COLOR_REGEX = /\^[0-9a-zA-Z]|\^{[0-9a-fA-F]{3}}/g;
 
-// ── Stage 2: QW special character table (codes 0x00–0x1F) ────────────────────
-// Quake's character set encodes special graphics in 0–31 and their high-bit
-// mirrors in 128–159. This table is the authoritative mapping used by qw-stats.
-const QW_CHAR_TABLE = {
-  0: '',  1: '_', 2: '_', 3: '_', 4: '_',
-  5: '.', 6: '*', 7: '.', 8: '=', 9: '=',
-  10: ' ', 11: ' ', 12: ' ', 13: '.', 14: '.', 15: '.',
-  16: '[', 17: ']',
-  18: '0', 19: '1', 20: '2', 21: '3', 22: '4',
-  23: '5', 24: '6', 25: '7', 26: '8', 27: '9',
-  28: '.', 29: '-', 30: '^', 31: 'v',
-};
+// ── Stage 2: Quake character table (all 256 byte values) ─────────────────────
+// From quakeworld/quake_text charset.rs — the authoritative 256-char lookup.
+// Bytes 0-127 are the base charset; 128-255 are their high-bit (brown) mirrors.
+// Every byte maps to exactly one printable ASCII character.
+// prettier-ignore
+const QW_ASCII_TABLE = '________________[]0123456789____ !"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_\'abcdefghijklmnopqrstuvwxyz{|}~_________________[]0123456789____ !"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_\'abcdefghijklmnopqrstuvwxyz{|}~_';
 
 /**
  * Stage 1: Strip QW color codes (^0–^9, ^h, ^d, extended variants).
@@ -32,19 +26,14 @@ export function stripColorCodes(name) {
 
 /**
  * Stage 2: Normalize high-bit characters (Quake mod-128 encoding).
- * Chars 128–255 are high-bit mirrors of 0–127; subtract 128 to decode.
- * Chars 0–31 are QW graphics; map to ASCII equivalents via QW_CHAR_TABLE.
+ * Single table lookup into QW_ASCII_TABLE — every byte 0-255 maps to a
+ * printable ASCII character. Aligned with quakeworld/quake_text crate.
  */
 export function normalizeHighBit(name) {
   if (typeof name !== 'string') return name;
-  return name.split('').map(char => {
-    const code = char.charCodeAt(0);
-    if (code < 128) {
-      return code < 32 ? (QW_CHAR_TABLE[code] ?? '') : char;
-    }
-    const normalized = code - 128;
-    if (normalized < 32) return QW_CHAR_TABLE[normalized] ?? '';
-    return String.fromCharCode(normalized);
+  return [...name].map(c => {
+    const code = c.charCodeAt(0);
+    return code < 256 ? QW_ASCII_TABLE[code] : c;
   }).join('');
 }
 

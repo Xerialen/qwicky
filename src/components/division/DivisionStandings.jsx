@@ -1,6 +1,6 @@
 // src/components/division/DivisionStandings.jsx
 import React, { useMemo } from 'react';
-import { normalize } from '../../utils/nameNormalizer';
+import { createTeamContext, resolveTeam } from '../../utils/teamIdentity';
 import EmptyState from '../EmptyState';
 
 export function calculateStandings(schedule, division) {
@@ -15,21 +15,10 @@ export function calculateStandings(schedule, division) {
   // Initialize ALL teams from division.teams first
   const teams = division.teams || [];
 
-  // Build normalized alias lookup map for resolving team names
-  const aliasLookup = {};
+  // Build team context for resolution (replaces inline aliasLookup)
+  const ctx = createTeamContext(teams);
+
   teams.forEach(team => {
-    // Map normalized canonical name
-    aliasLookup[normalize(team.name)] = team.name;
-
-    // Map all normalized aliases to canonical name
-    if (team.aliases && Array.isArray(team.aliases)) {
-      team.aliases.forEach(alias => {
-        if (alias && alias.trim()) {
-          aliasLookup[normalize(alias)] = team.name;
-        }
-      });
-    }
-
     // Initialize standings
     standings[team.name] = {
       name: team.name,
@@ -45,10 +34,8 @@ export function calculateStandings(schedule, division) {
     };
   });
 
-  // Helper to resolve team name via normalized aliases
-  const resolveTeamName = (name) => {
-    return aliasLookup[normalize(name)] || name;
-  };
+  // Helper to resolve team name via teamIdentity
+  const resolveTeamName = (name) => resolveTeam(name, ctx);
 
   const groupMatches = schedule.filter(m => m.round === 'group' && m.maps?.length > 0);
 

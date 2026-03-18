@@ -13,98 +13,26 @@
 //   { status: 'error', error }
 
 import { createClient } from '@supabase/supabase-js';
+import { normalize } from '../src/utils/nameNormalizer.js';
+import { resolveTeamName } from '../src/utils/teamResolver.js';
 
 const supabase = createClient(
   process.env.QWICKY_SUPABASE_URL,
   process.env.QWICKY_SUPABASE_SERVICE_KEY
 );
 
-// ── Inline normalizer (no ES module imports in serverless context) ────────────
-// Mirrors nameNormalizer.js — kept in sync manually.
-const QW_COLOR_REGEX = /\^[0-9a-zA-Z]/g;
-const QW_CHAR_TABLE = {
-  0:'',1:'_',2:'_',3:'_',4:'_',5:'.',6:'*',7:'.',8:'=',9:'=',
-  10:' ',11:' ',12:' ',13:'.',14:'.',15:'.',16:'[',17:']',
-  18:'0',19:'1',20:'2',21:'3',22:'4',23:'5',24:'6',25:'7',26:'8',27:'9',
-  28:'.',29:'-',30:'^',31:'v',
-};
-
-function normalize(raw) {
-  if (typeof raw !== 'string') return '';
-  const colorStripped = raw.replace(QW_COLOR_REGEX, '');
-  const highBit = colorStripped.split('').map(ch => {
-    const c = ch.charCodeAt(0);
-    if (c < 128) return c < 32 ? (QW_CHAR_TABLE[c] ?? '') : ch;
-    const n = c - 128;
-    if (n < 32) return QW_CHAR_TABLE[n] ?? '';
-    return String.fromCharCode(n);
-  }).join('');
-  return highBit.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
-}
-
-// ── Jaro-Winkler (self-contained copy) ───────────────────────────────────────
-function jaroWinkler(s1, s2) {
-  if (s1 === s2) return 1.0;
-  const l1 = s1.length, l2 = s2.length;
-  if (!l1 || !l2) return 0.0;
-  const dist = Math.max(Math.floor(Math.max(l1, l2) / 2) - 1, 0);
-  const m1 = new Array(l1).fill(false), m2 = new Array(l2).fill(false);
-  let matches = 0;
-  for (let i = 0; i < l1; i++) {
-    for (let j = Math.max(0, i - dist); j < Math.min(i + dist + 1, l2); j++) {
-      if (!m2[j] && s1[i] === s2[j]) { m1[i] = m2[j] = true; matches++; break; }
-    }
-  }
-  if (!matches) return 0.0;
-  let t = 0, k = 0;
-  for (let i = 0; i < l1; i++) {
-    if (!m1[i]) continue;
-    while (!m2[k]) k++;
-    if (s1[i] !== s2[k]) t++;
-    k++;
-  }
-  const jaro = (matches/l1 + matches/l2 + (matches - t/2)/matches) / 3;
-  let pfx = 0;
-  for (let i = 0; i < Math.min(4, l1, l2); i++) { if (s1[i]===s2[i]) pfx++; else break; }
-  return jaro + pfx * 0.1 * (1 - jaro);
-}
-
-// ── Team resolver (simplified inline version) ─────────────────────────────────
+// ── Team resolver — delegates to the shared 7-tier resolver ──────────────────
+// No more inlined copies. Uses the authoritative teamResolver.js which handles:
+// exact(100) → normalized(95) → tag+variants(90) → core(85) → alias(80) →
+// fuzzyJW≥0.92(70) → fuzzyJW≥0.80/Dice≥0.70(60)
 function resolveTeam(rawName, teams, aliases = []) {
-  const norm = normalize(rawName);
-  if (!norm || !teams.length) return { team: null, confidence: 0, method: 'no-input' };
-
-  // Build alias map
-  const aliasMap = new Map(aliases.map(a => [a.alias.toLowerCase().trim(), a.canonical]));
-
-  for (const team of teams) {
-    // Exact normalized match
-    if (normalize(team.name) === norm) return { team, confidence: 100, method: 'exact' };
-  }
-
-  // Tag match
-  for (const team of teams) {
-    if (team.tag && normalize(team.tag) === norm) return { team, confidence: 90, method: 'tag' };
-  }
-
-  // Alias match
-  const canonical = aliasMap.get(norm);
-  if (canonical) {
-    const aliasMatch = teams.find(t => normalize(t.name) === normalize(canonical));
-    if (aliasMatch) return { team: aliasMatch, confidence: 80, method: 'alias' };
-  }
-
-  // Fuzzy (Jaro-Winkler)
-  let best = 0, bestTeam = null, second = 0;
-  for (const team of teams) {
-    const score = jaroWinkler(norm, normalize(team.name));
-    if (score > best) { second = best; best = score; bestTeam = team; }
-    else if (score > second) second = score;
-  }
-  if (bestTeam && best >= 0.92) return { team: bestTeam, confidence: 70, method: 'fuzzy-high' };
-  if (bestTeam && best >= 0.80) return { team: bestTeam, confidence: 60, method: 'fuzzy-medium' };
-
-  return { team: null, confidence: 0, method: 'no-match' };
+  const result = resolveTeamName(rawName, teams, aliases);
+  // Map from teamResolver's { match, confidence, method } to auto-approve's { team, confidence, method }
+  return {
+    team: result.match,
+    confidence: result.confidence,
+    method: result.method,
+  };
 }
 
 // ── Multi-factor match scoring (inline from matchConfidence.js) ──────────────

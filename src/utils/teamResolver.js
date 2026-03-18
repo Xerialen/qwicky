@@ -153,8 +153,23 @@ export function resolveTeamName(rawName, divisionTeams, globalAliases = []) {
   }
 
   // ── Build alias lookup map ─────────────────────────────────────────────────
-  // alias (lowercased) → canonical team name
+  // alias (normalized) → canonical team name
+  // Merges BOTH sources: team.aliases arrays AND globalAliases from Supabase.
   const aliasByKey = new Map();
+
+  // Source 1: per-team aliases from division team objects
+  for (const team of divisionTeams) {
+    if (team.aliases && Array.isArray(team.aliases)) {
+      for (const alias of team.aliases) {
+        if (alias?.trim()) {
+          aliasByKey.set(normalize(alias), team.name);
+        }
+      }
+    }
+  }
+
+  // Source 2: globalAliases from Supabase team_aliases table
+  // These take priority over per-team aliases (set after, overwrites)
   for (const a of globalAliases) {
     aliasByKey.set(a.alias.toLowerCase().trim(), a.canonical);
   }

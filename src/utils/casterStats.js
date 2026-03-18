@@ -1,6 +1,8 @@
 // src/utils/casterStats.js
 // Statistical calculations for the Caster View, operating on division.rawMaps.
 import { unicodeToAscii } from './matchLogic';
+import { normalize } from './nameNormalizer';
+import { createTeamContext, resolveTeam, createScoreLookup } from './teamIdentity';
 //
 // rawMaps items are produced by parseMatch() in matchLogic.js and have the shape:
 // {
@@ -12,78 +14,52 @@ import { unicodeToAscii } from './matchLogic';
 //   scores: { [teamName]: number },  // keyed by original team name
 //   originalData: object  // raw ktxstats JSON (contains .players array)
 // }
-//
-// All team comparisons are case-insensitive via normalizeTeam().
 
 /**
- * Lowercase + trim for safe team name comparison.
+ * Normalize team name for comparison — delegates to nameNormalizer.
+ * Handles high-bit QW chars, color codes, diacritics, decorators.
  * @param {string} name
  */
-export const normalizeTeam = (name) => (name || '').toString().toLowerCase().trim();
+export const normalizeTeam = (name) => normalize((name || '').toString());
 
 // ─── Team Name Resolution ────────────────────────────────────────────────────
-// rawMaps store ktxstats team names (e.g. "hx"), while division.teams stores
-// admin-entered names (e.g. "[hx] Hell Xpress"). These helpers resolve the
-// ktxstats names to canonical admin names via tag, alias, and name lookups.
+// All resolution now delegates to teamIdentity.js — the single source of truth.
+// The old buildTeamLookup/resolveTeamName functions are replaced by
+// createTeamContext/resolveTeam from teamIdentity.
 
 /**
- * Build a lookup map from division teams for resolving ktxstats names.
+ * Build a lookup context from division teams.
  * @param {Object} division
+ * @returns {Object} Team context for use with resolveTeam()
  */
 export function buildTeamLookup(division) {
-  const byTag = {};
-  const byName = {};
-  const byNameLower = {};
-  (division.teams || []).forEach(team => {
-    if (team.tag) {
-      const tagLower = team.tag.toLowerCase();
-      byTag[tagLower] = team.name;
-      const cleanTag = tagLower.replace(/[\[\]]/g, '');
-      if (cleanTag !== tagLower) byTag[cleanTag] = team.name;
-      if (!tagLower.startsWith('[')) byTag[`[${cleanTag}]`] = team.name;
-    }
-    byName[team.name] = team.name;
-    byNameLower[team.name.toLowerCase()] = team.name;
-    if (team.aliases && Array.isArray(team.aliases)) {
-      team.aliases.forEach(alias => {
-        if (alias && alias.trim()) {
-          byNameLower[alias.toLowerCase().trim()] = team.name;
-        }
-      });
-    }
-  });
-  return { byTag, byName, byNameLower };
+  return createTeamContext(division.teams || []);
 }
 
 /**
  * Resolve a ktxstats team name to an admin-entered canonical name.
  * @param {string} jsonTeamName
- * @param {Object} lookup - from buildTeamLookup()
+ * @param {Object} lookup - team context from buildTeamLookup()
+ * @returns {string} Canonical team name
  */
 export function resolveTeamName(jsonTeamName, lookup) {
   if (!jsonTeamName || !lookup) return jsonTeamName;
-  const lower = jsonTeamName.toLowerCase().trim();
-  if (lookup.byName[jsonTeamName]) return lookup.byName[jsonTeamName];
-  if (lookup.byNameLower[lower]) return lookup.byNameLower[lower];
-  if (lookup.byTag[lower]) return lookup.byTag[lower];
-  const stripped = lower.replace(/[\[\]]/g, '');
-  if (stripped !== lower && lookup.byTag[stripped]) return lookup.byTag[stripped];
-  return jsonTeamName;
+  return resolveTeam(jsonTeamName, lookup);
 }
 
 /**
  * Create a copy of rawMaps with team names resolved to admin-entered names.
  * Scores are re-keyed to use the resolved names.
  * @param {Object[]} rawMaps
- * @param {Object} lookup - from buildTeamLookup()
+ * @param {Object} lookup - team context from buildTeamLookup()
  */
 export function resolveRawMapsTeams(rawMaps, lookup) {
   if (!lookup) return rawMaps;
   return rawMaps.map(m => {
-    const resolvedTeams = (m.teams || []).map(t => resolveTeamName(t, lookup));
+    const resolvedTeams = (m.teams || []).map(t => resolveTeam(t, lookup));
     const resolvedScores = {};
     for (const [key, val] of Object.entries(m.scores || {})) {
-      resolvedScores[resolveTeamName(key, lookup)] = val;
+      resolvedScores[resolveTeam(key, lookup)] = val;
     }
     return { ...m, teams: resolvedTeams, scores: resolvedScores };
   });
@@ -91,8 +67,7 @@ export function resolveRawMapsTeams(rawMaps, lookup) {
 
 /**
  * Extract the score for a specific team from a rawMap entry.
- * rawMap.scores is keyed by original team name, so we find the matching key
- * case-insensitively.
+ * Uses normalize() for key matching (handles high-bit chars, diacritics, etc.).
  * @param {Object} rawMap
  * @param {string} team - normalized team name
  * @returns {number}

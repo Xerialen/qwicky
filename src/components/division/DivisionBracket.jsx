@@ -2,6 +2,7 @@
 import React, { useMemo, useState } from 'react';
 import { createDefaultBracket } from '../../App';
 import { normalize } from '../../utils/nameNormalizer';
+import { createTeamContext, resolveTeam as resolveTeamIdentity } from '../../utils/teamIdentity';
 import EmptyState from '../EmptyState';
 import DivisionStandings from './DivisionStandings';
 import { isGroupStageComplete, seedBracket, getStandingsForSeeding } from '../../utils/bracketSeeder';
@@ -23,21 +24,9 @@ function BracketMatch({ match, schedule, teams = [], onUpdateTeam, onUpdateScore
   const autoResult = useMemo(() => {
     if (!match?.team1 || !match?.team2) return null;
 
-    // Build normalized alias lookup using nameNormalizer pipeline
-    const aliasLookup = {};
-    teams.forEach(team => {
-      aliasLookup[normalize(team.name)] = team.name;
-      if (team.aliases && Array.isArray(team.aliases)) {
-        team.aliases.forEach(alias => {
-          if (alias && alias.trim()) {
-            aliasLookup[normalize(alias)] = team.name;
-          }
-        });
-      }
-    });
-
-    // Resolve team names via normalized aliases
-    const resolveTeam = (name) => aliasLookup[normalize(name)] || name;
+    // Use shared team identity resolution (replaces inline aliasLookup)
+    const ctx = createTeamContext(teams);
+    const resolveTeam = (name) => resolveTeamIdentity(name, ctx);
     const t1Resolved = resolveTeam(match.team1);
     const t2Resolved = resolveTeam(match.team2);
 

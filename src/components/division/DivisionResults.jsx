@@ -1,7 +1,7 @@
 // src/components/division/DivisionResults.jsx
 import React, { useState, useRef, useMemo, useCallback, useEffect } from 'react';
 import { parseMatch, unicodeToAscii } from '../../utils/matchLogic';
-import { resolveTeamName as resolveTeamNameFromResolver } from '../../utils/teamResolver';
+import { createTeamContext, resolveTeam as resolveTeamIdentity, resolveTeamFull } from '../../utils/teamIdentity';
 import { confidenceLabel, confidenceColor } from '../../utils/matchConfidence';
 import DivisionStats from './DivisionStats';
 import QWStatsService from '../../services/QWStatsService';
@@ -57,8 +57,9 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
       if (divTeams.length === 0) return;
 
       // Count how many game teams resolve to a known team in this division
+      const divCtx = createTeamContext(divTeams);
       const matchCount = gameTeams.filter(gt => {
-        const result = resolveTeamNameFromResolver(gt, divTeams);
+        const result = resolveTeamFull(gt, divCtx);
         return result.match !== null;
       }).length;
 
@@ -240,26 +241,20 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
 
   // --- TEAM LOOKUP & SERIES LOGIC ---
 
-  // Standalone helper: resolve a team name against any division's teams using teamResolver
+  // Memoized team context for the current division (replaces inline lookups)
+  const teamsJson = JSON.stringify(teams.map(t => ({ name: t.name, tag: t.tag, aliases: t.aliases })));
+  const teamCtx = useMemo(() => createTeamContext(teams), [teamsJson]);
+
+  // Standalone helper: resolve a team name against any division's teams
   function resolveTeamNameWithLookup(jsonTeamName, divTeams) {
     if (!jsonTeamName) return jsonTeamName;
-    const result = resolveTeamNameFromResolver(jsonTeamName, divTeams);
-    return result.match ? result.match.name : jsonTeamName;
+    const ctx = divTeams === teams ? teamCtx : createTeamContext(divTeams);
+    return resolveTeamIdentity(jsonTeamName, ctx);
   }
-
-  // For backward compatibility: buildTeamLookupForDiv now returns the teams array directly
-  function buildTeamLookupForDiv(div) {
-    return div.teams || [];
-  }
-
-  // Memoized lookup for the current (active) division
-  const teamsJson = JSON.stringify(teams.map(t => ({ name: t.name, tag: t.tag })));
-
-  const teamLookup = useMemo(() => buildTeamLookupForDiv(division), [teamsJson]);
 
   const resolveTeamName = useCallback(
-    (jsonTeamName) => resolveTeamNameWithLookup(jsonTeamName, teamLookup),
-    [teamLookup]
+    (jsonTeamName) => resolveTeamIdentity(jsonTeamName, teamCtx),
+    [teamCtx]
   );
 
   const SERIES_GAP_MS = 2 * 60 * 60 * 1000;
@@ -409,8 +404,8 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
     const tDiv = targetDiv || division;
     const tRawMaps = tDiv.rawMaps || [];
     const tSchedule = tDiv.schedule || [];
-    const tLookup = targetDiv ? buildTeamLookupForDiv(targetDiv) : teamLookup;
-    const tResolve = (name) => resolveTeamNameWithLookup(name, tLookup);
+    const tCtx = targetDiv ? createTeamContext(targetDiv.teams || []) : teamCtx;
+    const tResolve = (name) => resolveTeamIdentity(name, tCtx);
 
     // Duplicate detection: check by ID
     const existingIds = new Set(tRawMaps.map(m => m.id));

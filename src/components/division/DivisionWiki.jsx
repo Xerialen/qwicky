@@ -3,25 +3,16 @@ import React, { useState, useMemo } from 'react';
 import { calculateStats, generateWikiTable } from '../../utils/statsLogic';
 import { unicodeToAscii } from '../../utils/matchLogic';
 import { renderWikiPreview } from '../../utils/wikiPreview';
+import { createTeamContext, getTeamMeta, resolveTeam } from '../../utils/teamIdentity';
+import { normalize } from '../../utils/nameNormalizer';
 import EmptyState from '../EmptyState';
 
-function getTeamInfo(teams, teamName) {
-  const lowerName = (teamName || '').toLowerCase();
-
-  // Try exact match first
-  let team = teams.find(t => t.name.toLowerCase() === lowerName);
-
-  // If not found, check aliases
-  if (!team) {
-    team = teams.find(t => {
-      if (t.aliases && Array.isArray(t.aliases)) {
-        return t.aliases.some(alias => alias.toLowerCase().trim() === lowerName);
-      }
-      return false;
-    });
-  }
-
-  return team || { name: teamName, tag: '', country: '', players: '' };
+// Replaced by getTeamMeta from teamIdentity — kept as a thin wrapper for
+// backward compatibility with the many call sites in this file.
+function getTeamInfo(teams, teamName, ctx) {
+  if (ctx) return getTeamMeta(teamName, ctx);
+  // Fallback when no context (shouldn't happen after migration)
+  return getTeamMeta(teamName, createTeamContext(teams));
 }
 
 function calculateStandings(schedule, division) {
@@ -633,11 +624,15 @@ const ROUND_HINT_TO_SCHEDULE = {
 function getMatchResultHelper(team1, team2, schedule, roundHint) {
   if (!team1 || !team2) return { maps: [], s1: 0, s2: 0 };
 
-  const t1Lower = team1.toLowerCase();
-  const t2Lower = team2.toLowerCase();
-  const teamMatch = (m) =>
-    (m.team1.toLowerCase() === t1Lower && m.team2.toLowerCase() === t2Lower) ||
-    (m.team1.toLowerCase() === t2Lower && m.team2.toLowerCase() === t1Lower);
+  // Use normalize() instead of toLowerCase() to handle high-bit chars, diacritics, etc.
+  const t1Norm = normalize(team1);
+  const t2Norm = normalize(team2);
+  const teamMatch = (m) => {
+    const mt1 = normalize(m.team1);
+    const mt2 = normalize(m.team2);
+    return (mt1 === t1Norm && mt2 === t2Norm) ||
+           (mt1 === t2Norm && mt2 === t1Norm);
+  };
 
   // Round-aware disambiguation
   let match = null;
@@ -660,7 +655,7 @@ function getMatchResultHelper(team1, team2, schedule, roundHint) {
   if (!match?.maps?.length) return { maps: [], s1: 0, s2: 0 };
 
   let s1 = 0, s2 = 0;
-  const isNormal = match.team1.toLowerCase() === t1Lower;
+  const isNormal = normalize(match.team1) === t1Norm;
   
   match.maps.forEach(map => {
     // Handle forfeit - team that forfeited loses the map
@@ -727,11 +722,14 @@ function formatTeamHelper(teamName, teams, score, isWinner) {
 
 function generateMatchDetailsHelper(team1, team2, schedule, roundHint) {
   const result = getMatchResultHelper(team1, team2, schedule, roundHint);
-  const t1Lower = team1.toLowerCase();
-  const t2Lower = team2.toLowerCase();
-  const teamMatch = (m) =>
-    (m.team1.toLowerCase() === t1Lower && m.team2.toLowerCase() === t2Lower) ||
-    (m.team1.toLowerCase() === t2Lower && m.team2.toLowerCase() === t1Lower);
+  const t1Norm = normalize(team1);
+  const t2Norm = normalize(team2);
+  const teamMatch = (m) => {
+    const mt1 = normalize(m.team1);
+    const mt2 = normalize(m.team2);
+    return (mt1 === t1Norm && mt2 === t2Norm) ||
+           (mt1 === t2Norm && mt2 === t1Norm);
+  };
 
   // Use same round-aware lookup as getMatchResultHelper
   let match = null;

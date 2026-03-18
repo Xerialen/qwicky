@@ -1,4 +1,5 @@
 // src/utils/scheduleValidator.js
+import { normalize } from './nameNormalizer.js';
 
 /**
  * Find scheduling conflicts where a team is double-booked.
@@ -47,7 +48,7 @@ export function findConflicts(schedule, allDivisions = []) {
 
         for (const teamName of [match.team1, match.team2]) {
           if (!teamName) continue;
-          const key = teamName.toLowerCase();
+          const key = normalize(teamName);
           if (!teamMap.has(key)) teamMap.set(key, []);
           teamMap.get(key).push({ matchId: match.id, divisionId: div.id, team: teamName });
         }
@@ -105,7 +106,7 @@ function buildDateTeamMap(schedule) {
 
     for (const teamName of [match.team1, match.team2]) {
       if (!teamName) continue;
-      const key = teamName.toLowerCase();
+      const key = normalize(teamName);
       if (!teamMap.has(key)) teamMap.set(key, []);
       teamMap.get(key).push(match.id);
     }
