@@ -64,7 +64,12 @@ export const createDefaultDivision = (name = 'Division 1') => ({
   teams: [],
   schedule: [],
   bracket: createDefaultBracket('single', 4),
-  rawMaps: []
+  rawMaps: [],
+  // Wiki auto-publish config (per division)
+  wikiConfig: {
+    enabled: false,
+    targets: [],   // [{ type: 'standings'|'matches'|'bracket'|'full', page: '', section: '' }]
+  }
 });
 
 // Helper to create bracket structure based on format and team count

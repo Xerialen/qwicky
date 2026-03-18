@@ -3,6 +3,7 @@ import React, { useState, useRef, useMemo, useCallback, useEffect } from 'react'
 import { parseMatch, unicodeToAscii } from '../../utils/matchLogic';
 import { createTeamContext, resolveTeam as resolveTeamIdentity, resolveTeamFull } from '../../utils/teamIdentity';
 import { confidenceLabel, confidenceColor } from '../../utils/matchConfidence';
+import { scheduleWikiPublish } from '../../services/wikiPublisher';
 import DivisionStats from './DivisionStats';
 import QWStatsService from '../../services/QWStatsService';
 
@@ -585,6 +586,18 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
     } else {
       updateDivision({ rawMaps: allMaps, schedule: newSchedule });
     }
+
+    // Trigger wiki auto-publish (debounced 10s) if configured
+    if (trulyUniqueMaps.length > 0) {
+      const publishDiv = { ...tDiv, rawMaps: allMaps, schedule: newSchedule };
+      scheduleWikiPublish(publishDiv, tournament, (results) => {
+        const ok = results.filter(r => r.ok);
+        const fail = results.filter(r => !r.ok);
+        if (ok.length > 0) console.log(`Wiki auto-publish: ${ok.length} target(s) updated`);
+        if (fail.length > 0) console.warn('Wiki auto-publish failures:', fail);
+      });
+    }
+
     return trulyUniqueMaps;
   };
 

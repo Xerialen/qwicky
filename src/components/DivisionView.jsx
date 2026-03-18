@@ -71,7 +71,7 @@ export default function DivisionView({ division, updateDivision, updateAnyDivisi
       case 'caster':
         return <DivisionCasterView division={division} />;
       case 'wiki':
-        return <DivisionWiki division={division} tournamentName={tournamentName} />;
+        return <DivisionWiki division={division} tournamentName={tournamentName} updateDivision={updateDivision} />;
       default:
         return <DivisionSetup division={division} updateDivision={updateDivision} />;
     }
