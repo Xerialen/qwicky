@@ -154,6 +154,61 @@ function WikiPublishPanel({ tournament, updateTournament }) {
                 </p>
               )}
             </div>
+
+            {/* Create Wiki Pages */}
+            {wikiPrefix && tournament.divisions?.length > 0 && (
+              <div className="p-4 bg-qw-dark rounded border border-qw-border">
+                <label className="text-white text-sm font-display font-semibold mb-2 block">Create Wiki Pages</label>
+                <p className="text-qw-muted text-xs mb-3">
+                  Create the overview page + one page per division on QWiki. Only creates pages that don't exist yet.
+                </p>
+                <button
+                  onClick={async () => {
+                    if (!window.confirm(`Create wiki pages under "${wikiPrefix}"? This will create pages on quakeworld.nu/wiki.`)) return;
+                    setScanning(true);
+                    try {
+                      // Create overview page
+                      const overviewRes = await fetch('/api/wiki/publish', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          pageTitle: wikiPrefix,
+                          content: `'''${tournament.name}''' is a [[${tournament.mode || '4on4'}]] tournament.\n\n__NOTOC__`,
+                          summary: 'Created via QWICKY',
+                        }),
+                      });
+                      const results = [await overviewRes.json()];
+
+                      // Create division pages
+                      for (const div of tournament.divisions) {
+                        const pageTitle = `${wikiPrefix}/${div.name}`;
+                        const divRes = await fetch('/api/wiki/publish', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({
+                            pageTitle,
+                            content: `{{Abbr/TBD}}\n__NOTOC__`,
+                            summary: 'Created via QWICKY',
+                          }),
+                        });
+                        results.push(await divRes.json());
+                      }
+
+                      const ok = results.filter(r => r.ok).length;
+                      const fail = results.filter(r => !r.ok).length;
+                      alert(`Created ${ok} page(s)${fail > 0 ? `, ${fail} failed` : ''}`);
+                    } catch (err) {
+                      alert('Failed: ' + err.message);
+                    }
+                    setScanning(false);
+                  }}
+                  disabled={scanning}
+                  className="qw-btn px-4 py-2 text-sm"
+                >
+                  {scanning ? 'Creating...' : 'Create All Wiki Pages'}
+                </button>
+              </div>
+            )}
           </>
         )}
       </div>

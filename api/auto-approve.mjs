@@ -294,6 +294,16 @@ export default async function handler(req, res) {
       diff: { flags: confidenceFlags, matchId: scheduleMatch.id },
     });
 
+    // Fire-and-forget wiki auto-publish if enabled
+    if (settings.wikiAutoPublish) {
+      const baseUrl = `https://${req.headers.host || 'qwicky.vercel.app'}`;
+      fetch(`${baseUrl}/api/wiki/auto-publish`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tournamentId, divisionId }),
+      }).catch(() => {}); // Best-effort — don't block the approval response
+    }
+
     return res.json({
       status: 'approved',
       matchId: scheduleMatch.id,

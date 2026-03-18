@@ -1194,6 +1194,129 @@ function generateDoubleElimBracket(bracket, schedule, teams, division, options) 
   return wiki;
 }
 
+// ── Page Template Generators ─────────────────────────────────────────────────
+
+/**
+ * Generate the boilerplate header for a wiki page (navbox + infobox + tabs).
+ * @param {object} tournament - Tournament data
+ * @param {object} opts - { navbox, tabIndex, divisions, prefix, infoboxType }
+ */
+function generatePageHeader(tournament, opts = {}) {
+  const { navbox, tabIndex = 1, divisions = [], prefix = '', infoboxType = 'league' } = opts;
+  let header = '';
+
+  // Navbox
+  if (navbox) header += `{{${navbox}}}\n`;
+
+  // Infobox
+  header += `{{Infobox ${infoboxType}\n`;
+  header += `|name=${tournament.name || ''}\n`;
+  header += `|image=\n|series=\n`;
+  header += `|organizer=\n|sponsor=\n`;
+  header += `|type=Online\n`;
+  header += `|format=${tournament.mode || '4on4'}\n`;
+  header += `|prizepool=\n`;
+  header += `|sdate=${tournament.startDate || ''}\n`;
+  header += `|edate=${tournament.endDate || ''}\n`;
+  header += `|year=${(tournament.startDate || '').slice(0, 4) || new Date().getFullYear()}\n`;
+  header += `|website=\n|discord=\n|twitch=\n`;
+  header += `|teamfirst=\n|teamfirstflag=\n`;
+  header += `|teamsecond=\n|teamsecondflag=\n`;
+  header += `|teamthird=\n|teamthirdflag=\n`;
+  header += `|teamfourth=\n|teamfourthflag=\n`;
+  header += `|team_number=${divisions.reduce((sum, d) => sum + (d.teams?.length || 0), 0) || ''}\n`;
+
+  // Maps from first division
+  const firstDiv = divisions[0];
+  const maps = [...new Set((firstDiv?.schedule || []).flatMap(m => (m.maps || []).map(mp => mp.map)).filter(Boolean))];
+  maps.slice(0, 5).forEach((map, i) => { header += `|map${i + 1}=${map}\n`; });
+
+  header += `}}\n`;
+
+  // Tabs
+  if (prefix && divisions.length > 0) {
+    header += `{{Tabs static\n`;
+    header += `|name1=Overview\n|link1=${prefix}\n`;
+    divisions.forEach((d, i) => {
+      header += `|name${i + 2}=${d.name}\n|link${i + 2}=${prefix}/${d.name}\n`;
+    });
+    header += `|This=${tabIndex}\n}}\n`;
+  }
+
+  return header;
+}
+
+/**
+ * Generate a full division page for multi-page layout (TB4 style).
+ * Contains boilerplate + standings + optional match list.
+ */
+function generateDivisionPage(division, tournament, opts = {}) {
+  const { tabIndex = 2, includeMatches = true } = opts;
+  const header = generatePageHeader(tournament, {
+    ...opts,
+    tabIndex,
+    divisions: tournament.divisions || [],
+    prefix: opts.prefix || '',
+  });
+
+  const standings = calculateStandings(division.schedule || [], division);
+  let body = generateStandingsWiki(standings, division.teams || [], division, {});
+
+  if (includeMatches) {
+    body += '\n' + generateMatchListWiki(division.schedule || [], division.teams || [], division, {});
+  }
+
+  return header + body + '\n__NOTOC__\n';
+}
+
+/**
+ * Generate a playoffs page for multi-page layout (TB4 style).
+ * Contains boilerplate + bracket sections per division.
+ */
+function generatePlayoffsPage(divisions, tournament, opts = {}) {
+  const header = generatePageHeader(tournament, {
+    ...opts,
+    divisions,
+    prefix: opts.prefix || '',
+  });
+
+  let body = '';
+  for (const div of divisions) {
+    if (!div.bracket) continue;
+    body += `== ${div.name} Playoffs ==\n`;
+    body += generateBracketWiki(div.bracket, div.schedule || [], div.teams || [], div, {});
+    body += '\n';
+  }
+
+  return header + body + '__NOTOC__\n';
+}
+
+/**
+ * Generate an overview page with results summary.
+ */
+function generateOverviewPage(tournament, opts = {}) {
+  const header = generatePageHeader(tournament, {
+    ...opts,
+    tabIndex: 1,
+    divisions: tournament.divisions || [],
+    prefix: opts.prefix || '',
+  });
+
+  let body = `'''${tournament.name}''' is a [[${tournament.mode || '4on4'}]] event.\n\n`;
+  body += '== Maps ==\n';
+
+  const maps = [...new Set((tournament.divisions || []).flatMap(d =>
+    (d.schedule || []).flatMap(m => (m.maps || []).map(mp => mp.map)).filter(Boolean)
+  ))];
+  if (maps.length > 0) {
+    body += '{{Maps\n|title=\n';
+    maps.slice(0, 10).forEach((map, i) => { body += `|map${i + 1}=${map}\n`; });
+    body += '}}\n';
+  }
+
+  return header + body + '__NOTOC__\n';
+}
+
 // ── Exports ──────────────────────────────────────────────────────────────────
 export {
   getTeamInfo,
@@ -1213,4 +1336,8 @@ export {
   generate8SEBracket,
   generate16SEBracket,
   generate32SEBracket,
+  generatePageHeader,
+  generateDivisionPage,
+  generatePlayoffsPage,
+  generateOverviewPage,
 };
