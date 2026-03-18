@@ -407,18 +407,25 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
     const tCtx = targetDiv ? createTeamContext(targetDiv.teams || []) : teamCtx;
     const tResolve = (name) => resolveTeamIdentity(name, tCtx);
 
-    // Duplicate detection: check by ID
+    // Duplicate detection: check by ID (also strip "browse-" prefix for cross-path matching)
     const existingIds = new Set(tRawMaps.map(m => m.id));
-    const uniqueNewMaps = newMaps.filter(m => !existingIds.has(m.id));
-
-    // Additional duplicate detection: check by map+teams+timestamp (in case IDs differ but it's the same game)
-    const existingFingerprints = new Set(
-      tRawMaps.map(m => `${m.map}|${m.teams.sort().join('vs')}|${m.timestamp || m.date}`)
-    );
-    const trulyUniqueMaps = uniqueNewMaps.filter(m => {
-      const fingerprint = `${m.map}|${m.teams.sort().join('vs')}|${m.timestamp || m.date}`;
-      return !existingFingerprints.has(fingerprint);
+    const existingBaseIds = new Set(tRawMaps.map(m => String(m.id).replace(/^browse-/, '').replace(/-[^-]+$/, '')));
+    const uniqueNewMaps = newMaps.filter(m => {
+      if (existingIds.has(m.id)) return false;
+      // Cross-path check: "browse-12345-dm3" should match existing "12345"
+      const baseId = String(m.id).replace(/^browse-/, '').replace(/-[^-]+$/, '');
+      if (existingBaseIds.has(baseId)) return false;
+      return true;
     });
+
+    // Additional duplicate detection: normalized fingerprint (handles team name variants)
+    // Resolves team names so "sr", "SR", "-s-", "òó" all produce the same fingerprint
+    const makeFingerprint = (m) => {
+      const resolvedTeams = (m.teams || []).map(t => tResolve(t).toLowerCase());
+      return `${(m.map || '').toLowerCase()}|${resolvedTeams.sort().join('vs')}|${m.timestamp || m.date}`;
+    };
+    const existingFingerprints = new Set(tRawMaps.map(makeFingerprint));
+    const trulyUniqueMaps = uniqueNewMaps.filter(m => !existingFingerprints.has(makeFingerprint(m)));
 
     if (trulyUniqueMaps.length === 0) {
       console.log('No new unique maps to add (all duplicates)');
