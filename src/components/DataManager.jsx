@@ -1,9 +1,10 @@
 // src/components/DataManager.jsx
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import DangerButton from './DangerButton';
 
 export default function DataManager({ tournament, importTournament, resetTournament }) {
   const fileInputRef = useRef(null);
+  const [dedupResult, setDedupResult] = useState(null);
 
   const handleExport = () => {
     const data = {
@@ -51,6 +52,54 @@ export default function DataManager({ tournament, importTournament, resetTournam
     e.target.value = '';
   };
 
+  const handleDedup = () => {
+    let rawDups = 0;
+    let scheduleDups = 0;
+    const cleaned = {
+      ...tournament,
+      divisions: (tournament.divisions || []).map(div => {
+        // Dedup rawMaps by normalized fingerprint
+        const seen = new Map();
+        const dedupedRawMaps = [];
+        for (const m of (div.rawMaps || [])) {
+          const teams = (m.teams || []).map(t => (t || '').toLowerCase()).sort();
+          const fp = `${(m.map || '').toLowerCase()}|${teams.join('vs')}|${m.timestamp || m.date || ''}`;
+          if (!seen.has(fp)) {
+            seen.set(fp, true);
+            dedupedRawMaps.push(m);
+          } else {
+            rawDups++;
+          }
+        }
+
+        // Dedup schedule match maps by map+scores
+        const dedupedSchedule = (div.schedule || []).map(match => {
+          if (!match.maps || match.maps.length <= 1) return match;
+          const mapSeen = new Set();
+          const cleanMaps = match.maps.filter(map => {
+            const fp = `${(map.map || '').toLowerCase()}|${map.score1}|${map.score2}`;
+            if (mapSeen.has(fp)) { scheduleDups++; return false; }
+            mapSeen.add(fp);
+            return true;
+          });
+          return { ...match, maps: cleanMaps };
+        });
+
+        return { ...div, rawMaps: dedupedRawMaps, schedule: dedupedSchedule };
+      })
+    };
+
+    if (rawDups === 0 && scheduleDups === 0) {
+      setDedupResult('clean');
+      setTimeout(() => setDedupResult(null), 3000);
+      return;
+    }
+
+    importTournament(cleaned);
+    setDedupResult(`${rawDups + scheduleDups} duplicates removed`);
+    setTimeout(() => setDedupResult(null), 5000);
+  };
+
   const stats = {
     divisions: tournament.divisions?.length || 0,
     teams: tournament.divisions?.reduce((sum, d) => sum + (d.teams?.length || 0), 0) || 0,
@@ -88,6 +137,14 @@ export default function DataManager({ tournament, importTournament, resetTournam
           title="Save tournament"
         >
           💾 Save
+        </button>
+
+        <button
+          onClick={handleDedup}
+          className="px-3 py-2 rounded bg-qw-dark border border-qw-border text-qw-muted hover:text-white hover:border-qw-accent transition-all text-sm"
+          title="Remove duplicate maps"
+        >
+          {dedupResult === 'clean' ? '✓ Clean' : dedupResult ? `✓ ${dedupResult}` : 'Dedup'}
         </button>
 
         <DangerButton
