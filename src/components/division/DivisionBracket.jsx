@@ -1,8 +1,11 @@
 // src/components/division/DivisionBracket.jsx
 import React, { useMemo, useState } from 'react';
 import { createDefaultBracket } from '../../App';
+import { normalize } from '../../utils/nameNormalizer';
+import { createTeamContext, resolveTeam as resolveTeamIdentity } from '../../utils/teamIdentity';
 import EmptyState from '../EmptyState';
 import DivisionStandings from './DivisionStandings';
+import { isGroupStageComplete, seedBracket, getStandingsForSeeding } from '../../utils/bracketSeeder';
 
 const ROUND_HINT_TO_SCHEDULE = {
   'round32': 'r32',    'round16': 'r16',
@@ -21,32 +24,20 @@ function BracketMatch({ match, schedule, teams = [], onUpdateTeam, onUpdateScore
   const autoResult = useMemo(() => {
     if (!match?.team1 || !match?.team2) return null;
 
-    // Build alias lookup
-    const aliasLookup = {};
-    teams.forEach(team => {
-      aliasLookup[team.name.toLowerCase()] = team.name;
-      if (team.aliases && Array.isArray(team.aliases)) {
-        team.aliases.forEach(alias => {
-          if (alias && alias.trim()) {
-            aliasLookup[alias.toLowerCase().trim()] = team.name;
-          }
-        });
-      }
-    });
-
-    // Resolve team names via aliases
-    const resolveTeam = (name) => aliasLookup[name.toLowerCase()] || name;
+    // Use shared team identity resolution (replaces inline aliasLookup)
+    const ctx = createTeamContext(teams);
+    const resolveTeam = (name) => resolveTeamIdentity(name, ctx);
     const t1Resolved = resolveTeam(match.team1);
     const t2Resolved = resolveTeam(match.team2);
 
-    const t1Lower = t1Resolved.toLowerCase();
-    const t2Lower = t2Resolved.toLowerCase();
+    const t1Norm = normalize(t1Resolved);
+    const t2Norm = normalize(t2Resolved);
 
     const teamMatch = (m) => {
-      const schedT1 = resolveTeam(m.team1).toLowerCase();
-      const schedT2 = resolveTeam(m.team2).toLowerCase();
-      return (schedT1 === t1Lower && schedT2 === t2Lower) ||
-             (schedT1 === t2Lower && schedT2 === t1Lower);
+      const schedT1 = normalize(resolveTeam(m.team1));
+      const schedT2 = normalize(resolveTeam(m.team2));
+      return (schedT1 === t1Norm && schedT2 === t2Norm) ||
+             (schedT1 === t2Norm && schedT2 === t1Norm);
     };
 
     // Find matching schedule entry with round-aware disambiguation
@@ -71,7 +62,7 @@ function BracketMatch({ match, schedule, teams = [], onUpdateTeam, onUpdateScore
     let s1 = 0, s2 = 0;
     const schedT1Resolved = resolveTeam(scheduled.team1);
     scheduled.maps.forEach(m => {
-      const isNormal = schedT1Resolved.toLowerCase() === t1Lower;
+      const isNormal = normalize(schedT1Resolved) === t1Norm;
       if (isNormal) {
         if (m.score1 > m.score2) s1++; else if (m.score2 > m.score1) s2++;
       } else {
@@ -815,6 +806,43 @@ export default function DivisionBracket({ division, updateDivision }) {
     updateDivision({ playoffTiers: updatedTiers });
   };
 
+  // Bracket seeding
+  const groupStageComplete = useMemo(
+    () => (division.format === 'groups' || division.format === 'multi-tier') && isGroupStageComplete(division),
+    [division]
+  );
+  const canSeed = division.format === 'groups' || division.format === 'multi-tier';
+
+  const handleSeedBracket = () => {
+    if (!window.confirm('Seed bracket from group standings? This will overwrite current bracket teams.')) return;
+
+    const standings = getStandingsForSeeding(division);
+    const advanceCount = division.advanceCount || 2;
+
+    if (isMultiTier) {
+      // For multi-tier, seed each tier based on position ranges
+      const tiers = division.playoffTiers || [];
+      const updatedTiers = tiers.map(tier => {
+        const [startPos, endPos] = tier.positions.split('-').map(n => parseInt(n.trim()));
+        // Get teams in this tier's position range from each group
+        const tierStandings = standings.filter(s => s.position >= startPos && s.position <= endPos);
+        // Remap positions to be relative within the tier (1-based)
+        const remappedStandings = tierStandings.map(s => ({
+          ...s,
+          position: s.position - startPos + 1
+        }));
+        const tierAdvance = endPos - startPos + 1;
+        const seeded = seedBracket(remappedStandings, tier.bracket || {}, tierAdvance);
+        return { ...tier, bracket: seeded };
+      });
+      updateDivision({ playoffTiers: updatedTiers });
+    } else {
+      // Standard bracket seeding
+      const seeded = seedBracket(standings, bracket, advanceCount);
+      updateDivision({ bracket: seeded });
+    }
+  };
+
   // Check if using legacy bracket format
   const isLegacyFormat = bracket.quarterFinals && !bracket.winners;
 
@@ -853,7 +881,19 @@ export default function DivisionBracket({ division, updateDivision }) {
             </p>
             <p className="text-qw-muted text-xs mt-1">Enter team names. Scores auto-update from playoff matches.</p>
           </div>
-          <button onClick={handleReset} className="text-sm text-red-400 hover:text-red-300">Reset All Brackets</button>
+          <div className="flex items-center gap-3">
+            {canSeed && (
+              <button
+                onClick={handleSeedBracket}
+                disabled={!groupStageComplete}
+                className="qw-btn-secondary text-sm flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
+                title={groupStageComplete ? 'Seed bracket from group standings' : 'Complete all group matches first'}
+              >
+                <span>🏅</span> Seed Bracket
+              </button>
+            )}
+            <button onClick={handleReset} className="text-sm text-red-400 hover:text-red-300">Reset All Brackets</button>
+          </div>
         </div>
 
         <MultiTierBracketView
@@ -918,7 +958,19 @@ export default function DivisionBracket({ division, updateDivision }) {
           </p>
           <p className="text-qw-muted text-xs mt-1">Enter team names. Scores auto-update from playoff matches.</p>
         </div>
-        <button onClick={handleReset} className="text-sm text-red-400 hover:text-red-300">Reset Bracket</button>
+        <div className="flex items-center gap-3">
+          {canSeed && (
+            <button
+              onClick={handleSeedBracket}
+              disabled={!groupStageComplete}
+              className="qw-btn-secondary text-sm flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
+              title={groupStageComplete ? 'Seed bracket from group standings' : 'Complete all group matches first'}
+            >
+              <span>🏅</span> Seed Bracket
+            </button>
+          )}
+          <button onClick={handleReset} className="text-sm text-red-400 hover:text-red-300">Reset Bracket</button>
+        </div>
       </div>
 
       <div className="qw-panel p-6 overflow-x-auto">

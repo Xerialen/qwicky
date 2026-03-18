@@ -6,6 +6,7 @@ import DivisionSchedule from './division/DivisionSchedule';
 import DivisionResults from './division/DivisionResults';
 import DivisionBracket from './division/DivisionBracket';
 import DivisionWiki from './division/DivisionWiki';
+import DivisionCasterView from './division/DivisionCasterView';
 
 export default function DivisionView({ division, updateDivision, updateAnyDivision, tournamentName, tournamentMode, tournamentStartDate, tournamentId, allDivisions, tournament, initialSubTab }) {
   const [activeSubTab, setActiveSubTab] = useState(initialSubTab || 'setup');
@@ -31,6 +32,7 @@ export default function DivisionView({ division, updateDivision, updateAnyDivisi
         return hasResults ? 'complete' : 'empty';
       }
       case 'bracket':
+      case 'caster':
       case 'wiki':
         return 'optional';
       default:
@@ -44,6 +46,7 @@ export default function DivisionView({ division, updateDivision, updateAnyDivisi
     { id: 'schedule', label: 'Schedule', icon: '📅', count: division.schedule?.length },
     { id: 'results', label: 'Results', icon: '📥' },
     { id: 'bracket', label: 'Bracket', icon: '🎯' },
+    { id: 'caster', label: 'Caster', icon: '🎙️' },
     { id: 'wiki', label: 'Wiki', icon: '📝' },
   ];
 
@@ -60,13 +63,15 @@ export default function DivisionView({ division, updateDivision, updateAnyDivisi
       case 'teams':
         return <DivisionTeams division={division} updateDivision={updateDivision} tournamentMode={tournamentMode} allDivisions={allDivisions} />;
       case 'schedule':
-        return <DivisionSchedule division={division} updateDivision={updateDivision} tournamentStartDate={tournamentStartDate} />;
+        return <DivisionSchedule division={division} updateDivision={updateDivision} tournamentStartDate={tournamentStartDate} allDivisions={allDivisions} />;
       case 'results':
         return <DivisionResults division={division} updateDivision={updateDivision} updateAnyDivision={updateAnyDivision} tournamentId={tournamentId} tournament={tournament} />;
       case 'bracket':
         return <DivisionBracket division={division} updateDivision={updateDivision} />;
+      case 'caster':
+        return <DivisionCasterView division={division} />;
       case 'wiki':
-        return <DivisionWiki division={division} tournamentName={tournamentName} />;
+        return <DivisionWiki division={division} tournamentName={tournamentName} updateDivision={updateDivision} />;
       default:
         return <DivisionSetup division={division} updateDivision={updateDivision} />;
     }

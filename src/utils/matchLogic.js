@@ -1,20 +1,11 @@
 // src/utils/matchLogic.js
+import { stripColorCodes, normalizeHighBit, normalize as normalizeName } from './nameNormalizer.js';
 
-// 1. Clean weird Quake characters
+// 1. Clean weird Quake characters (display-safe: strips color codes + high-bit decode)
+// Delegates to nameNormalizer's authoritative QW_ASCII_TABLE for character mapping.
 export function unicodeToAscii(name) {
   if (typeof name !== 'string') return name;
-  const lookupTable = {
-    0: "=", 2: "=", 5: "•", 10: " ", 14: "•", 15: "•",
-    16: "[", 17: "]", 18: "0", 19: "1", 20: "2", 21: "3",
-    22: "4", 23: "5", 24: "6", 25: "7", 26: "8", 27: "9",
-    28: "•", 29: "=", 30: "=", 31: "="
-  };
-  return name.split('').map(char => {
-    const code = char.charCodeAt(0);
-    const normalized = code >= 128 ? code - 128 : code;
-    if (normalized < 32) return lookupTable[normalized] || '?';
-    return String.fromCharCode(normalized);
-  }).join('');
+  return normalizeHighBit(stripColorCodes(name));
 }
 
 // 2. Parse the JSON from proxy - handles both formats
@@ -36,7 +27,9 @@ export function parseMatch(gameId, jsonData) {
   }
   
   const cleanTeams = rawTeams.map(t => unicodeToAscii(t).trim());
-  const sortedTeams = [...cleanTeams].sort((a, b) => a.localeCompare(b));
+  // Use full normalization pipeline for the matchup key so color-coded names,
+  // diacritics, and bracket variants all resolve to the same key.
+  const sortedTeams = [...cleanTeams].map(t => normalizeName(t)).sort((a, b) => a.localeCompare(b));
   const matchupKey = sortedTeams.join("vs");
 
   const teamScores = {};
@@ -202,23 +195,22 @@ export function getSeriesSummary(allMatches) {
 
 // 5. Find bracket match from series
 export function findBracketMatch(team1, team2, seriesSummary) {
-  // Create the matchup key (sorted alphabetically)
-  const sortedTeams = [team1, team2].sort((a, b) => a.localeCompare(b));
-  const matchupKey = sortedTeams.join("vs");
+  // Use full normalization for the matchup key (handles high-bit, diacritics, decorators)
+  const sorted = [normalizeName(team1), normalizeName(team2)].sort((a, b) => a.localeCompare(b));
+  const matchupKey = sorted.join("vs");
 
-  // Try exact key first, then fall back to case-insensitive search
-  const lowerMatchupKey = matchupKey.toLowerCase();
+  // Try normalized key first, then fall back to case-insensitive search
   const resolvedKey = seriesSummary[matchupKey]
     ? matchupKey
-    : Object.keys(seriesSummary).find(k => k.toLowerCase() === lowerMatchupKey);
+    : Object.keys(seriesSummary).find(k => normalizeName(k) === normalizeName(matchupKey));
 
   if (resolvedKey && seriesSummary[resolvedKey]) {
     const s = seriesSummary[resolvedKey];
-    // Look up map wins case-insensitively against the stored team keys
-    const t1Lower = team1.toLowerCase();
-    const t2Lower = team2.toLowerCase();
-    const storedT1 = Object.keys(s.mapWins).find(k => k.toLowerCase() === t1Lower);
-    const storedT2 = Object.keys(s.mapWins).find(k => k.toLowerCase() === t2Lower);
+    // Look up map wins using normalize() for key matching
+    const t1Norm = normalizeName(team1);
+    const t2Norm = normalizeName(team2);
+    const storedT1 = Object.keys(s.mapWins).find(k => normalizeName(k) === t1Norm);
+    const storedT2 = Object.keys(s.mapWins).find(k => normalizeName(k) === t2Norm);
     return {
       team1Score: (storedT1 && s.mapWins[storedT1]) || 0,
       team2Score: (storedT2 && s.mapWins[storedT2]) || 0,
