@@ -105,9 +105,161 @@ async function handleChannels(req, res) {
   return res.json({ channels: enriched });
 }
 
+async function handleRunDiscovery(req, res) {
+  const { tournamentId, divisionId } = req.body || {};
+  if (!tournamentId) return res.status(400).json({ error: 'tournamentId required' });
+
+  const supabase = getSupabase();
+
+  // Load tournament settings
+  const { data: tournament } = await supabase
+    .from('tournaments').select('settings').eq('id', tournamentId).single();
+  if (!tournament) return res.status(404).json({ error: 'Tournament not found' });
+
+  const discovery = tournament.settings?.discovery || {};
+  if (!discovery.enabled) return res.json({ ok: false, error: 'Discovery not enabled' });
+
+  // Check last run to prevent double-runs (12 hour cooldown)
+  const { data: lastRuns } = await supabase
+    .from('discovery_runs')
+    .select('run_at')
+    .eq('tournament_id', tournamentId)
+    .order('run_at', { ascending: false })
+    .limit(1);
+
+  if (lastRuns?.[0]) {
+    const hoursSince = (Date.now() - new Date(lastRuns[0].run_at).getTime()) / (1000 * 60 * 60);
+    if (hoursSince < 12) {
+      return res.json({ ok: false, error: `Last run was ${Math.round(hoursSince)}h ago. Cooldown: 12h.` });
+    }
+  }
+
+  // Call discovery endpoint internally
+  const baseUrl = `https://${req.headers.host || 'qwicky.vercel.app'}`;
+  const discoverRes = await fetch(`${baseUrl}/api/discover-games`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ tournamentId, divisionId }),
+  });
+
+  if (!discoverRes.ok) {
+    return res.status(502).json({ error: 'Discovery endpoint failed' });
+  }
+
+  const { candidates, summary } = await discoverRes.json();
+  if (!candidates || candidates.length === 0) {
+    // Log empty run
+    await supabase.from('discovery_runs').insert({
+      tournament_id: tournamentId, division_id: divisionId || null,
+      candidates_found: 0, candidates_posted: 0, candidates_auto_imported: 0, duplicates_skipped: 0,
+      summary: summary || {},
+    });
+    return res.json({ ok: true, candidatesFound: 0, posted: 0, autoImported: 0, skippedDuplicates: 0 });
+  }
+
+  // Dedup: collect all game IDs from candidates
+  const allGameIds = candidates.flatMap(c => c.games.map(g => String(g.id)));
+
+  // Check which are already in match_submissions
+  const { data: existingSubs } = await supabase
+    .from('match_submissions')
+    .select('game_id')
+    .eq('tournament_id', tournamentId)
+    .in('game_id', allGameIds);
+  const knownGameIds = new Set((existingSubs || []).map(s => s.game_id));
+
+  // Check which are already in match_maps
+  const { data: existingMaps } = await supabase
+    .from('match_maps')
+    .select('game_id')
+    .not('game_id', 'is', null)
+    .in('game_id', allGameIds);
+  for (const m of (existingMaps || [])) knownGameIds.add(m.game_id);
+
+  // Filter candidates to only include new games
+  const threshold = discovery.threshold || 70;
+  const newCandidates = [];
+  let duplicatesSkipped = 0;
+
+  for (const candidate of candidates) {
+    const newGames = candidate.games.filter(g => !knownGameIds.has(String(g.id)));
+    if (newGames.length === 0) {
+      duplicatesSkipped += candidate.games.length;
+      continue;
+    }
+    if (candidate.avgConfidence < threshold) continue;
+    newCandidates.push({ ...candidate, games: newGames, mapCount: newGames.length });
+  }
+
+  let posted = 0;
+  let autoImported = 0;
+
+  // Post to Discord if enabled
+  if (discovery.postToDiscord !== false && newCandidates.length > 0) {
+    const { data: channels } = await supabase
+      .from('tournament_channels')
+      .select('discord_channel_id')
+      .eq('tournament_id', tournamentId);
+
+    if (channels?.length > 0) {
+      const rows = channels.map(ch => ({
+        tournament_id: tournamentId,
+        channel_id: ch.discord_channel_id,
+        notification_type: 'discovery_summary',
+        payload: { tournament_id: tournamentId, candidates: newCandidates, summary },
+      }));
+      await supabase.from('discord_notifications').insert(rows);
+      posted = newCandidates.length;
+    }
+  }
+
+  // Auto-import high-confidence games if enabled
+  if (discovery.autoImport && discovery.autoImportThreshold) {
+    for (const candidate of newCandidates) {
+      if (candidate.avgConfidence < discovery.autoImportThreshold) continue;
+
+      for (const game of candidate.games) {
+        // Insert as approved submission
+        await supabase.from('match_submissions').insert({
+          tournament_id: tournamentId,
+          game_id: String(game.id),
+          game_data: game,
+          status: 'approved',
+          submitted_by_name: 'auto-discovery',
+          submitted_by_discord_id: 'system',
+          discord_channel_id: null,
+          hub_url: null,
+          reviewed_at: new Date().toISOString(),
+        }).catch(() => {}); // ignore duplicate constraint violations
+      }
+      autoImported += candidate.games.length;
+    }
+  }
+
+  // Log the run
+  await supabase.from('discovery_runs').insert({
+    tournament_id: tournamentId,
+    division_id: divisionId || null,
+    candidates_found: newCandidates.length,
+    candidates_posted: posted,
+    candidates_auto_imported: autoImported,
+    duplicates_skipped: duplicatesSkipped,
+    summary: summary || {},
+  });
+
+  return res.json({
+    ok: true,
+    candidatesFound: newCandidates.length,
+    posted,
+    autoImported,
+    skippedDuplicates: duplicatesSkipped,
+  });
+}
+
 const actions = {
   'post-schedule': handlePostSchedule,
   'post-discovery': handlePostDiscovery,
+  'run-discovery': handleRunDiscovery,
   'channels': handleChannels,
 };
 

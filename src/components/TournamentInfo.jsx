@@ -356,6 +356,135 @@ export default function TournamentInfo({ tournament, updateTournament, onNavigat
             </div>
           </div>
 
+          {/* Game Discovery */}
+          <div className="qw-panel p-6">
+            <h3 className="font-display text-lg text-qw-accent mb-4">GAME DISCOVERY</h3>
+            <p className="text-qw-muted text-xs mb-4">Automatically find tournament games from QW Stats and post candidates to Discord.</p>
+            {(() => {
+              const disc = tournament.settings?.discovery || {};
+              const updateDisc = (patch) => updateTournament({
+                settings: { ...(tournament.settings || {}), discovery: { ...disc, ...patch } }
+              });
+              return (
+                <div className="space-y-3">
+                  {/* Enable toggle */}
+                  <div className="flex items-start gap-3 p-3 bg-qw-dark rounded border border-qw-border">
+                    <button
+                      onClick={() => updateDisc({ enabled: !disc.enabled })}
+                      className={`relative flex-shrink-0 w-11 h-6 rounded-full transition-colors mt-0.5 ${disc.enabled ? 'bg-qw-win' : 'bg-qw-border'}`}
+                    >
+                      <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${disc.enabled ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                    </button>
+                    <div>
+                      <div className="text-sm text-white font-semibold">Enable scheduled discovery</div>
+                      <div className="text-xs text-qw-muted">Bot scans for games matching your scheduled matchups</div>
+                    </div>
+                  </div>
+
+                  {disc.enabled && (
+                    <>
+                      {/* Schedule */}
+                      <div className="p-3 bg-qw-dark rounded border border-qw-border">
+                        <label className="text-xs text-qw-muted block mb-1">Run schedule</label>
+                        <select
+                          value={disc.schedule || 'daily'}
+                          onChange={(e) => updateDisc({ schedule: e.target.value })}
+                          className="w-full bg-qw-darker border border-qw-border rounded px-3 py-1.5 text-sm text-white"
+                        >
+                          <option value="daily">Daily (22:00 UTC)</option>
+                          <option value="twice-weekly">Twice weekly (Wed + Sun 22:00 UTC)</option>
+                          <option value="weekly">Weekly (Sun 22:00 UTC)</option>
+                          <option value="manual">Manual only</option>
+                        </select>
+                      </div>
+
+                      {/* Threshold */}
+                      <div className="p-3 bg-qw-dark rounded border border-qw-border">
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="text-xs text-qw-muted">Confidence threshold</label>
+                          <span className="text-sm font-mono text-white">{disc.threshold || 70}%</span>
+                        </div>
+                        <input
+                          type="range" min="30" max="95" step="5"
+                          value={disc.threshold || 70}
+                          onChange={(e) => updateDisc({ threshold: parseInt(e.target.value) })}
+                          className="w-full accent-qw-accent"
+                        />
+                        <div className="flex justify-between text-[10px] text-qw-muted font-mono mt-1">
+                          <span>30% (broad)</span><span>70%</span><span>95% (strict)</span>
+                        </div>
+                      </div>
+
+                      {/* Tag patterns */}
+                      <div className="p-3 bg-qw-dark rounded border border-qw-border">
+                        <label className="text-xs text-qw-muted block mb-1">Matchtag patterns (comma-separated)</label>
+                        <input
+                          type="text"
+                          value={(disc.tagPatterns || []).join(', ')}
+                          onChange={(e) => updateDisc({ tagPatterns: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })}
+                          placeholder="e.g. eql23, s23, tb4s2"
+                          className="w-full bg-qw-darker border border-qw-border rounded px-3 py-1.5 text-sm text-white placeholder-zinc-600"
+                        />
+                        <p className="text-[10px] text-qw-muted mt-1">Games with matching matchtags get a confidence boost</p>
+                      </div>
+
+                      {/* Auto-import */}
+                      <div className="flex items-start gap-3 p-3 bg-qw-dark rounded border border-qw-border">
+                        <button
+                          onClick={() => updateDisc({ autoImport: !disc.autoImport })}
+                          className={`relative flex-shrink-0 w-11 h-6 rounded-full transition-colors mt-0.5 ${disc.autoImport ? 'bg-qw-win' : 'bg-qw-border'}`}
+                        >
+                          <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${disc.autoImport ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                        </button>
+                        <div>
+                          <div className="text-sm text-white font-semibold">Auto-import (Mode B)</div>
+                          <div className="text-xs text-qw-muted">Automatically add games above {disc.autoImportThreshold || 90}% confidence</div>
+                        </div>
+                      </div>
+
+                      {disc.autoImport && (
+                        <div className="p-3 bg-qw-dark rounded border border-qw-border">
+                          <div className="flex items-center justify-between mb-1">
+                            <label className="text-xs text-qw-muted">Auto-import threshold</label>
+                            <span className="text-sm font-mono text-white">{disc.autoImportThreshold || 90}%</span>
+                          </div>
+                          <input
+                            type="range" min="70" max="100" step="5"
+                            value={disc.autoImportThreshold || 90}
+                            onChange={(e) => updateDisc({ autoImportThreshold: parseInt(e.target.value) })}
+                            className="w-full accent-qw-accent"
+                          />
+                        </div>
+                      )}
+
+                      {/* Run Now */}
+                      <button
+                        onClick={async () => {
+                          const apiBase = import.meta.env.VITE_API_BASE_URL || '';
+                          try {
+                            const r = await fetch(`${apiBase}/api/discord?action=run-discovery`, {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ tournamentId: tournament.id || tournament.name?.toLowerCase().replace(/\s+/g, '-') }),
+                            });
+                            const d = await r.json();
+                            if (!r.ok || !d.ok) alert(d.error || 'Discovery failed');
+                            else alert(`Discovery: ${d.candidatesFound} candidates found, ${d.posted} posted to Discord, ${d.autoImported} auto-imported, ${d.skippedDuplicates} duplicates skipped`);
+                          } catch (err) {
+                            alert('Error: ' + err.message);
+                          }
+                        }}
+                        className="w-full qw-btn py-2 text-sm"
+                      >
+                        Run Discovery Now
+                      </button>
+                    </>
+                  )}
+                </div>
+              );
+            })()}
+          </div>
+
           {/* Discord Features */}
           <div className="qw-panel p-6">
             <h3 className="font-display text-lg text-qw-accent mb-4">DISCORD FEATURES</h3>
