@@ -37,6 +37,8 @@ export default function WikiSetupWizard({ tournament, updateTournament, onClose 
   // Step 3 state
   const [scaffoldLoading, setScaffoldLoading] = useState(false);
   const [scaffoldResult, setScaffoldResult] = useState(null);
+  const [existingPages, setExistingPages] = useState(null); // { title: boolean }
+  const [checkingPages, setCheckingPages] = useState(false);
 
   // Derived
   const divisionNames = (tournament.divisions || []).map(d => d.name);
@@ -47,6 +49,36 @@ export default function WikiSetupWizard({ tournament, updateTournament, onClose 
       : selectedRoot
         ? `${selectedRoot}/${seasonName}`
         : seasonName;
+
+  // ── Check which pages already exist when entering Step 3 ─────────────────
+  useEffect(() => {
+    if (step !== 3 || !seasonPage) return;
+    let cancelled = false;
+    setCheckingPages(true);
+    setExistingPages(null);
+
+    (async () => {
+      const pages = buildPages();
+      const result = {};
+      try {
+        const res = await fetch(`/api/wiki?action=scan&prefix=${encodeURIComponent(seasonPage)}`);
+        const data = await res.json();
+        const existingTitles = new Set((data.pages || []).filter(p => p.exists).map(p => p.title));
+        for (const page of pages) {
+          result[page.link] = existingTitles.has(page.link);
+        }
+      } catch {
+        // If scan fails, assume none exist
+        for (const page of pages) result[page.link] = false;
+      }
+      if (!cancelled) {
+        setExistingPages(result);
+        setCheckingPages(false);
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [step, seasonPage]);
 
   // ── Debounced search ────────────────────────────────────────────────────────
   const doSearch = useCallback(async (query) => {
@@ -494,19 +526,52 @@ export default function WikiSetupWizard({ tournament, updateTournament, onClose 
           {step === 3 && (
             <div className="space-y-4">
               <h3 className="font-display text-sm text-white">Page Structure</h3>
-              <p className="text-sm text-qw-muted">
-                These pages will be created with boilerplate (navbox, infobox, tabs). Existing pages are skipped.
-              </p>
+
+              {/* Safety notice */}
+              <div className="flex items-start gap-2 p-3 bg-blue-900/20 border border-blue-500/30 rounded text-xs text-blue-300">
+                <span className="text-blue-400 mt-0.5">&#9432;</span>
+                <div>
+                  <span className="font-semibold">Existing pages will NOT be overwritten.</span> Only new pages are created. Pages that already exist on the wiki are safely skipped.
+                </div>
+              </div>
+
+              {checkingPages && (
+                <div className="flex items-center gap-2 text-sm text-qw-muted py-2">
+                  <Spinner /> Checking existing pages on wiki...
+                </div>
+              )}
 
               <div className="space-y-1">
-                {buildPages().map((page, i) => (
-                  <div key={page.link} className="flex items-center gap-3 p-2 bg-qw-darker rounded text-sm">
-                    <span className="text-qw-accent font-mono w-6 text-center">{i + 1}</span>
-                    <span className="text-white flex-1 font-mono text-xs">{page.link}</span>
-                    <span className="text-xs text-qw-muted capitalize">{page.type}</span>
-                  </div>
-                ))}
+                {buildPages().map((page, i) => {
+                  const exists = existingPages?.[page.link];
+                  return (
+                    <div key={page.link} className={`flex items-center gap-3 p-2 rounded text-sm ${exists ? 'bg-qw-dark/50' : 'bg-qw-darker'}`}>
+                      <span className="font-mono w-6 text-center">
+                        {existingPages === null ? (
+                          <span className="text-qw-accent">{i + 1}</span>
+                        ) : exists ? (
+                          <span className="text-qw-muted" title="Already exists — will be skipped">&#10003;</span>
+                        ) : (
+                          <span className="text-qw-win" title="Will be created">+</span>
+                        )}
+                      </span>
+                      <span className={`flex-1 font-mono text-xs ${exists ? 'text-qw-muted' : 'text-white'}`}>{page.link}</span>
+                      <span className="text-xs capitalize text-qw-muted">{page.type}</span>
+                      {existingPages !== null && (
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded ${exists ? 'bg-zinc-700 text-zinc-400' : 'bg-qw-win/20 text-qw-win'}`}>
+                          {exists ? 'exists' : 'new'}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
+
+              {existingPages && Object.values(existingPages).every(v => v) && (
+                <div className="p-3 bg-amber-900/20 border border-amber-500/30 rounded text-xs text-amber-300">
+                  All pages already exist. Nothing will be created, but auto-publish targets will still be configured.
+                </div>
+              )}
 
               {scaffoldResult && (
                 <div className={`p-3 rounded border text-sm ${scaffoldResult.ok
