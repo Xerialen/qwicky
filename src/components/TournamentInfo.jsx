@@ -284,11 +284,11 @@ export default function TournamentInfo({ tournament, updateTournament, onNavigat
                     }
                   })}
                   className={`relative w-11 h-6 rounded-full transition-colors ${
-                    (tournament.settings?.autoApproveEnabled ?? true) ? 'bg-qw-win' : 'bg-qw-border'
+                    (tournament.settings?.autoApproveEnabled ?? true) ? 'bg-qw-win' : 'bg-zinc-600'
                   }`}
                 >
-                  <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${
-                    (tournament.settings?.autoApproveEnabled ?? true) ? 'translate-x-5' : 'translate-x-0.5'
+                  <span className={`absolute top-0.5 w-5 h-5 rounded-full shadow-md transition-transform ring-1 ${
+                    (tournament.settings?.autoApproveEnabled ?? true) ? 'translate-x-5 bg-white ring-qw-win/50' : 'translate-x-0.5 bg-zinc-300 ring-zinc-500'
                   }`} />
                 </button>
               </div>
@@ -371,12 +371,12 @@ export default function TournamentInfo({ tournament, updateTournament, onNavigat
                   <div className="flex items-start gap-3 p-3 bg-qw-dark rounded border border-qw-border">
                     <button
                       onClick={() => updateDisc({ enabled: !disc.enabled })}
-                      className={`relative flex-shrink-0 w-11 h-6 rounded-full transition-colors mt-0.5 ${disc.enabled ? 'bg-qw-win' : 'bg-qw-border'}`}
+                      className={`relative flex-shrink-0 w-11 h-6 rounded-full transition-colors mt-0.5 ${disc.enabled ? 'bg-qw-win' : 'bg-zinc-600'}`}
                     >
-                      <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${disc.enabled ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                      <span className={`absolute top-0.5 w-5 h-5 rounded-full shadow-md transition-transform ring-1 ${disc.enabled ? 'translate-x-5 bg-white ring-qw-win/50' : 'translate-x-0.5 bg-zinc-300 ring-zinc-500'}`} />
                     </button>
                     <div>
-                      <div className="text-sm text-white font-semibold">Enable scheduled discovery</div>
+                      <div className={`text-sm font-semibold ${disc.enabled ? 'text-white' : 'text-qw-muted'}`}>Enable scheduled discovery</div>
                       <div className="text-xs text-qw-muted">Bot scans for games matching your scheduled matchups</div>
                     </div>
                   </div>
@@ -432,12 +432,12 @@ export default function TournamentInfo({ tournament, updateTournament, onNavigat
                       <div className="flex items-start gap-3 p-3 bg-qw-dark rounded border border-qw-border">
                         <button
                           onClick={() => updateDisc({ autoImport: !disc.autoImport })}
-                          className={`relative flex-shrink-0 w-11 h-6 rounded-full transition-colors mt-0.5 ${disc.autoImport ? 'bg-qw-win' : 'bg-qw-border'}`}
+                          className={`relative flex-shrink-0 w-11 h-6 rounded-full transition-colors mt-0.5 ${disc.autoImport ? 'bg-qw-win' : 'bg-zinc-600'}`}
                         >
-                          <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${disc.autoImport ? 'translate-x-5' : 'translate-x-0.5'}`} />
+                          <span className={`absolute top-0.5 w-5 h-5 rounded-full shadow-md transition-transform ring-1 ${disc.autoImport ? 'translate-x-5 bg-white ring-qw-win/50' : 'translate-x-0.5 bg-zinc-300 ring-zinc-500'}`} />
                         </button>
                         <div>
-                          <div className="text-sm text-white font-semibold">Auto-import (Mode B)</div>
+                          <div className={`text-sm font-semibold ${disc.autoImport ? 'text-white' : 'text-qw-muted'}`}>Auto-import (Mode B)</div>
                           <div className="text-xs text-qw-muted">Automatically add games above {disc.autoImportThreshold || 90}% confidence</div>
                         </div>
                       </div>
@@ -511,15 +511,15 @@ export default function TournamentInfo({ tournament, updateTournament, onNavigat
                         }
                       })}
                       className={`relative flex-shrink-0 w-11 h-6 rounded-full transition-colors mt-0.5 ${
-                        isEnabled ? 'bg-qw-win' : 'bg-qw-border'
+                        isEnabled ? 'bg-qw-win' : 'bg-zinc-600'
                       }`}
                     >
-                      <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${
-                        isEnabled ? 'translate-x-5' : 'translate-x-0.5'
+                      <span className={`absolute top-0.5 w-5 h-5 rounded-full shadow-md transition-transform ring-1 ${
+                        isEnabled ? 'translate-x-5 bg-white ring-qw-win/50' : 'translate-x-0.5 bg-zinc-300 ring-zinc-500'
                       }`} />
                     </button>
                     <div>
-                      <div className="text-sm text-white font-semibold">{label}</div>
+                      <div className={`text-sm font-semibold ${isEnabled ? 'text-white' : 'text-qw-muted'}`}>{label}</div>
                       <div className="text-xs text-qw-muted">{desc}</div>
                     </div>
                   </div>
