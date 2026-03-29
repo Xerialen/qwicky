@@ -1289,6 +1289,36 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
                         } maps)
                       </button>
                     )}
+                    {discoverSelected.size > 0 && (
+                      <button
+                        onClick={async () => {
+                          const selected = [...discoverSelected].map(idx => discoverResults.candidates[idx]).filter(Boolean);
+                          try {
+                            const apiBase = import.meta.env.VITE_API_BASE_URL || '';
+                            const res = await fetch(`${apiBase}/api/discord/post-discovery`, {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({
+                                tournamentId,
+                                candidates: selected,
+                                summary: discoverResults.summary || null,
+                              }),
+                            });
+                            const data = await res.json();
+                            if (!res.ok) throw new Error(data.error || 'Failed');
+                            setWikiToast({ type: data.channels > 0 ? 'success' : 'warn', message: data.channels > 0 ? `Posted ${selected.length} candidate(s) to ${data.channels} channel(s)` : 'No registered channels' });
+                          } catch (err) {
+                            setWikiToast({ type: 'error', message: err.message });
+                          }
+                          setTimeout(() => setWikiToast(null), 5000);
+                        }}
+                        className="qw-btn-secondary px-4 py-1.5 text-sm flex items-center gap-1.5"
+                        title="Post selected candidates to Discord with Approve/Reject buttons"
+                      >
+                        <svg width="14" height="11" viewBox="0 0 71 55" fill="currentColor"><path d="M60.1 4.9A58.5 58.5 0 0045.4.2a.2.2 0 00-.2.1 40.7 40.7 0 00-1.8 3.7 54 54 0 00-16.2 0A26.4 26.4 0 0025.4.3a.2.2 0 00-.2-.1A58.4 58.4 0 0010.5 5 59.6 59.6 0 00.4 45.2a.3.3 0 00.1.2 58.9 58.9 0 0017.7 9 .2.2 0 00.3-.1 42 42 0 003.6-5.9.2.2 0 00-.1-.3 38.8 38.8 0 01-5.5-2.7.2.2 0 01 0-.4c.4-.3.7-.6 1.1-.8a.2.2 0 01.2 0 42 42 0 0035.8 0 .2.2 0 01.2 0l1.1.9a.2.2 0 010 .3 36.4 36.4 0 01-5.5 2.7.2.2 0 00-.1.3 47.2 47.2 0 003.6 5.9.2.2 0 00.3.1A58.7 58.7 0 0070 45.4a.3.3 0 00.1-.2c1.6-16.7-2.7-31.2-11.5-44A.2.2 0 0058 .5zM23.7 37.1c-3.8 0-6.9-3.5-6.9-7.8s3-7.8 6.9-7.8c3.9 0 7 3.5 6.9 7.8 0 4.3-3 7.8-6.9 7.8zm25.5 0c-3.8 0-6.9-3.5-6.9-7.8s3-7.8 6.9-7.8c3.9 0 7 3.5 6.9 7.8 0 4.3-3.1 7.8-6.9 7.8z"/></svg>
+                        Post to Discord
+                      </button>
+                    )}
                   </div>
 
                   {/* Series list */}
