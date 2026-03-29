@@ -1,21 +1,24 @@
 // src/components/WikiSetupWizard.jsx
 // 3-step wizard for connecting a QWICKY tournament to the QW Wiki.
-// Step 1: Search for existing tournament pages on the wiki
+// Step 1: Find or create tournament wiki pages
 // Step 2: Confirm/edit tournament metadata for the infobox
 // Step 3: Preview and create page structure
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 
 export default function WikiSetupWizard({ tournament, updateTournament, onClose }) {
   const [step, setStep] = useState(1);
 
   // Step 1 state
-  const [searchQuery, setSearchQuery] = useState(tournament.name || '');
+  const [entryMode, setEntryMode] = useState(null); // 'search' | 'url' | 'new'
+  const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState(null);
   const [searchLoading, setSearchLoading] = useState(false);
   const [selectedRoot, setSelectedRoot] = useState('');
   const [seasonName, setSeasonName] = useState('');
-  const [createNew, setCreateNew] = useState(false);
+  const [directPath, setDirectPath] = useState('');
+  const [scanLoading, setScanLoading] = useState(false);
+  const searchTimerRef = useRef(null);
 
   // Step 2 state
   const [navbox, setNavbox] = useState(tournament.wikiConfig?.navbox || '');
@@ -37,84 +40,87 @@ export default function WikiSetupWizard({ tournament, updateTournament, onClose 
 
   // Derived
   const divisionNames = (tournament.divisions || []).map(d => d.name);
-  const seasonPage = selectedRoot
-    ? `${selectedRoot}/${seasonName}`
-    : seasonName;
+  const seasonPage = entryMode === 'url'
+    ? directPath
+    : entryMode === 'new'
+      ? seasonName
+      : selectedRoot
+        ? `${selectedRoot}/${seasonName}`
+        : seasonName;
 
-  // ── Step 1: Search ──────────────────────────────────────────────────────────
-  const handleSearch = async () => {
-    if (!searchQuery.trim()) return;
+  // ── Debounced search ────────────────────────────────────────────────────────
+  const doSearch = useCallback(async (query) => {
+    if (!query || query.length < 2) {
+      setSearchResults(null);
+      return;
+    }
     setSearchLoading(true);
-    setSearchResults(null);
     try {
-      const res = await fetch(`/api/wiki?action=scan&q=${encodeURIComponent(searchQuery)}`);
+      const res = await fetch(`/api/wiki?action=scan&q=${encodeURIComponent(query)}`);
       const data = await res.json();
       setSearchResults(data.tournaments || []);
-    } catch (err) {
+    } catch {
       setSearchResults([]);
     }
     setSearchLoading(false);
-  };
+  }, []);
 
+  useEffect(() => {
+    if (entryMode !== 'search') return;
+    clearTimeout(searchTimerRef.current);
+    if (searchQuery.length < 2) {
+      setSearchResults(null);
+      return;
+    }
+    searchTimerRef.current = setTimeout(() => doSearch(searchQuery), 400);
+    return () => clearTimeout(searchTimerRef.current);
+  }, [searchQuery, entryMode, doSearch]);
+
+  // ── Deep scan on tournament selection ───────────────────────────────────────
   const handleSelectTournament = async (root) => {
     setSelectedRoot(root);
-    setCreateNew(false);
+    setScanLoading(true);
 
-    // Deep scan to find existing seasons and extract boilerplate
     try {
       const res = await fetch(`/api/wiki?action=scan&prefix=${encodeURIComponent(root)}`);
       const data = await res.json();
 
-      // Detect existing seasons (e.g., "Season 1", "Season 2")
       const seasons = (data.pages || [])
         .map(p => p.title)
         .filter(t => t !== root && !t.includes('/Division') && !t.includes('/Playoffs') && !t.includes('/Information'))
         .filter(t => t.split('/').length === root.split('/').length + 1)
         .sort();
 
-      // Suggest next season name
       const lastSeason = seasons[seasons.length - 1];
       if (lastSeason) {
         const seasonMatch = lastSeason.match(/Season\s*(\d+)/i);
-        if (seasonMatch) {
-          setSeasonName(`Season ${parseInt(seasonMatch[1]) + 1}`);
-        } else {
-          setSeasonName('Season 2');
-        }
+        setSeasonName(seasonMatch ? `Season ${parseInt(seasonMatch[1]) + 1}` : 'Season 2');
 
-        // Try to extract boilerplate from the latest season's first division page
-        const latestSeasonPrefix = lastSeason;
         const divPage = (data.pages || []).find(p =>
-          p.title.startsWith(latestSeasonPrefix + '/Division')
+          p.title.startsWith(lastSeason + '/Division')
         );
-
-        if (divPage?.boilerplate?.navbox) {
-          setNavbox(divPage.boilerplate.navbox);
-        }
-
-        // Fetch infobox from latest season overview
-        try {
-          const infoRes = await fetch(`/api/wiki?action=scan&prefix=${encodeURIComponent(latestSeasonPrefix)}`);
-          const infoData = await infoRes.json();
-          const overviewPage = (infoData.pages || []).find(p => p.title === latestSeasonPrefix);
-          if (overviewPage?.bodyPreview) {
-            // Parse infobox fields from preview or full content
-            // This is a best-effort extraction
-          }
-        } catch {}
+        if (divPage?.boilerplate?.navbox) setNavbox(divPage.boilerplate.navbox);
       } else {
         setSeasonName('Season 1');
       }
     } catch {}
+    setScanLoading(false);
   };
 
-  const handleCreateNew = () => {
-    setCreateNew(true);
-    setSelectedRoot('');
-    setSeasonName('');
+  // ── Validate direct URL/path ────────────────────────────────────────────────
+  const parseWikiPath = (input) => {
+    // Accept full URLs or bare paths
+    let path = input.trim();
+    // Strip wiki URL prefixes
+    path = path.replace(/^https?:\/\/(www\.)?quakeworld\.nu\/(wiki|w)\//, '');
+    // Strip leading/trailing slashes
+    path = path.replace(/^\/+|\/+$/g, '');
+    // Replace underscores with spaces
+    path = path.replace(/_/g, ' ');
+    return path;
   };
 
-  // ── Step 2: Build infobox ───────────────────────────────────────────────────
+  // ── Build info and pages ────────────────────────────────────────────────────
   const buildFullInfobox = () => {
     const maps = new Set();
     for (const div of tournament.divisions || []) {
@@ -124,11 +130,9 @@ export default function WikiSetupWizard({ tournament, updateTournament, onClose 
         }
       }
     }
-
     const teamCount = (tournament.divisions || []).reduce(
       (sum, div) => sum + (div.teams?.length || 0), 0
     );
-
     const derived = {
       format: tournament.mode || '4on4',
       sdate: tournament.startDate || '',
@@ -136,20 +140,12 @@ export default function WikiSetupWizard({ tournament, updateTournament, onClose 
       year: tournament.startDate ? tournament.startDate.split('-')[0] : '',
       team_number: String(teamCount || ''),
     };
-
-    const mapArray = [...maps];
-    mapArray.forEach((m, i) => {
-      if (i < 5) derived[`map${i + 1}`] = m;
-    });
-
+    [...maps].forEach((m, i) => { if (i < 5) derived[`map${i + 1}`] = m; });
     return { ...derived, ...infobox };
   };
 
-  // ── Step 3: Build pages and scaffold ────────────────────────────────────────
   const buildPages = () => {
-    const pages = [
-      { name: 'Overview', link: seasonPage, type: 'overview' },
-    ];
+    const pages = [{ name: 'Overview', link: seasonPage, type: 'overview' }];
     for (const divName of divisionNames) {
       pages.push({ name: divName, link: `${seasonPage}/${divName}`, type: 'division' });
     }
@@ -161,80 +157,49 @@ export default function WikiSetupWizard({ tournament, updateTournament, onClose 
   const handleScaffold = async () => {
     setScaffoldLoading(true);
     setScaffoldResult(null);
-
     const pages = buildPages();
     const tabs = pages.map(p => ({ name: p.name, link: p.link }));
     const fullInfobox = buildFullInfobox();
-
-    const payload = {
-      pages: pages.map(p => ({
-        title: p.link,
-        contentBody: '{{Abbr/TBD}}',
-      })),
-      boilerplate: {
-        navbox,
-        infobox: fullInfobox,
-        tabs,
-      },
-      skipExisting: true,
-      summary: `Created via QWICKY — ${tournament.name || 'tournament setup'}`,
-    };
 
     try {
       const res = await fetch('/api/wiki?action=scaffold', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          pages: pages.map(p => ({ title: p.link, contentBody: '{{Abbr/TBD}}' })),
+          boilerplate: { navbox, infobox: fullInfobox, tabs },
+          skipExisting: true,
+          summary: `Created via QWICKY — ${tournament.name || 'tournament setup'}`,
+        }),
       });
       const result = await res.json();
       setScaffoldResult(result);
 
       if (result.ok || result.created?.length > 0) {
-        // Save wiki config to tournament (localStorage)
-        const wikiConfig = {
-          enabled: true,
-          parentPage: selectedRoot || '',
-          seasonPage,
-          navbox,
-          infobox,
-          pages,
-        };
+        const wikiConfig = { enabled: true, parentPage: selectedRoot || '', seasonPage, navbox, infobox, pages };
         updateTournament({ wikiConfig });
 
-        // Auto-configure division publish targets
-        const divisions = tournament.divisions || [];
-        const updatedDivisions = divisions.map(div => {
+        const updatedDivisions = (tournament.divisions || []).map(div => {
           const divPage = pages.find(p => p.name === div.name && p.type === 'division');
           if (!divPage) return div;
-          return {
-            ...div,
-            wikiConfig: {
-              enabled: true,
-              targets: [
-                { type: 'standings', page: divPage.link, section: '' },
-                { type: 'matches', page: divPage.link, section: '' },
-              ],
-            },
-          };
+          return { ...div, wikiConfig: { enabled: true, targets: [
+            { type: 'standings', page: divPage.link, section: '' },
+            { type: 'matches', page: divPage.link, section: '' },
+          ]}};
         });
         updateTournament({ divisions: updatedDivisions });
 
-        // Sync to Supabase (fire-and-forget) so server-side auto-publish works
-        const tournamentId = (tournament.name || '')
-          .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+        // Sync to Supabase
+        const tournamentId = (tournament.name || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
         if (tournamentId) {
           fetch('/api/wiki?action=config-tournament', {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
+            method: 'PUT', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ tournamentId, wikiConfig }),
           }).catch(() => {});
-
-          // Sync each division's wiki config
           for (const div of updatedDivisions) {
             if (div.wikiConfig?.enabled) {
               fetch('/api/wiki?action=config-division', {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                method: 'PUT', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ divisionId: div.id, wikiConfig: div.wikiConfig }),
               }).catch(() => {});
             }
@@ -244,9 +209,16 @@ export default function WikiSetupWizard({ tournament, updateTournament, onClose 
     } catch (err) {
       setScaffoldResult({ ok: false, errors: [{ title: 'request', error: err.message }] });
     }
-
     setScaffoldLoading(false);
   };
+
+  // ── Spinner component ───────────────────────────────────────────────────────
+  const Spinner = () => (
+    <svg className="animate-spin h-4 w-4 text-qw-accent" viewBox="0 0 24 24" fill="none">
+      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+    </svg>
+  );
 
   // ── Render ──────────────────────────────────────────────────────────────────
   return (
@@ -268,101 +240,171 @@ export default function WikiSetupWizard({ tournament, updateTournament, onClose 
 
         <div className="p-6">
 
-          {/* ── STEP 1: Find Tournament ── */}
+          {/* ── STEP 1: Find / Create ── */}
           {step === 1 && (
             <div className="space-y-4">
-              <h3 className="font-display text-sm text-white">Find Existing Tournament on QWiki</h3>
-              <p className="text-sm text-qw-muted">Search for your tournament series to connect to its existing wiki pages, or create a new structure.</p>
+              <h3 className="font-display text-sm text-white">Connect to QW Wiki</h3>
+              <p className="text-sm text-qw-muted">Choose how to set up your tournament's wiki pages.</p>
 
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && handleSearch()}
-                  placeholder="e.g. The Big 4, EQL, NQR..."
-                  className="flex-1 bg-qw-darker text-white p-2 rounded border border-qw-border focus:border-qw-accent outline-none text-sm"
-                />
-                <button onClick={handleSearch} disabled={searchLoading} className="qw-btn px-4 py-2 text-sm">
-                  {searchLoading ? 'Searching...' : 'Search'}
-                </button>
-              </div>
-
-              {searchResults !== null && (
+              {/* Entry mode selector */}
+              {!entryMode && (
                 <div className="space-y-2">
-                  {searchResults.length === 0 ? (
-                    <p className="text-sm text-qw-muted">No tournaments found. You can create a new wiki structure.</p>
-                  ) : (
-                    searchResults.map(t => (
-                      <button
-                        key={t.root}
-                        onClick={() => handleSelectTournament(t.root)}
-                        className={`w-full text-left p-3 rounded border transition-colors ${selectedRoot === t.root
-                          ? 'border-qw-accent bg-qw-accent/10'
-                          : 'border-qw-border bg-qw-darker hover:border-qw-accent/50'
-                        }`}
-                      >
-                        <div className="text-white font-semibold text-sm">{t.root}</div>
-                        <div className="text-xs text-qw-muted">{t.matchCount || t.pages?.length || 0} pages</div>
-                      </button>
-                    ))
-                  )}
-                </div>
-              )}
-
-              {(selectedRoot || searchResults !== null) && (
-                <div className="pt-2 border-t border-qw-border/50">
                   <button
-                    onClick={handleCreateNew}
-                    className={`w-full text-left p-3 rounded border transition-colors ${createNew
-                      ? 'border-qw-accent bg-qw-accent/10'
-                      : 'border-qw-border bg-qw-darker hover:border-qw-accent/50'
-                    }`}
+                    onClick={() => { setEntryMode('search'); setSearchQuery(tournament.name || ''); }}
+                    className="w-full text-left p-4 rounded-lg border border-qw-border bg-qw-darker hover:border-qw-accent/50 transition-colors group"
                   >
-                    <div className="text-white font-semibold text-sm">+ Create New Tournament</div>
-                    <div className="text-xs text-qw-muted">Start a fresh wiki page structure</div>
+                    <div className="text-white font-semibold text-sm group-hover:text-qw-accent">Search existing tournaments</div>
+                    <div className="text-xs text-qw-muted mt-1">Find your tournament series on the wiki (e.g. The Big 4, EQL, NQR)</div>
+                  </button>
+                  <button
+                    onClick={() => setEntryMode('url')}
+                    className="w-full text-left p-4 rounded-lg border border-qw-border bg-qw-darker hover:border-qw-accent/50 transition-colors group"
+                  >
+                    <div className="text-white font-semibold text-sm group-hover:text-qw-accent">Enter wiki page path or URL</div>
+                    <div className="text-xs text-qw-muted mt-1">Paste the direct URL or path to your tournament's parent page</div>
+                  </button>
+                  <button
+                    onClick={() => setEntryMode('new')}
+                    className="w-full text-left p-4 rounded-lg border border-qw-border bg-qw-darker hover:border-qw-accent/50 transition-colors group"
+                  >
+                    <div className="text-white font-semibold text-sm group-hover:text-qw-accent">Create from scratch</div>
+                    <div className="text-xs text-qw-muted mt-1">First tournament ever? Set up a brand new wiki page structure</div>
                   </button>
                 </div>
               )}
 
-              {(selectedRoot || createNew) && (
-                <div className="space-y-2 pt-2">
+              {/* Search mode */}
+              {entryMode === 'search' && (
+                <div className="space-y-3">
+                  <button onClick={() => { setEntryMode(null); setSearchResults(null); setSelectedRoot(''); }} className="text-xs text-qw-muted hover:text-white">&larr; Back</button>
+
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={e => { setSearchQuery(e.target.value); setSelectedRoot(''); }}
+                      placeholder="Start typing a tournament name..."
+                      autoFocus
+                      className="w-full bg-qw-darker text-white p-3 rounded-lg border border-qw-border focus:border-qw-accent outline-none text-sm pr-10"
+                    />
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                      {searchLoading ? <Spinner /> : searchQuery.length >= 2 && (
+                        <span className="text-xs text-qw-muted">{searchResults?.length ?? ''}</span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Results */}
+                  {searchResults !== null && !searchLoading && (
+                    <div className="space-y-1 max-h-48 overflow-y-auto">
+                      {searchResults.length === 0 && searchQuery.length >= 2 && (
+                        <p className="text-sm text-qw-muted py-2">No tournaments found for "{searchQuery}"</p>
+                      )}
+                      {searchResults.map(t => (
+                        <button
+                          key={t.root}
+                          onClick={() => handleSelectTournament(t.root)}
+                          className={`w-full text-left p-3 rounded border transition-colors ${selectedRoot === t.root
+                            ? 'border-qw-accent bg-qw-accent/10'
+                            : 'border-qw-border/50 bg-qw-darker hover:border-qw-accent/50'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="text-white font-semibold text-sm">{t.root}</span>
+                            <span className="text-xs text-qw-muted">{t.matchCount || t.pages?.length || 0} pages</span>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Season name after selection */}
                   {selectedRoot && (
-                    <div>
-                      <label className="text-xs text-qw-muted block mb-1">Season Name</label>
-                      <input
-                        type="text"
-                        value={seasonName}
-                        onChange={e => setSeasonName(e.target.value)}
-                        placeholder="Season 2"
-                        className="w-full bg-qw-darker text-white p-2 rounded border border-qw-border focus:border-qw-accent outline-none text-sm"
-                      />
-                      <div className="text-xs text-qw-muted mt-1">
-                        Pages will be created under: <span className="text-qw-accent">{seasonPage || '...'}</span>
-                      </div>
+                    <div className="p-3 bg-qw-darker rounded-lg border border-qw-accent/30 space-y-2">
+                      {scanLoading ? (
+                        <div className="flex items-center gap-2 text-sm text-qw-muted py-2">
+                          <Spinner /> Scanning existing pages...
+                        </div>
+                      ) : (
+                        <>
+                          <label className="text-xs text-qw-muted block">Season Name</label>
+                          <input
+                            type="text"
+                            value={seasonName}
+                            onChange={e => setSeasonName(e.target.value)}
+                            placeholder="Season 2"
+                            className="w-full bg-qw-dark text-white p-2 rounded border border-qw-border focus:border-qw-accent outline-none text-sm"
+                          />
+                          <div className="text-xs text-qw-muted">
+                            Pages at: <span className="text-qw-accent font-mono">{seasonPage || '...'}</span>
+                          </div>
+                        </>
+                      )}
                     </div>
                   )}
-                  {createNew && (
-                    <div>
-                      <label className="text-xs text-qw-muted block mb-1">Full Page Path</label>
-                      <input
-                        type="text"
-                        value={seasonName}
-                        onChange={e => setSeasonName(e.target.value)}
-                        placeholder="My Tournament/Season 1"
-                        className="w-full bg-qw-darker text-white p-2 rounded border border-qw-border focus:border-qw-accent outline-none text-sm"
-                      />
-                    </div>
-                  )}
-
-                  <button
-                    onClick={() => setStep(2)}
-                    disabled={!seasonPage}
-                    className="qw-btn px-6 py-2 text-sm disabled:opacity-50"
-                  >
-                    Next: Metadata
-                  </button>
                 </div>
+              )}
+
+              {/* Direct URL mode */}
+              {entryMode === 'url' && (
+                <div className="space-y-3">
+                  <button onClick={() => { setEntryMode(null); setDirectPath(''); }} className="text-xs text-qw-muted hover:text-white">&larr; Back</button>
+
+                  <div>
+                    <label className="text-xs text-qw-muted block mb-1">Wiki page URL or path</label>
+                    <input
+                      type="text"
+                      value={directPath}
+                      onChange={e => setDirectPath(parseWikiPath(e.target.value))}
+                      placeholder="https://quakeworld.nu/wiki/The_Big_4/Season_3 or The Big 4/Season 3"
+                      autoFocus
+                      className="w-full bg-qw-darker text-white p-3 rounded-lg border border-qw-border focus:border-qw-accent outline-none text-sm"
+                    />
+                    {directPath && (
+                      <div className="text-xs text-qw-muted mt-2">
+                        Pages at: <span className="text-qw-accent font-mono">{directPath}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Create new mode */}
+              {entryMode === 'new' && (
+                <div className="space-y-3">
+                  <button onClick={() => { setEntryMode(null); setSeasonName(''); }} className="text-xs text-qw-muted hover:text-white">&larr; Back</button>
+
+                  <div>
+                    <label className="text-xs text-qw-muted block mb-1">Full page path for your tournament</label>
+                    <input
+                      type="text"
+                      value={seasonName}
+                      onChange={e => setSeasonName(e.target.value)}
+                      placeholder="My Tournament/Season 1"
+                      autoFocus
+                      className="w-full bg-qw-darker text-white p-3 rounded-lg border border-qw-border focus:border-qw-accent outline-none text-sm"
+                    />
+                    <p className="text-xs text-qw-muted mt-2">
+                      Division pages, Playoffs, and Information pages will be created as sub-pages.
+                    </p>
+                    {seasonName && (
+                      <div className="text-xs text-qw-muted mt-1">
+                        Example: <span className="text-qw-accent font-mono">{seasonName}/Division 1</span>, <span className="text-qw-accent font-mono">{seasonName}/Playoffs</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Next button */}
+              {entryMode && seasonPage && (
+                <button
+                  onClick={() => setStep(2)}
+                  disabled={scanLoading}
+                  className="qw-btn px-6 py-2 text-sm disabled:opacity-50 w-full"
+                >
+                  Next: Metadata
+                </button>
               )}
             </div>
           )}
@@ -372,8 +414,8 @@ export default function WikiSetupWizard({ tournament, updateTournament, onClose 
             <div className="space-y-4">
               <h3 className="font-display text-sm text-white">Tournament Metadata</h3>
               <p className="text-sm text-qw-muted">
-                These fields populate the <code className="text-qw-accent">{'{{Infobox league}}'}</code> template on each wiki page.
-                Format, dates, maps, and team count are auto-derived from your QWICKY setup.
+                These fields populate the <code className="text-qw-accent">{'{{Infobox league}}'}</code> template.
+                Format, dates, maps, and team count are auto-derived.
               </p>
 
               <div className="grid grid-cols-2 gap-3">
@@ -421,15 +463,29 @@ export default function WikiSetupWizard({ tournament, updateTournament, onClose 
 
               <div className="text-xs text-qw-muted bg-qw-darker p-3 rounded border border-qw-border/50">
                 <div className="font-semibold text-white mb-1">Auto-derived from QWICKY:</div>
-                <div>Format: {tournament.mode || '4on4'}</div>
-                <div>Start: {tournament.startDate || '(not set)'}</div>
-                <div>Teams: {(tournament.divisions || []).reduce((s, d) => s + (d.teams?.length || 0), 0)}</div>
-                <div>Divisions: {divisionNames.join(', ') || '(none)'}</div>
+                <div>Format: {tournament.mode || '4on4'} | Start: {tournament.startDate || '(not set)'} | Teams: {(tournament.divisions || []).reduce((s, d) => s + (d.teams?.length || 0), 0)} | Divisions: {divisionNames.join(', ') || '(none)'}</div>
               </div>
+
+              {/* Template reference */}
+              <details className="text-xs">
+                <summary className="text-qw-muted cursor-pointer hover:text-white">Wiki template reference</summary>
+                <div className="mt-2 p-3 bg-qw-darker rounded border border-qw-border/50 space-y-2 text-qw-muted font-mono">
+                  <div><span className="text-qw-accent">{'{{Infobox league}}'}</span> — Tournament header with metadata</div>
+                  <div><span className="text-qw-accent">{'{{Tabs static}}'}</span> — Navigation tabs between pages</div>
+                  <div><span className="text-qw-accent">{'{{GroupTableStart}}'}</span> — Group stage standings table</div>
+                  <div><span className="text-qw-accent">{'{{GroupTableSlot}}'}</span> — Team row in standings</div>
+                  <div><span className="text-qw-accent">{'{{MatchList}}'}</span> — Match results container</div>
+                  <div><span className="text-qw-accent">{'{{MatchMaps}}'}</span> — Individual match with map scores</div>
+                  <div><span className="text-qw-accent">{'{{4SETeamBracket}}'}</span> — 4-team single elimination bracket</div>
+                  <div><span className="text-qw-accent">{'{{8SETeamBracket}}'}</span> — 8-team single elimination bracket</div>
+                  <div><span className="text-qw-accent">{'{{player|Name|flag=xx}}'}</span> — Player link with country flag</div>
+                  <div><span className="text-qw-accent">{'{{Abbr/TBD}}'}</span> — "To be determined" placeholder</div>
+                </div>
+              </details>
 
               <div className="flex gap-2">
                 <button onClick={() => setStep(1)} className="qw-btn-secondary px-4 py-2 text-sm">Back</button>
-                <button onClick={() => setStep(3)} className="qw-btn px-6 py-2 text-sm">Next: Create Pages</button>
+                <button onClick={() => setStep(3)} className="qw-btn px-6 py-2 text-sm flex-1">Next: Create Pages</button>
               </div>
             </div>
           )}
@@ -439,17 +495,15 @@ export default function WikiSetupWizard({ tournament, updateTournament, onClose 
             <div className="space-y-4">
               <h3 className="font-display text-sm text-white">Page Structure</h3>
               <p className="text-sm text-qw-muted">
-                These pages will be created on the QW Wiki with proper boilerplate (navbox, infobox, tabs).
-                Existing pages will be skipped.
+                These pages will be created with boilerplate (navbox, infobox, tabs). Existing pages are skipped.
               </p>
 
               <div className="space-y-1">
                 {buildPages().map((page, i) => (
                   <div key={page.link} className="flex items-center gap-3 p-2 bg-qw-darker rounded text-sm">
                     <span className="text-qw-accent font-mono w-6 text-center">{i + 1}</span>
-                    <span className="text-white flex-1">{page.link}</span>
+                    <span className="text-white flex-1 font-mono text-xs">{page.link}</span>
                     <span className="text-xs text-qw-muted capitalize">{page.type}</span>
-                    <span className="text-xs text-qw-muted">This={i + 1}</span>
                   </div>
                 ))}
               </div>
@@ -462,25 +516,15 @@ export default function WikiSetupWizard({ tournament, updateTournament, onClose 
                   {scaffoldResult.ok ? (
                     <>
                       <div className="font-semibold">Pages created successfully!</div>
-                      {scaffoldResult.created?.map(p => (
-                        <div key={p.title} className="text-xs mt-1">+ {p.title}</div>
-                      ))}
-                      {scaffoldResult.skipped?.map(p => (
-                        <div key={p.title} className="text-xs mt-1 text-qw-muted">- {p.title} (already exists)</div>
-                      ))}
-                      <div className="mt-2 text-xs text-qw-muted">
-                        Auto-publish targets configured for each division. Wiki will auto-update as you approve games.
-                      </div>
+                      {scaffoldResult.created?.map(p => <div key={p.title} className="text-xs mt-1">+ {p.title}</div>)}
+                      {scaffoldResult.skipped?.map(p => <div key={p.title} className="text-xs mt-1 text-qw-muted">- {p.title} (exists)</div>)}
+                      <div className="mt-2 text-xs text-qw-muted">Auto-publish targets configured. Wiki updates as you approve games.</div>
                     </>
                   ) : (
                     <>
                       <div className="font-semibold">Some errors occurred:</div>
-                      {scaffoldResult.created?.map(p => (
-                        <div key={p.title} className="text-xs mt-1 text-green-400">+ {p.title}</div>
-                      ))}
-                      {scaffoldResult.errors?.map(e => (
-                        <div key={e.title} className="text-xs mt-1">! {e.title}: {e.error}</div>
-                      ))}
+                      {scaffoldResult.created?.map(p => <div key={p.title} className="text-xs mt-1 text-green-400">+ {p.title}</div>)}
+                      {scaffoldResult.errors?.map(e => <div key={e.title} className="text-xs mt-1">! {e.title}: {e.error}</div>)}
                     </>
                   )}
                 </div>
@@ -489,15 +533,13 @@ export default function WikiSetupWizard({ tournament, updateTournament, onClose 
               <div className="flex gap-2">
                 <button onClick={() => setStep(2)} className="qw-btn-secondary px-4 py-2 text-sm">Back</button>
                 {!scaffoldResult?.ok ? (
-                  <button
-                    onClick={handleScaffold}
-                    disabled={scaffoldLoading}
-                    className="qw-btn px-6 py-2 text-sm disabled:opacity-50"
-                  >
-                    {scaffoldLoading ? 'Creating Pages...' : 'Create Pages on Wiki'}
+                  <button onClick={handleScaffold} disabled={scaffoldLoading} className="qw-btn px-6 py-2 text-sm flex-1 disabled:opacity-50">
+                    {scaffoldLoading ? (
+                      <span className="flex items-center justify-center gap-2"><Spinner /> Creating Pages...</span>
+                    ) : 'Create Pages on Wiki'}
                   </button>
                 ) : (
-                  <button onClick={onClose} className="qw-btn px-6 py-2 text-sm">Done</button>
+                  <button onClick={onClose} className="qw-btn px-6 py-2 text-sm flex-1">Done</button>
                 )}
               </div>
             </div>
