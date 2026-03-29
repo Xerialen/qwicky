@@ -333,7 +333,10 @@ function App() {
   } = useTournamentState();
 
   // App mode: 'landing' | 'wizard' | 'app'
-  const [appMode, setAppMode] = useState('landing');
+  // Skip landing if localStorage already has a tournament with divisions
+  const [appMode, setAppMode] = useState(() =>
+    tournament.divisions?.length > 0 ? 'app' : 'landing'
+  );
 
   // UI state
   const [activeTab, setActiveTab] = useState('info'); // info, divisions, division
