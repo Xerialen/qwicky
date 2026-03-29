@@ -63,7 +63,7 @@ export default function DivisionView({ division, updateDivision, updateAnyDivisi
       case 'teams':
         return <DivisionTeams division={division} updateDivision={updateDivision} tournamentMode={tournamentMode} allDivisions={allDivisions} />;
       case 'schedule':
-        return <DivisionSchedule division={division} updateDivision={updateDivision} tournamentStartDate={tournamentStartDate} allDivisions={allDivisions} />;
+        return <DivisionSchedule division={division} updateDivision={updateDivision} tournamentStartDate={tournamentStartDate} allDivisions={allDivisions} tournamentId={tournamentId} />;
       case 'results':
         return <DivisionResults division={division} updateDivision={updateDivision} updateAnyDivision={updateAnyDivision} tournamentId={tournamentId} tournament={tournament} />;
       case 'bracket':

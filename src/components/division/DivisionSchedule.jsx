@@ -46,7 +46,7 @@ function dateForRound(startDate, roundIndex, pace) {
   return d.toISOString().split('T')[0];
 }
 
-export default function DivisionSchedule({ division, updateDivision, tournamentStartDate, allDivisions = [] }) {
+export default function DivisionSchedule({ division, updateDivision, tournamentStartDate, allDivisions = [], tournamentId }) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingMatch, setEditingMatch] = useState(null);
   const [newMatch, setNewMatch] = useState({
@@ -54,6 +54,8 @@ export default function DivisionSchedule({ division, updateDivision, tournamentS
   });
   const [draggedMatchId, setDraggedMatchId] = useState(null);
   const [dragOverRound, setDragOverRound] = useState(null);
+  const [discordToast, setDiscordToast] = useState(null);
+  const [postingRound, setPostingRound] = useState(null);
   const dragGroupRef = useRef(null);
 
   const teams = division.teams || [];
@@ -226,6 +228,36 @@ export default function DivisionSchedule({ division, updateDivision, tournamentS
     handleUpdateMatch(matchId, updates);
   };
 
+  // Post a round's schedule to Discord via the notification queue
+  const postRoundToDiscord = async (roundNum, group, matches) => {
+    if (!tournamentId) return;
+    const key = `${group || ''}-${roundNum}`;
+    setPostingRound(key);
+    try {
+      const apiBase = import.meta.env.VITE_API_BASE_URL || '';
+      const res = await fetch(`${apiBase}/api/discord/post-schedule`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tournamentId,
+          divisionName: division.name,
+          roundNum,
+          group: group || null,
+          matches,
+          deadline: null,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed');
+      setDiscordToast({ type: data.channels > 0 ? 'success' : 'warn', message: data.channels > 0 ? `Posted to ${data.channels} channel(s)` : 'No registered channels' });
+    } catch (err) {
+      setDiscordToast({ type: 'error', message: err.message });
+    } finally {
+      setPostingRound(null);
+      setTimeout(() => setDiscordToast(null), 5000);
+    }
+  };
+
   const groupedMatches = useMemo(() => {
     const grouped = { groups: {}, playoffs: [] };
     
@@ -355,6 +387,16 @@ export default function DivisionSchedule({ division, updateDivision, tournamentS
 
   return (
     <div className="space-y-6">
+      {discordToast && (
+        <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg text-sm font-semibold transition-all ${
+          discordToast.type === 'success' ? 'bg-qw-win/20 border border-qw-win/40 text-qw-win' :
+          discordToast.type === 'warn' ? 'bg-amber-500/20 border border-amber-500/40 text-amber-300' :
+          'bg-qw-loss/20 border border-qw-loss/40 text-qw-loss'
+        }`}>
+          {discordToast.message}
+          <button onClick={() => setDiscordToast(null)} className="ml-3 text-xs opacity-60 hover:opacity-100">&times;</button>
+        </div>
+      )}
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div className="flex gap-2">
           <button onClick={generateGroupSchedule} className="px-4 py-2 rounded border border-qw-border text-qw-muted hover:text-white hover:border-qw-accent">
@@ -502,7 +544,17 @@ export default function DivisionSchedule({ division, updateDivision, tournamentS
                                   {byRound[rn][0]?.date && (
                                     <span className="text-xs font-mono text-qw-muted">— {byRound[rn][0].date}</span>
                                   )}
-                                  {isDropTarget && <span className="text-xs text-qw-accent/70 ml-auto">↓ drop here</span>}
+                                  {tournamentId && (
+                                    <button
+                                      onClick={() => postRoundToDiscord(rn, groupName, byRound[rn])}
+                                      disabled={postingRound === `${groupName}-${rn}`}
+                                      className="ml-auto text-xs text-zinc-500 hover:text-[#5865F2] transition-colors disabled:opacity-40"
+                                      title="Post this round to Discord"
+                                    >
+                                      <svg width="16" height="12" viewBox="0 0 71 55" fill="currentColor"><path d="M60.1 4.9A58.5 58.5 0 0045.4.2a.2.2 0 00-.2.1 40.7 40.7 0 00-1.8 3.7 54 54 0 00-16.2 0A26.4 26.4 0 0025.4.3a.2.2 0 00-.2-.1A58.4 58.4 0 0010.5 5 59.6 59.6 0 00.4 45.2a.3.3 0 00.1.2 58.9 58.9 0 0017.7 9 .2.2 0 00.3-.1 42 42 0 003.6-5.9.2.2 0 00-.1-.3 38.8 38.8 0 01-5.5-2.7.2.2 0 01 0-.4c.4-.3.7-.6 1.1-.8a.2.2 0 01.2 0 42 42 0 0035.8 0 .2.2 0 01.2 0l1.1.9a.2.2 0 010 .3 36.4 36.4 0 01-5.5 2.7.2.2 0 00-.1.3 47.2 47.2 0 003.6 5.9.2.2 0 00.3.1A58.7 58.7 0 0070 45.4a.3.3 0 00.1-.2c1.6-16.7-2.7-31.2-11.5-44A.2.2 0 0058 .5zM23.7 37.1c-3.8 0-6.9-3.5-6.9-7.8s3-7.8 6.9-7.8c3.9 0 7 3.5 6.9 7.8 0 4.3-3 7.8-6.9 7.8zm25.5 0c-3.8 0-6.9-3.5-6.9-7.8s3-7.8 6.9-7.8c3.9 0 7 3.5 6.9 7.8 0 4.3-3.1 7.8-6.9 7.8z"/></svg>
+                                    </button>
+                                  )}
+                                  {isDropTarget && <span className="text-xs text-qw-accent/70">↓ drop here</span>}
                                 </div>
                               )}
                               <div className="divide-y divide-qw-border">
