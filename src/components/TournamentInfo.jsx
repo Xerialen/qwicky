@@ -356,6 +356,49 @@ export default function TournamentInfo({ tournament, updateTournament, onNavigat
             </div>
           </div>
 
+          {/* Discord Features */}
+          <div className="qw-panel p-6">
+            <h3 className="font-display text-lg text-qw-accent mb-4">DISCORD FEATURES</h3>
+            <p className="text-qw-muted text-xs mb-4">Control which Discord notifications the bot sends for this tournament.</p>
+            <div className="space-y-3">
+              {[
+                { key: 'submissionFeedback', label: 'Submission feedback', desc: 'Edit Discord embeds when submissions are approved or rejected', defaultOn: true },
+                { key: 'gameDayReminders', label: 'Game day reminders', desc: 'Daily post at 09:00 UTC listing matches scheduled for today', defaultOn: false },
+                { key: 'unscheduledAlerts', label: 'Unscheduled match alerts', desc: 'Daily alert about matches that still need a date', defaultOn: false },
+                { key: 'adminAlerts', label: 'Admin alerts', desc: 'Warnings about stale pending submissions and unmatched teams', defaultOn: false },
+              ].map(({ key, label, desc, defaultOn }) => {
+                const discord = tournament.settings?.discord || {};
+                const isEnabled = discord[key]?.enabled ?? defaultOn;
+                return (
+                  <div key={key} className="flex items-start gap-3 p-3 bg-qw-dark rounded border border-qw-border">
+                    <button
+                      onClick={() => updateTournament({
+                        settings: {
+                          ...(tournament.settings || {}),
+                          discord: {
+                            ...discord,
+                            [key]: { ...(discord[key] || {}), enabled: !isEnabled },
+                          },
+                        }
+                      })}
+                      className={`relative flex-shrink-0 w-11 h-6 rounded-full transition-colors mt-0.5 ${
+                        isEnabled ? 'bg-qw-win' : 'bg-qw-border'
+                      }`}
+                    >
+                      <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${
+                        isEnabled ? 'translate-x-5' : 'translate-x-0.5'
+                      }`} />
+                    </button>
+                    <div>
+                      <div className="text-sm text-white font-semibold">{label}</div>
+                      <div className="text-xs text-qw-muted">{desc}</div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
           {/* Wiki Setup */}
           <div className="qw-panel p-6">
             <h3 className="font-display text-lg text-qw-accent mb-4">WIKI INTEGRATION</h3>
