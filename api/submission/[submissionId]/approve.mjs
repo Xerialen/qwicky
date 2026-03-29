@@ -22,6 +22,19 @@ export default async function handler(req, res) {
     if (error) throw error;
     if (!data) return res.status(404).json({ error: 'Submission not found' });
 
+    // Fire-and-forget wiki auto-publish if configured
+    if (data.tournament_id) {
+      const baseUrl = `https://${req.headers.host || 'qwicky.vercel.app'}`;
+      fetch(`${baseUrl}/api/wiki/auto-publish`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tournamentId: data.tournament_id,
+          divisionId: data.division_id || undefined,
+        }),
+      }).catch(() => {});
+    }
+
     return res.json({ submission: data });
   } catch (err) {
     console.error('Error approving submission:', err);

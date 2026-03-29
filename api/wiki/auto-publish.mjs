@@ -13,6 +13,7 @@ import {
   createWikiClient, editPage, findSectionByHeading,
   getPageContent, findBoilerplateBoundary,
 } from './_wikiClient.mjs';
+import { assembleBoilerplate } from './_boilerplate.mjs';
 import {
   calculateStandings,
   generateStandingsWiki,
@@ -78,7 +79,7 @@ export default async function handler(req, res) {
 
       const teams = (teamData || []).map(t => ({
         name: t.name, tag: t.tag, country: t.country,
-        players: t.players || '', aliases: t.aliases || [], group: t.group_name,
+        players: t.players || '', aliases: t.aliases || [], group: t.group,
       }));
 
       // Load match maps
@@ -100,7 +101,7 @@ export default async function handler(req, res) {
 
       const schedule = (matchData || []).map(m => ({
         id: m.id, team1: m.team1, team2: m.team2, status: m.status,
-        round: m.round, group: m.group_name, roundNum: m.round_num,
+        round: m.round, group: m.group, roundNum: m.round_num,
         bestOf: m.best_of, date: m.match_date, time: m.match_time,
         maps: mapsByMatch[m.id] || [], forfeit: m.forfeit,
       }));
@@ -177,7 +178,17 @@ export default async function handler(req, res) {
                 summary: `Updated ${target.type} via QWICKY auto-publish`,
               });
             } else {
-              result = await editPage(wikiClient, target.page, markup, {
+              // Page doesn't exist — create with boilerplate if tournament has wiki config
+              let fullContent = markup;
+              if (tournament?.settings?.wikiConfig) {
+                const wc = tournament.settings.wikiConfig;
+                if (wc.pages?.length > 0 && (wc.navbox || Object.keys(wc.infobox || {}).length > 0)) {
+                  const tabs = wc.pages.map(p => ({ name: p.name, link: p.link }));
+                  const bp = assembleBoilerplate({ navbox: wc.navbox, infobox: wc.infobox || {}, tabs }, target.page);
+                  fullContent = bp + '\n\n' + markup;
+                }
+              }
+              result = await editPage(wikiClient, target.page, fullContent, {
                 summary: `Created via QWICKY auto-publish`,
               });
             }

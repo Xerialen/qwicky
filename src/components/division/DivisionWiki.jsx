@@ -2,6 +2,7 @@
 import React, { useState, useMemo } from 'react';
 import { calculateStats, generateWikiTable } from '../../utils/statsLogic';
 import { renderWikiPreview } from '../../utils/wikiPreview';
+import { publishDivisionWiki } from '../../services/wikiPublisher';
 import EmptyState from '../EmptyState';
 import {
   calculateStandings,
@@ -14,7 +15,6 @@ export default function DivisionWiki({ division, tournamentName, updateDivision 
   const [activeExport, setActiveExport] = useState('standings');
   const [copied, setCopied] = useState(false);
   const [viewMode, setViewMode] = useState('code');
-  const [showPreview, setShowPreview] = useState(true);
   const [showPublishModal, setShowPublishModal] = useState(false);
   const [publishState, setPublishState] = useState({ status: 'idle', message: '' });
   const [publishFields, setPublishFields] = useState({
@@ -22,6 +22,7 @@ export default function DivisionWiki({ division, tournamentName, updateDivision 
     section: '',
     summary: 'Updated via QWICKY',
   });
+  const [publishNowState, setPublishNowState] = useState({ status: 'idle', message: '' });
   const [options, setOptions] = useState({
     title: division.name || 'Division'
   });
@@ -31,7 +32,17 @@ export default function DivisionWiki({ division, tournamentName, updateDivision 
 
   const updateWikiConfig = (updates) => {
     if (!updateDivision) return;
-    updateDivision({ wikiConfig: { ...wikiConfig, ...updates } });
+    const updated = { ...wikiConfig, ...updates };
+    updateDivision({ wikiConfig: updated });
+
+    // Sync to Supabase (fire-and-forget)
+    if (division.id) {
+      fetch('/api/wiki/config/division', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ divisionId: division.id, wikiConfig: updated }),
+      }).catch(() => {});
+    }
   };
 
   const addTarget = (type) => {
@@ -81,17 +92,6 @@ export default function DivisionWiki({ division, tournamentName, updateDivision 
   }, [ktxstatsData]);
 
   const wikiContent = useMemo(() => {
-    // DEBUG: Log schedule to see what matches exist
-    console.log('=== WIKI GENERATION DEBUG ===');
-    console.log('Schedule matches:', schedule.length);
-    console.log('Playoff matches:', schedule.filter(m => m.round !== 'group').map(m => ({ 
-      team1: m.team1, 
-      team2: m.team2, 
-      round: m.round,
-      maps: m.maps?.length || 0
-    })));
-    console.log('=============================');
-    
     switch (activeExport) {
       case 'standings': 
         return generateStandingsWiki(standings, teams, division, options);
@@ -268,6 +268,49 @@ const handleCopy = async () => {
                       ))}
                     </div>
                   </div>
+
+                  {/* Publish Now button */}
+                  {(wikiConfig.targets || []).some(t => t.page) && (
+                    <div className="pt-3 border-t border-qw-border/30">
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={async () => {
+                            setPublishNowState({ status: 'publishing', message: 'Publishing...' });
+                            try {
+                              // Build a minimal tournament object for the publisher
+                              const fakeTournament = { settings: { wikiAutoPublish: true } };
+                              const results = await publishDivisionWiki(division, fakeTournament);
+                              const ok = results.filter(r => r.ok);
+                              const fail = results.filter(r => !r.ok);
+                              if (fail.length === 0) {
+                                setPublishNowState({ status: 'success', message: `Published ${ok.length} target(s)` });
+                              } else if (ok.length > 0) {
+                                setPublishNowState({ status: 'warn', message: `${ok.length} updated, ${fail.length} failed: ${fail[0]?.error}` });
+                              } else {
+                                setPublishNowState({ status: 'error', message: fail[0]?.error || 'Publish failed' });
+                              }
+                            } catch (err) {
+                              setPublishNowState({ status: 'error', message: err.message });
+                            }
+                            setTimeout(() => setPublishNowState({ status: 'idle', message: '' }), 8000);
+                          }}
+                          disabled={publishNowState.status === 'publishing'}
+                          className="qw-btn px-4 py-1.5 text-xs disabled:opacity-50"
+                        >
+                          {publishNowState.status === 'publishing' ? 'Publishing...' : 'Publish Now'}
+                        </button>
+                        {publishNowState.status !== 'idle' && publishNowState.status !== 'publishing' && (
+                          <span className={`text-xs ${
+                            publishNowState.status === 'success' ? 'text-qw-win' :
+                            publishNowState.status === 'warn' ? 'text-amber-300' :
+                            'text-qw-loss'
+                          }`}>
+                            {publishNowState.message}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </>
               )}
             </div>
@@ -350,27 +393,6 @@ const handleCopy = async () => {
             </div>
           )}
         </div>
-      </div>
-
-      {/* Live Preview - Collapsible */}
-      <div className="qw-panel overflow-hidden">
-        <button
-          onClick={() => setShowPreview(!showPreview)}
-          className="w-full flex items-center justify-between px-4 py-3 bg-qw-dark border-b border-qw-border hover:bg-qw-dark/80 transition-colors"
-        >
-          <div className="flex items-center gap-2">
-            <h3 className="font-display text-sm text-qw-accent">LIVE PREVIEW</h3>
-            <span className="text-xs text-qw-muted">(updates as you edit)</span>
-          </div>
-          <span className={`text-qw-accent transition-transform duration-200 ${showPreview ? 'rotate-180' : ''}`}>
-            ▼
-          </span>
-        </button>
-        {showPreview && (
-          <div className="p-4 max-h-[600px] overflow-auto wiki-preview">
-            {renderWikiPreview(wikiContent, activeExport)}
-          </div>
-        )}
       </div>
 
       {/* Help section */}

@@ -1,220 +1,7 @@
 // src/components/TournamentInfo.jsx
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import WikiSetupWizard from './WikiSetupWizard';
 import { calculateStandings } from './division/DivisionStandings';
-
-// ── Wiki Auto-Publish Panel ─────────────────────────────────────────────────
-
-function WikiPublishPanel({ tournament, updateTournament }) {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState(null);
-  const [scanning, setScanning] = useState(false);
-  const [scanResult, setScanResult] = useState(null);
-
-  const settings = tournament.settings || {};
-  const wikiEnabled = settings.wikiAutoPublish || false;
-  const wikiPrefix = settings.wikiPagePrefix || '';
-
-  const handleSearch = async () => {
-    if (!searchQuery.trim()) return;
-    setScanning(true);
-    setSearchResults(null);
-    try {
-      const res = await fetch(`/api/wiki/scan?q=${encodeURIComponent(searchQuery.trim())}`);
-      const data = await res.json();
-      setSearchResults(data.tournaments || []);
-    } catch (err) {
-      setSearchResults([]);
-    }
-    setScanning(false);
-  };
-
-  const handleDeepScan = async (prefix) => {
-    setScanning(true);
-    setScanResult(null);
-    try {
-      const res = await fetch(`/api/wiki/scan?prefix=${encodeURIComponent(prefix)}`);
-      const data = await res.json();
-      setScanResult(data);
-      // Auto-set prefix
-      updateTournament({
-        settings: { ...settings, wikiPagePrefix: prefix }
-      });
-    } catch (err) {
-      setScanResult({ ok: false, error: err.message });
-    }
-    setScanning(false);
-  };
-
-  return (
-    <div className="qw-panel p-6">
-      <h3 className="font-display text-lg text-qw-accent mb-4">WIKI PUBLISHING</h3>
-      <p className="text-qw-muted text-sm mb-4">
-        Auto-publish standings, match results, and brackets to QWiki (quakeworld.nu/wiki) when matches are approved.
-      </p>
-
-      <div className="space-y-4">
-        {/* Master toggle */}
-        <div className="flex items-center justify-between p-4 bg-qw-dark rounded border border-qw-border">
-          <div>
-            <label className="text-white text-sm font-display font-semibold">Auto-Publish to QWiki</label>
-            <p className="text-qw-muted text-xs mt-0.5">Automatically update wiki pages on match approval</p>
-          </div>
-          <button
-            onClick={() => updateTournament({
-              settings: { ...settings, wikiAutoPublish: !wikiEnabled }
-            })}
-            className={`relative w-11 h-6 rounded-full transition-colors ${wikiEnabled ? 'bg-qw-win' : 'bg-qw-border'}`}
-          >
-            <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${wikiEnabled ? 'translate-x-5' : 'translate-x-0.5'}`} />
-          </button>
-        </div>
-
-        {wikiEnabled && (
-          <>
-            {/* Search QWiki */}
-            <div className="p-4 bg-qw-dark rounded border border-qw-border">
-              <label className="text-white text-sm font-display font-semibold mb-2 block">Find Tournament on QWiki</label>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                  placeholder="e.g. 'big 4 season 2' or 'eql 23'"
-                  className="flex-1 bg-qw-darker border border-qw-border rounded px-3 py-2 text-sm text-white placeholder-qw-muted focus:border-qw-accent outline-none"
-                />
-                <button onClick={handleSearch} disabled={scanning} className="qw-btn px-4 py-2 text-sm">
-                  {scanning ? '...' : 'Search'}
-                </button>
-              </div>
-
-              {/* Search results */}
-              {searchResults && searchResults.length > 0 && (
-                <div className="mt-3 space-y-2">
-                  {searchResults.map((t, i) => (
-                    <button
-                      key={i}
-                      onClick={() => handleDeepScan(t.root)}
-                      className="w-full flex items-center justify-between p-3 bg-qw-darker border border-qw-border rounded hover:border-qw-accent transition-colors text-left"
-                    >
-                      <span className="text-white text-sm font-mono">{t.root}</span>
-                      <span className="text-qw-muted text-xs">{t.matchCount} pages</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-              {searchResults && searchResults.length === 0 && (
-                <p className="text-qw-muted text-xs mt-2">No tournament pages found. Try different search terms.</p>
-              )}
-            </div>
-
-            {/* Scan results */}
-            {scanResult?.ok && (
-              <div className="p-4 bg-qw-dark rounded border border-qw-border">
-                <div className="flex items-center justify-between mb-3">
-                  <label className="text-white text-sm font-display font-semibold">
-                    Found {scanResult.pageCount} pages
-                  </label>
-                  <span className="text-xs font-mono text-qw-accent">
-                    {scanResult.suggestedLayout === 'multi-page' ? 'Multi-page layout' : 'Single-page layout'}
-                  </span>
-                </div>
-                <div className="space-y-1">
-                  {scanResult.pages.map((p, i) => (
-                    <div key={i} className="flex items-center gap-2 text-xs font-mono">
-                      <span className={`w-2 h-2 rounded-full ${p.hasContent ? 'bg-qw-win' : p.exists ? 'bg-yellow-500' : 'bg-qw-border'}`} />
-                      <span className="text-white">{p.title}</span>
-                      <span className="text-qw-muted">
-                        {p.hasContent ? `${p.sections.length} sections` : p.exists ? 'empty' : 'not found'}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-                <p className="text-qw-muted text-xs mt-3">
-                  Configure publish targets per division in each division's Wiki tab.
-                </p>
-              </div>
-            )}
-
-            {/* Page prefix (manual or from scan) */}
-            <div className="p-4 bg-qw-dark rounded border border-qw-border">
-              <label className="text-white text-sm font-display font-semibold mb-2 block">Wiki Page Prefix</label>
-              <input
-                type="text"
-                value={wikiPrefix}
-                onChange={(e) => updateTournament({
-                  settings: { ...settings, wikiPagePrefix: e.target.value }
-                })}
-                placeholder="e.g. The_Big_4/Season_2"
-                className="w-full bg-qw-darker border border-qw-border rounded px-3 py-2 text-sm text-white font-mono placeholder-qw-muted focus:border-qw-accent outline-none"
-              />
-              {wikiPrefix && (
-                <p className="text-qw-muted text-xs mt-2 font-mono">
-                  Division pages: {tournament.divisions?.map(d => `${wikiPrefix}/${d.name}`).join(', ') || '(no divisions)'}
-                </p>
-              )}
-            </div>
-
-            {/* Create Wiki Pages */}
-            {wikiPrefix && tournament.divisions?.length > 0 && (
-              <div className="p-4 bg-qw-dark rounded border border-qw-border">
-                <label className="text-white text-sm font-display font-semibold mb-2 block">Create Wiki Pages</label>
-                <p className="text-qw-muted text-xs mb-3">
-                  Create the overview page + one page per division on QWiki. Only creates pages that don't exist yet.
-                </p>
-                <button
-                  onClick={async () => {
-                    if (!window.confirm(`Create wiki pages under "${wikiPrefix}"? This will create pages on quakeworld.nu/wiki.`)) return;
-                    setScanning(true);
-                    try {
-                      // Create overview page
-                      const overviewRes = await fetch('/api/wiki/publish', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                          pageTitle: wikiPrefix,
-                          content: `'''${tournament.name}''' is a [[${tournament.mode || '4on4'}]] tournament.\n\n__NOTOC__`,
-                          summary: 'Created via QWICKY',
-                        }),
-                      });
-                      const results = [await overviewRes.json()];
-
-                      // Create division pages
-                      for (const div of tournament.divisions) {
-                        const pageTitle = `${wikiPrefix}/${div.name}`;
-                        const divRes = await fetch('/api/wiki/publish', {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({
-                            pageTitle,
-                            content: `{{Abbr/TBD}}\n__NOTOC__`,
-                            summary: 'Created via QWICKY',
-                          }),
-                        });
-                        results.push(await divRes.json());
-                      }
-
-                      const ok = results.filter(r => r.ok).length;
-                      const fail = results.filter(r => !r.ok).length;
-                      alert(`Created ${ok} page(s)${fail > 0 ? `, ${fail} failed` : ''}`);
-                    } catch (err) {
-                      alert('Failed: ' + err.message);
-                    }
-                    setScanning(false);
-                  }}
-                  disabled={scanning}
-                  className="qw-btn px-4 py-2 text-sm"
-                >
-                  {scanning ? 'Creating...' : 'Create All Wiki Pages'}
-                </button>
-              </div>
-            )}
-          </>
-        )}
-      </div>
-    </div>
-  );
-}
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -347,6 +134,7 @@ function DivisionStandingsCard({ division, onNavigate }) {
 export default function TournamentInfo({ tournament, updateTournament, onNavigateToDivision }) {
   const [copiedField, setCopiedField] = useState(null);
   const [showSettings, setShowSettings] = useState(false);
+  const [showWikiWizard, setShowWikiWizard] = useState(false);
   const [channels, setChannels] = useState(null);
   const [channelsLoading, setChannelsLoading] = useState(false);
   const [channelsError, setChannelsError] = useState(null);
@@ -568,8 +356,42 @@ export default function TournamentInfo({ tournament, updateTournament, onNavigat
             </div>
           </div>
 
-          {/* Wiki Auto-Publish */}
-          <WikiPublishPanel tournament={tournament} updateTournament={updateTournament} />
+          {/* Wiki Setup */}
+          <div className="qw-panel p-6">
+            <h3 className="font-display text-lg text-qw-accent mb-4">WIKI INTEGRATION</h3>
+            {tournament.wikiConfig?.enabled ? (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="w-2 h-2 rounded-full bg-qw-win"></span>
+                  <span className="text-white">Connected to wiki</span>
+                </div>
+                <div className="text-xs text-qw-muted space-y-1">
+                  <div>Season page: <span className="text-white">{tournament.wikiConfig.seasonPage}</span></div>
+                  {tournament.wikiConfig.navbox && <div>Navbox: <span className="text-white">{'{{'}{tournament.wikiConfig.navbox}{'}}'}</span></div>}
+                  <div>Pages: <span className="text-white">{tournament.wikiConfig.pages?.length || 0}</span></div>
+                </div>
+                <button
+                  onClick={() => setShowWikiWizard(true)}
+                  className="qw-btn-secondary px-4 py-2 text-xs"
+                >
+                  Reconfigure Wiki
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <p className="text-sm text-qw-muted">
+                  Connect to the QW Wiki to automatically publish standings, match results, and brackets.
+                  QWICKY will create the wiki pages with proper boilerplate and auto-update them as games are approved.
+                </p>
+                <button
+                  onClick={() => setShowWikiWizard(true)}
+                  className="qw-btn px-6 py-2 text-sm"
+                >
+                  Connect to Wiki
+                </button>
+              </div>
+            )}
+          </div>
 
           {/* Discord Integration */}
           <div className="qw-panel p-6">
@@ -856,6 +678,15 @@ export default function TournamentInfo({ tournament, updateTournament, onNavigat
             </div>
           )}
         </div>
+      )}
+
+      {/* Wiki Setup Wizard Modal */}
+      {showWikiWizard && (
+        <WikiSetupWizard
+          tournament={tournament}
+          updateTournament={updateTournament}
+          onClose={() => setShowWikiWizard(false)}
+        />
       )}
     </div>
   );

@@ -29,8 +29,18 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
   const [showApproved, setShowApproved] = useState(false);
   const [filterByDivision, setFilterByDivision] = useState(true);
 
+  // Wiki publish toast
+  const [wikiToast, setWikiToast] = useState(null);
+
+  // Discover states
+  const [discoverResults, setDiscoverResults] = useState(null);
+  const [discoverLoading, setDiscoverLoading] = useState(false);
+  const [discoverError, setDiscoverError] = useState(null);
+  const [discoverSelected, setDiscoverSelected] = useState(new Set());
+
   // Browse states
   const [browseTeamTag, setBrowseTeamTag] = useState('');
+
   const [browseDateFrom, setBrowseDateFrom] = useState('');
   const [browseDateTo, setBrowseDateTo] = useState('');
   const [browseMapFilter, setBrowseMapFilter] = useState('');
@@ -593,8 +603,14 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
       scheduleWikiPublish(publishDiv, tournament, (results) => {
         const ok = results.filter(r => r.ok);
         const fail = results.filter(r => !r.ok);
-        if (ok.length > 0) console.log(`Wiki auto-publish: ${ok.length} target(s) updated`);
-        if (fail.length > 0) console.warn('Wiki auto-publish failures:', fail);
+        if (ok.length > 0 && fail.length === 0) {
+          setWikiToast({ type: 'success', message: `Wiki updated: ${ok.length} target(s)` });
+        } else if (ok.length > 0) {
+          setWikiToast({ type: 'warn', message: `Wiki: ${ok.length} updated, ${fail.length} failed` });
+        } else if (fail.length > 0) {
+          setWikiToast({ type: 'error', message: `Wiki publish failed: ${fail[0]?.error || 'unknown error'}` });
+        }
+        setTimeout(() => setWikiToast(null), 6000);
       });
     }
 
@@ -896,6 +912,18 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
 
   return (
     <div className="space-y-6">
+      {/* Wiki publish toast */}
+      {wikiToast && (
+        <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg text-sm font-semibold transition-all ${
+          wikiToast.type === 'success' ? 'bg-qw-win/20 border border-qw-win/40 text-qw-win' :
+          wikiToast.type === 'warn' ? 'bg-amber-500/20 border border-amber-500/40 text-amber-300' :
+          'bg-qw-loss/20 border border-qw-loss/40 text-qw-loss'
+        }`}>
+          {wikiToast.message}
+          <button onClick={() => setWikiToast(null)} className="ml-3 text-xs opacity-60 hover:opacity-100">&times;</button>
+        </div>
+      )}
+
       <div className="flex items-center justify-between">
         <div className="flex gap-2">
           <button onClick={() => { setMode('discord'); fetchSubmissions(showApproved); }} className={`px-4 py-2 rounded font-body font-semibold ${mode === 'discord' ? 'bg-qw-accent text-qw-dark' : 'bg-qw-panel border border-qw-border text-qw-muted hover:text-white'}`}>
@@ -909,6 +937,9 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
           </button>
           <button onClick={() => setMode('browse')} className={`px-4 py-2 rounded font-body font-semibold ${mode === 'browse' ? 'bg-qw-accent text-qw-dark' : 'bg-qw-panel border border-qw-border text-qw-muted hover:text-white'}`}>
             🔍 Browse
+          </button>
+          <button onClick={() => setMode('discover')} className={`px-4 py-2 rounded font-body font-semibold ${mode === 'discover' ? 'bg-qw-accent text-qw-dark' : 'bg-qw-panel border border-qw-border text-qw-muted hover:text-white'}`}>
+            🎯 Discover
           </button>
         </div>
         {rawMaps.length > 0 && (
@@ -1102,6 +1133,235 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
             <textarea value={jsonInput} onChange={(e) => setJsonInput(e.target.value)} placeholder='{"teams": [...], "players": [...]}' rows={4} className="w-full bg-qw-dark border border-qw-border rounded px-4 py-2 font-mono text-white text-sm resize-none" />
             <button onClick={handleJsonPaste} disabled={!jsonInput.trim()} className="qw-btn mt-2 disabled:opacity-50">Import</button>
           </div>
+        </div>
+      ) : mode === 'discover' ? (
+        // --- DISCOVER GAMES UI ---
+        <div className="qw-panel p-6 space-y-4">
+          <h3 className="font-display text-lg text-qw-accent">DISCOVER GAMES</h3>
+          <p className="text-sm text-qw-muted">
+            Automatically find games for this division's scheduled matchups using the QW Stats API.
+            Uses the confidence model to score each candidate (roster, schedule, matchtag, series format).
+          </p>
+
+          <button
+            onClick={async () => {
+              setDiscoverLoading(true);
+              setDiscoverError(null);
+              setDiscoverResults(null);
+              setDiscoverSelected(new Set());
+              try {
+                // Build maps from all divisions
+                const mapPool = new Set();
+                for (const div of (tournament.divisions || [])) {
+                  for (const match of div.schedule || []) {
+                    for (const map of match.maps || []) {
+                      if (map.map) mapPool.add(map.map);
+                    }
+                  }
+                }
+                // Also add common QW maps as fallback
+                if (mapPool.size === 0) {
+                  ['dm2', 'dm3', 'dm4', 'dm6', 'e1m2', 'aerowalk', 'ztndm3', 'skull'].forEach(m => mapPool.add(m));
+                }
+
+                const config = {
+                  name: tournament.name || '',
+                  mode: tournament.mode || '4on4',
+                  startDate: tournament.startDate || '',
+                  endDate: tournament.endDate || '',
+                  mapPool: [...mapPool],
+                  tagPatterns: [],
+                  threshold: 0,
+                  divisions: [{
+                    id: division.id,
+                    name: division.name,
+                    teams: (division.teams || []).map(t => ({
+                      name: t.name,
+                      tag: t.tag,
+                      aliases: t.aliases || [],
+                      players: t.players || '',
+                    })),
+                    schedule: (division.schedule || []).map(m => ({
+                      team1: m.team1,
+                      team2: m.team2,
+                      date: m.date,
+                      bestOf: m.bestOf,
+                      status: m.status,
+                    })),
+                    isPlayoffs: division.format !== 'groups',
+                    bestOf: division.groupStageBestOf || 3,
+                  }],
+                  aliasMap: {},
+                };
+
+                const res = await fetch('/api/discover-games', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ config }),
+                });
+                const data = await res.json();
+                if (!data.ok) throw new Error(data.error || 'Discovery failed');
+                setDiscoverResults(data);
+              } catch (err) {
+                setDiscoverError(err.message);
+              }
+              setDiscoverLoading(false);
+            }}
+            disabled={discoverLoading || (division.teams || []).length === 0}
+            className="qw-btn px-6 py-2 disabled:opacity-50"
+          >
+            {discoverLoading ? 'Scanning...' : 'Discover Games'}
+          </button>
+
+          {discoverError && (
+            <div className="p-3 bg-red-900/30 border border-red-500/50 rounded text-red-300 text-sm">{discoverError}</div>
+          )}
+
+          {discoverResults && (
+            <div className="space-y-4">
+              {/* Summary */}
+              <div className="flex flex-wrap gap-4 text-sm">
+                <span className="text-qw-muted">Scanned: <span className="text-white font-mono">{discoverResults.summary?.scanned || 0}</span></span>
+                <span className="text-qw-muted">Passed gates: <span className="text-qw-win font-mono">{discoverResults.summary?.passed || 0}</span></span>
+                <span className="text-qw-muted">Rejected: <span className="text-qw-loss font-mono">{discoverResults.summary?.rejected || 0}</span></span>
+                <span className="text-qw-muted">Series: <span className="text-qw-accent font-mono">{discoverResults.candidates?.length || 0}</span></span>
+              </div>
+
+              {(discoverResults.candidates || []).length > 0 && (
+                <>
+                  {/* Select all / Import */}
+                  <div className="flex items-center justify-between">
+                    <button
+                      onClick={() => {
+                        const all = discoverResults.candidates || [];
+                        if (discoverSelected.size === all.length) {
+                          setDiscoverSelected(new Set());
+                        } else {
+                          setDiscoverSelected(new Set(all.map((_, i) => i)));
+                        }
+                      }}
+                      className="text-sm text-qw-accent hover:text-white"
+                    >
+                      {discoverSelected.size === (discoverResults.candidates || []).length ? 'Deselect All' : 'Select All'}
+                    </button>
+                    {discoverSelected.size > 0 && (
+                      <button
+                        onClick={() => {
+                          const candidates = discoverResults.candidates || [];
+                          const newMaps = [];
+                          for (const idx of discoverSelected) {
+                            const series = candidates[idx];
+                            if (!series) continue;
+                            for (const game of series.games) {
+                              const t1 = game.teams?.[0] || {};
+                              const t2 = game.teams?.[1] || {};
+                              const scores = {};
+                              scores[series.team1] = t1.frags ?? 0;
+                              scores[series.team2] = t2.frags ?? 0;
+                              let timestamp = null;
+                              if (game.timestamp) {
+                                try { timestamp = new Date(game.timestamp).getTime(); } catch {}
+                              }
+                              newMaps.push({
+                                id: `discover-${game.id}-${game.map}`,
+                                date: game.timestamp || null,
+                                timestamp,
+                                map: game.map || 'unknown',
+                                mode: tournament.mode || '4on4',
+                                duration: null,
+                                teams: [series.team1, series.team2],
+                                matchupId: [series.team1, series.team2].sort().join('vs'),
+                                scores,
+                                originalData: game,
+                              });
+                            }
+                          }
+                          const added = addMapsInBatch(newMaps);
+                          if (added && added.length > 0) {
+                            setLastImported(added);
+                            setDiscoverSelected(new Set());
+                          }
+                        }}
+                        className="qw-btn px-4 py-1.5 text-sm"
+                      >
+                        Import Selected ({discoverSelected.size} series, {
+                          [...discoverSelected].reduce((sum, idx) => sum + ((discoverResults.candidates || [])[idx]?.games?.length || 0), 0)
+                        } maps)
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Series list */}
+                  <div className="space-y-2 max-h-[600px] overflow-y-auto">
+                    {(discoverResults.candidates || []).map((series, idx) => {
+                      const isSelected = discoverSelected.has(idx);
+                      const conf = series.avgConfidence || 0;
+                      const confColor = conf >= 80 ? 'text-qw-win' : conf >= 50 ? 'text-amber-300' : 'text-qw-loss';
+                      const confBg = conf >= 80 ? 'bg-qw-win/15 border-qw-win/30' : conf >= 50 ? 'bg-amber-500/15 border-amber-500/30' : 'bg-qw-loss/15 border-qw-loss/30';
+                      return (
+                        <div
+                          key={`${series.team1}-${series.team2}-${idx}`}
+                          onClick={() => {
+                            const next = new Set(discoverSelected);
+                            if (next.has(idx)) next.delete(idx);
+                            else next.add(idx);
+                            setDiscoverSelected(next);
+                          }}
+                          className={`p-3 rounded border cursor-pointer transition-colors ${
+                            isSelected
+                              ? 'bg-qw-accent/10 border-qw-accent'
+                              : 'bg-qw-dark border-qw-border hover:border-qw-muted'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-3 flex-1 min-w-0">
+                              <input type="checkbox" checked={isSelected} readOnly className="accent-qw-accent flex-shrink-0" />
+                              <span className="font-body font-semibold text-white truncate">{series.team1}</span>
+                              <span className="text-qw-muted text-xs">vs</span>
+                              <span className="font-body font-semibold text-white truncate">{series.team2}</span>
+                            </div>
+                            <div className="flex items-center gap-3 flex-shrink-0">
+                              <span className="text-xs text-qw-muted">{series.mapCount} map{series.mapCount !== 1 ? 's' : ''}</span>
+                              <span className="text-xs text-qw-muted">{series.source}</span>
+                              <span className={`px-2 py-0.5 rounded text-xs font-bold ${confBg} ${confColor}`}>
+                                {conf}%
+                              </span>
+                            </div>
+                          </div>
+                          {/* Per-map details */}
+                          <div className="mt-2 flex flex-wrap gap-2">
+                            {(series.games || []).map((game, gi) => {
+                              const t1 = game.teams?.[0] || {};
+                              const t2 = game.teams?.[1] || {};
+                              const dateStr = game.timestamp ? new Date(game.timestamp).toLocaleDateString('sv-SE') : '';
+                              return (
+                                <div key={gi} className="flex items-center gap-2 text-xs bg-qw-darker px-2 py-1 rounded">
+                                  <span className="text-qw-accent font-mono">{game.map}</span>
+                                  <span className="font-mono">
+                                    <span className={(t1.frags ?? 0) > (t2.frags ?? 0) ? 'text-qw-win' : 'text-white'}>{t1.frags ?? '?'}</span>
+                                    <span className="text-qw-muted">-</span>
+                                    <span className={(t2.frags ?? 0) > (t1.frags ?? 0) ? 'text-qw-win' : 'text-white'}>{t2.frags ?? '?'}</span>
+                                  </span>
+                                  {dateStr && <span className="text-qw-muted">{dateStr}</span>}
+                                  <span className={`${game.confidence?.total >= 80 ? 'text-qw-win' : game.confidence?.total >= 50 ? 'text-amber-300' : 'text-qw-loss'}`}>
+                                    {game.confidence?.total ?? '?'}
+                                  </span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+
+              {(discoverResults.candidates || []).length === 0 && (
+                <p className="text-qw-muted text-sm">No matching games found. Make sure teams are set up and the tournament date range covers the period games were played.</p>
+              )}
+            </div>
+          )}
         </div>
       ) : mode === 'browse' ? (
         // --- BROWSE / SEARCH UI ---
