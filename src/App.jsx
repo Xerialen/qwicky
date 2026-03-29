@@ -8,7 +8,6 @@ import LandingScreen from './components/LandingScreen';
 import SetupWizard from './components/SetupWizard';
 import PublicTournament from './pages/PublicTournament';
 import { useTournamentState } from './hooks/useTournamentState.js';
-import { syncTournament } from './services/tournamentService.js';
 
 // Default tournament structure
 const createDefaultTournament = () => ({
@@ -537,17 +536,13 @@ function App() {
     return (
       <LandingScreen
         hasExistingData={hasExistingData}
-        tournamentName={tournament.name}
-        stats={stats}
         onCreateNew={() => {
           setTournament(createDefaultTournament());
           setActiveDivisionId(null);
           setActiveTab('info');
           setAppMode('wizard');
         }}
-        onContinue={() => setAppMode('app')}
         onLoadFile={(data) => importTournament(data)}
-        onSyncToCloud={() => syncTournament(tournament, activeDivisionId)}
         cloudTournaments={cloudTournaments}
         onLoadFromCloud={async (id) => {
           const loaded = await loadFromCloud(id);
