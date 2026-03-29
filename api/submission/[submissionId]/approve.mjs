@@ -35,7 +35,7 @@ export default async function handler(req, res) {
     // Fire-and-forget wiki auto-publish if configured
     if (data.tournament_id) {
       const baseUrl = `https://${req.headers.host || 'qwicky.vercel.app'}`;
-      fetch(`${baseUrl}/api/wiki/auto-publish`, {
+      fetch(`${baseUrl}/api/wiki?action=auto-publish`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

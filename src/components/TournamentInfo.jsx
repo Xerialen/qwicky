@@ -146,7 +146,7 @@ export default function TournamentInfo({ tournament, updateTournament, onNavigat
     setChannelsLoading(true);
     setChannelsError(null);
     try {
-      const res = await fetch('/api/channels');
+      const res = await fetch('/api/discord?action=channels');
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       setChannels(data.channels || []);

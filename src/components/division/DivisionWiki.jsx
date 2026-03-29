@@ -37,7 +37,7 @@ export default function DivisionWiki({ division, tournamentName, updateDivision 
 
     // Sync to Supabase (fire-and-forget)
     if (division.id) {
-      fetch('/api/wiki/config/division', {
+      fetch('/api/wiki?action=config-division', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ divisionId: division.id, wikiConfig: updated }),
@@ -178,7 +178,7 @@ const handleCopy = async () => {
       if (publishFields.section && publishFields.section !== '') {
         payload.section = parseInt(publishFields.section, 10);
       }
-      const res = await fetch('/api/wiki/publish', {
+      const res = await fetch('/api/wiki?action=publish', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),

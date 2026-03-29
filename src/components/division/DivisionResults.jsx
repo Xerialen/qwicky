@@ -1295,7 +1295,7 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
                           const selected = [...discoverSelected].map(idx => discoverResults.candidates[idx]).filter(Boolean);
                           try {
                             const apiBase = import.meta.env.VITE_API_BASE_URL || '';
-                            const res = await fetch(`${apiBase}/api/discord/post-discovery`, {
+                            const res = await fetch(`${apiBase}/api/discord?action=post-discovery`, {
                               method: 'POST',
                               headers: { 'Content-Type': 'application/json' },
                               body: JSON.stringify({

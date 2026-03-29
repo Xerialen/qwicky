@@ -53,7 +53,7 @@ export async function publishDivisionWiki(division, tournament) {
     if (!markup) continue;
 
     try {
-      const res = await fetch('/api/wiki/publish-section', {
+      const res = await fetch('/api/wiki?action=publish-section', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

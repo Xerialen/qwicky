@@ -235,7 +235,7 @@ export default function DivisionSchedule({ division, updateDivision, tournamentS
     setPostingRound(key);
     try {
       const apiBase = import.meta.env.VITE_API_BASE_URL || '';
-      const res = await fetch(`${apiBase}/api/discord/post-schedule`, {
+      const res = await fetch(`${apiBase}/api/discord?action=post-schedule`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

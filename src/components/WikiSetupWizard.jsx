@@ -47,7 +47,7 @@ export default function WikiSetupWizard({ tournament, updateTournament, onClose 
     setSearchLoading(true);
     setSearchResults(null);
     try {
-      const res = await fetch(`/api/wiki/scan?q=${encodeURIComponent(searchQuery)}`);
+      const res = await fetch(`/api/wiki?action=scan&q=${encodeURIComponent(searchQuery)}`);
       const data = await res.json();
       setSearchResults(data.tournaments || []);
     } catch (err) {
@@ -62,7 +62,7 @@ export default function WikiSetupWizard({ tournament, updateTournament, onClose 
 
     // Deep scan to find existing seasons and extract boilerplate
     try {
-      const res = await fetch(`/api/wiki/scan?prefix=${encodeURIComponent(root)}`);
+      const res = await fetch(`/api/wiki?action=scan&prefix=${encodeURIComponent(root)}`);
       const data = await res.json();
 
       // Detect existing seasons (e.g., "Season 1", "Season 2")
@@ -94,7 +94,7 @@ export default function WikiSetupWizard({ tournament, updateTournament, onClose 
 
         // Fetch infobox from latest season overview
         try {
-          const infoRes = await fetch(`/api/wiki/scan?prefix=${encodeURIComponent(latestSeasonPrefix)}`);
+          const infoRes = await fetch(`/api/wiki?action=scan&prefix=${encodeURIComponent(latestSeasonPrefix)}`);
           const infoData = await infoRes.json();
           const overviewPage = (infoData.pages || []).find(p => p.title === latestSeasonPrefix);
           if (overviewPage?.bodyPreview) {
@@ -181,7 +181,7 @@ export default function WikiSetupWizard({ tournament, updateTournament, onClose 
     };
 
     try {
-      const res = await fetch('/api/wiki/scaffold', {
+      const res = await fetch('/api/wiki?action=scaffold', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -223,7 +223,7 @@ export default function WikiSetupWizard({ tournament, updateTournament, onClose 
         const tournamentId = (tournament.name || '')
           .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
         if (tournamentId) {
-          fetch('/api/wiki/config/tournament', {
+          fetch('/api/wiki?action=config-tournament', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ tournamentId, wikiConfig }),
@@ -232,7 +232,7 @@ export default function WikiSetupWizard({ tournament, updateTournament, onClose 
           // Sync each division's wiki config
           for (const div of updatedDivisions) {
             if (div.wikiConfig?.enabled) {
-              fetch('/api/wiki/config/division', {
+              fetch('/api/wiki?action=config-division', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ divisionId: div.id, wikiConfig: div.wikiConfig }),
