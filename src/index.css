@@ -1,133 +1,85 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   MODERN DARK MODE — QWICKY TOURNAMENT ADMIN
-   ═══════════════════════════════════════════════════════════════════════════ */
+/* ───────────────────────────────────────────────────────────────────────────
+   QWICKY — Quiet Admin theme
+   Zinc mono palette, violet accent, typography-driven hierarchy.
+   ─────────────────────────────────────────────────────────────────────────── */
 
 :root {
-  /* Backgrounds */
-  --bg-app:      #121212;
-  --bg-card:     #1E1E2E;
-  --bg-input:    #252535;
-  --bg-elevated: #2A2A3C;
+  --bg-app:      #09090B;
+  --bg-card:     #18181B;
+  --bg-input:    #18181B;
+  --bg-elevated: #27272A;
 
-  /* Text */
-  --text-primary:   #E0E0E0;
-  --text-secondary: #A0A0B0;
+  --text-primary:   #FAFAFA;
+  --text-secondary: #A1A1AA;
   --text-bright:    #FFFFFF;
 
-  /* Accent — Deep Amber / Gold */
-  --accent:    #FFB300;
-  --accent-dim:#E6A200;
-  --accent-on: #121212;   /* text colour rendered ON an accent surface */
+  --accent:    #A78BFA;
+  --accent-dim:#8B5CF6;
+  --accent-on: #09090B;
 
-  /* Status */
-  --status-win:  #00FF88;
-  --status-loss: #FF3366;
+  --status-win:  #4ADE80;
+  --status-loss: #F87171;
 
-  /* Borders */
-  --border:       #2A2A3C;
-  --border-focus: #FFB300;
+  --border:       #27272A;
+  --border-focus: #A78BFA;
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   BASE / RESET
-   ═══════════════════════════════════════════════════════════════════════════ */
+/* ── Reset ─────────────────────────────────────────────────────────────── */
 
-* {
-  box-sizing: border-box;
-}
+* { box-sizing: border-box; }
 
 body {
   margin: 0;
   padding: 0;
   background: var(--bg-app);
   min-height: 100vh;
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
   color: var(--text-primary);
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* No grid, no scanlines on body */
-body::before,
-body::after {
-  content: none !important;
-}
+body::before, body::after { content: none !important; }
+.noise-overlay, .scanline { display: none !important; }
+#root { position: relative; z-index: 1; }
 
-/* Kill the cyberpunk overlay <div>s that still live in JSX */
-.noise-overlay,
-.scanline {
-  display: none !important;
-}
+/* ── Scrollbar ─────────────────────────────────────────────────────────── */
 
-#root {
-  position: relative;
-  z-index: 1;
-}
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #3F3F46; border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: #52525B; }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   SCROLLBAR
-   ═══════════════════════════════════════════════════════════════════════════ */
-
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-::-webkit-scrollbar-track {
-  background: var(--bg-app);
-}
-
-::-webkit-scrollbar-thumb {
-  background: var(--bg-elevated);
-  border-radius: 3px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: var(--accent);
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   TYPOGRAPHY
-   ═══════════════════════════════════════════════════════════════════════════ */
+/* ── Typography ────────────────────────────────────────────────────────── */
 
 h1, h2, h3, h4, h5, h6 {
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
   font-weight: 600;
-  letter-spacing: -0.01em;
-  line-height: 1.3;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
   text-transform: none;
 }
 
-/* .font-logo (Orbitron) is applied only to the QW badge via JSX */
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   PANELS / CARDS
-   ═══════════════════════════════════════════════════════════════════════════ */
+/* ── Panels ────────────────────────────────────────────────────────────── */
 
 .qw-panel {
   background: var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: 10px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  border-radius: 8px;
+  box-shadow: none;
   position: relative;
 }
 
-/* Strip the cyberpunk corner-accent pseudo-elements */
-.qw-panel::before,
-.qw-panel::after {
-  content: none !important;
-}
+.qw-panel::before, .qw-panel::after { content: none !important; }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   INPUTS
-   ═══════════════════════════════════════════════════════════════════════════ */
+/* ── Inputs ────────────────────────────────────────────────────────────── */
 
 input[type="text"],
 input[type="number"],
@@ -135,15 +87,14 @@ input[type="date"],
 input[type="time"],
 textarea,
 select {
-  background: var(--bg-input);
+  background: var(--bg-app);
   border: 1px solid var(--border);
   color: var(--text-bright);
   padding: 0.5rem 0.75rem;
   border-radius: 6px;
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
   font-size: 0.875rem;
-  letter-spacing: normal;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition: border-color 0.15s;
 }
 
 input[type="text"]:focus,
@@ -153,21 +104,19 @@ input[type="time"]:focus,
 textarea:focus,
 select:focus {
   outline: none;
-  border-color: var(--border-focus);
-  box-shadow: 0 0 0 2px rgba(255, 179, 0, 0.25);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px rgba(167, 139, 250, 0.25);
 }
 
-input::placeholder,
-textarea::placeholder {
+input::placeholder, textarea::placeholder {
   color: var(--text-secondary);
-  opacity: 0.7;
+  opacity: 0.6;
 }
 
-/* Select arrow */
 select {
   appearance: none;
   cursor: pointer;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23A0A0B0' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23A1A1AA' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 0.6rem center;
   padding-right: 2rem;
@@ -178,17 +127,16 @@ select option {
   color: var(--text-primary);
 }
 
-/* Checkbox */
 input[type="checkbox"] {
   appearance: none;
-  width: 18px;
-  height: 18px;
-  border: 1px solid var(--border);
-  background: var(--bg-input);
-  border-radius: 4px;
+  width: 16px;
+  height: 16px;
+  border: 1px solid #3F3F46;
+  background: transparent;
+  border-radius: 3px;
   cursor: pointer;
   position: relative;
-  transition: background 0.15s, border-color 0.15s;
+  transition: background 0.1s, border-color 0.1s;
 }
 
 input[type="checkbox"]:checked {
@@ -203,122 +151,79 @@ input[type="checkbox"]:checked::after {
   left: 50%;
   transform: translate(-50%, -50%);
   color: var(--accent-on);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   BUTTONS
-   ═══════════════════════════════════════════════════════════════════════════ */
+/* ── Buttons ───────────────────────────────────────────────────────────── */
 
 .qw-btn {
   background: var(--accent);
   color: var(--accent-on);
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
   font-weight: 600;
-  font-size: 0.85rem;
-  padding: 0.5rem 1.25rem;
+  font-size: 0.8rem;
+  padding: 0.45rem 1rem;
   border: none;
   border-radius: 6px;
   cursor: pointer;
-  text-transform: none;
-  letter-spacing: normal;
-  position: relative;
-  overflow: hidden;
-  transition: background 0.15s ease, transform 0.1s ease;
+  transition: background 0.12s, opacity 0.12s;
   box-shadow: none;
 }
 
-/* Kill the shine-sweep pseudo-element */
-.qw-btn::before {
-  content: none !important;
-}
-
-.qw-btn:hover {
-  background: var(--accent-dim);
-  transform: translateY(-1px);
-  box-shadow: none;
-  animation: none;
-}
-
-.qw-btn:active {
-  transform: translateY(0);
-}
+.qw-btn::before { content: none !important; }
+.qw-btn:hover { background: var(--accent-dim); }
+.qw-btn:active { opacity: 0.85; }
 
 .qw-btn:disabled {
   background: var(--bg-elevated);
   color: var(--text-secondary);
   cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
 }
 
-/* Secondary / ghost variant */
 .qw-btn-secondary {
   background: transparent;
-  border: 1px solid var(--border);
-  color: var(--text-primary);
+  border: 1px solid #3F3F46;
+  color: var(--text-secondary);
   box-shadow: none;
 }
 
 .qw-btn-secondary:hover {
   border-color: var(--accent);
   color: var(--accent);
-  box-shadow: none;
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   TABLES
-   ═══════════════════════════════════════════════════════════════════════════ */
+/* ── Tables ─────────────────────────────────────────────────────────────── */
 
 table {
   width: 100%;
   border-collapse: collapse;
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
 }
 
 th {
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  font-weight: 600;
+  font-weight: 500;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
-  font-size: 0.7rem;
+  letter-spacing: 0.05em;
+  font-size: 0.65rem;
   color: var(--text-secondary);
-  padding: 0.75rem;
+  padding: 0.6rem 0.75rem;
   text-align: left;
   border-bottom: 1px solid var(--border);
-  background: rgba(42, 42, 60, 0.6);
 }
 
 td {
-  padding: 0.65rem 0.75rem;
-  border-bottom: 1px solid rgba(42, 42, 60, 0.5);
-  font-size: 0.875rem;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid rgba(39, 39, 42, 0.5);
+  font-size: 0.85rem;
   line-height: 1.5;
 }
 
-tr {
-  transition: background 0.12s ease;
-}
+tr { transition: background 0.1s; }
+tr:hover { background: rgba(39, 39, 42, 0.3); }
+td .font-semibold, td .font-bold { color: var(--text-bright); text-shadow: none; }
 
-tr:hover {
-  background: rgba(42, 42, 60, 0.4);
-  box-shadow: none;
-}
-
-/* Clean bold text in table cells — no text-shadow */
-td .font-semibold,
-td .font-bold {
-  color: var(--text-bright);
-  text-shadow: none;
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   TABS
-   Active state: solid amber background, dark text.
-   Inactive tabs are styled via inline Tailwind (bg-qw-border / bg-qw-panel)
-   which already resolve correctly from the new palette.
-   ═══════════════════════════════════════════════════════════════════════════ */
+/* ── Tabs ──────────────────────────────────────────────────────────────── */
 
 .tab-active {
   background: var(--accent) !important;
@@ -329,104 +234,45 @@ td .font-bold {
   animation: none !important;
 }
 
-/* Kill the old neon-hover on any element whose class contains "tab" */
-[class*="tab"]:not(.tab-active):hover {
-  text-shadow: none !important;
-}
+[class*="tab"]:not(.tab-active):hover { text-shadow: none !important; }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   STATUS COLOUR UTILITIES  (used as className in JSX)
-   ═══════════════════════════════════════════════════════════════════════════ */
+/* ── Status colours ────────────────────────────────────────────────────── */
 
-.text-qw-win {
-  color: var(--status-win) !important;
-  text-shadow: none;
-}
+.text-qw-win { color: var(--status-win) !important; text-shadow: none; }
+.text-qw-loss { color: var(--status-loss) !important; text-shadow: none; }
+.text-qw-accent { color: var(--accent) !important; text-shadow: none; }
 
-.text-qw-loss {
-  color: var(--status-loss) !important;
-  text-shadow: none;
-}
+.bg-qw-win\/10 { background: rgba(74, 222, 128, 0.08) !important; }
+.bg-qw-win\/20 { background: rgba(74, 222, 128, 0.12) !important; }
+.bg-qw-win\/30 { background: rgba(74, 222, 128, 0.18) !important; }
 
-.text-qw-accent {
-  color: var(--accent) !important;
-  text-shadow: none;
-}
+/* ── Legacy neutralization ─────────────────────────────────────────────── */
 
-/* Faint status-tinted backgrounds */
-.bg-qw-win\/10 {
-  background: rgba(0, 255, 136, 0.08) !important;
-}
-
-.bg-qw-win\/20 {
-  background: rgba(0, 255, 136, 0.15) !important;
-}
-
-.bg-qw-win\/30 {
-  background: rgba(0, 255, 136, 0.22) !important;
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   LEGACY EFFECT CLASSES — all neutralised
-   ═══════════════════════════════════════════════════════════════════════════ */
-
-.glow-amber,
-.glow-blue,
-.text-glow-amber,
-.text-glow-blue,
-.animate-pulse-glow {
+.glow-amber, .glow-blue, .text-glow-amber, .text-glow-blue, .animate-pulse-glow {
   box-shadow: none !important;
   text-shadow: none !important;
   animation: none !important;
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   TERMINAL LABELS — keep layout, strip the ">" prefix
-   ═══════════════════════════════════════════════════════════════════════════ */
-
 .terminal-label {
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   color: var(--text-secondary);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
 }
-
-.terminal-label::before {
-  content: none !important;
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   DIVISION HEADER — keep left accent stripe, strip the "//" prefix
-   ═══════════════════════════════════════════════════════════════════════════ */
+.terminal-label::before { content: none !important; }
 
 .division-header {
-  border-left: 3px solid var(--accent);
-  padding-left: 1rem;
+  border-left: 2px solid var(--accent);
+  padding-left: 0.75rem;
   position: relative;
 }
+.division-header::before { content: none !important; }
 
-.division-header::before {
-  content: none !important;
-}
+.bracket-line { background: var(--border); }
+.ring-2.ring-qw-accent { box-shadow: 0 0 0 2px var(--accent); }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   BRACKET CONNECTORS — subtle, no neon
-   ═══════════════════════════════════════════════════════════════════════════ */
-
-.bracket-line {
-  background: var(--border);
-}
-
-/* Grand-final ring — plain 2px ring, no glow */
-.ring-2.ring-qw-accent {
-  box-shadow: 0 0 0 2px var(--accent);
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   WIKI PREVIEW — Liquipedia-style light theme
-   Scoped under .wiki-preview so it doesn't leak into the rest of the app.
-   ═══════════════════════════════════════════════════════════════════════════ */
+/* ── Wiki preview (Liquipedia light theme — unchanged) ─────────────────── */
 
 .wiki-preview {
   background: #f8f9fa;
@@ -434,392 +280,86 @@ td .font-bold {
   font-family: -apple-system, 'Segoe UI', 'Roboto', 'Lato', 'Helvetica', 'Arial', sans-serif;
   font-size: 14px;
   line-height: 1.6;
-  border-radius: 8px;
+  border-radius: 6px;
   padding: 16px;
   border: 1px solid #a2a9b1;
 }
 
-/* Override dark theme leaking through global table/tr/td styles */
-.wiki-preview tr:hover {
-  background: rgba(0, 0, 0, 0.03);
-  box-shadow: none;
-}
-.wiki-preview th {
-  background: #eaecf0;
-  color: #202122;
-  font-family: inherit;
-  text-transform: none;
-  letter-spacing: normal;
-  font-size: 13px;
-  font-weight: 700;
-  padding: 6px 8px;
-  border: 1px solid #a2a9b1;
-}
-.wiki-preview td {
-  color: #202122;
-  padding: 4px 8px;
-  border: 1px solid #a2a9b1;
-  font-size: 13px;
-  line-height: 1.5;
-}
-.wiki-preview table {
-  font-family: inherit;
-}
+.wiki-preview tr:hover { background: rgba(0, 0, 0, 0.03); box-shadow: none; }
+.wiki-preview th { background: #eaecf0; color: #202122; font-family: inherit; text-transform: none; letter-spacing: normal; font-size: 13px; font-weight: 700; padding: 6px 8px; border: 1px solid #a2a9b1; }
+.wiki-preview td { color: #202122; padding: 4px 8px; border: 1px solid #a2a9b1; font-size: 13px; line-height: 1.5; }
+.wiki-preview table { font-family: inherit; }
 
-/* ── Wiki Tables ── */
+.wiki-table { border-collapse: collapse; width: 100%; border: 1px solid #a2a9b1; background: #ffffff; }
+.wiki-table th { background: #eaecf0; color: #202122; font-weight: 700; font-size: 13px; padding: 6px 8px; text-align: left; border: 1px solid #a2a9b1; }
+.wiki-table td { padding: 4px 8px; border: 1px solid #a2a9b1; font-size: 13px; color: #202122; }
+.wiki-table-title { background: #eaecf0; text-align: center; font-weight: 700; font-size: 14px; padding: 8px; border: 1px solid #a2a9b1; }
+.wiki-table-subtitle { background: #f0f0f0; text-align: center; font-size: 12px; color: #54595d; padding: 4px 8px; border: 1px solid #a2a9b1; }
 
-.wiki-table {
-  border-collapse: collapse;
-  width: 100%;
-  border: 1px solid #a2a9b1;
-  background: #ffffff;
-}
+.wiki-row-up { background: #D8FFD8; }
+.wiki-row-stayup { background: #E2FFE2; }
+.wiki-row-stay { background: #FFFFDD; }
+.wiki-row-staydown { background: #FFE8D0; }
+.wiki-row-down { background: #FFD0D0; }
 
-.wiki-table th {
-  background: #eaecf0;
-  color: #202122;
-  font-weight: 700;
-  font-size: 13px;
-  padding: 6px 8px;
-  text-align: left;
-  border: 1px solid #a2a9b1;
-}
+.wiki-match-card { display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: #fff; border: 1px solid #c8ccd1; border-radius: 3px; }
+.wiki-match-team { display: flex; align-items: center; gap: 6px; flex: 1; color: #202122; font-size: 13px; }
+.wiki-match-team-right { justify-content: flex-end; }
+.wiki-match-winner { font-weight: 700; color: #202122; }
+.wiki-match-score { display: flex; align-items: center; gap: 3px; font-family: monospace; font-size: 13px; font-weight: 700; min-width: 3rem; justify-content: center; }
+.wiki-match-score-win { color: #008800; }
+.wiki-match-score-lose { color: #555; }
+.wiki-match-maps { display: flex; gap: 4px; margin-left: 8px; }
+.wiki-match-map { font-size: 11px; color: #54595d; padding: 1px 5px; background: #f0f0f0; border: 1px solid #c8ccd1; border-radius: 2px; }
 
-.wiki-table td {
-  padding: 4px 8px;
-  border: 1px solid #a2a9b1;
-  font-size: 13px;
-  color: #202122;
-}
+.wiki-bracket-round-title { font-size: 15px; font-weight: 700; color: #202122; border-bottom: 1px solid #a2a9b1; padding-bottom: 4px; margin-bottom: 8px; margin-top: 16px; }
+.wiki-bracket-matchup { display: inline-flex; flex-direction: column; border: 1px solid #a2a9b1; border-radius: 2px; overflow: hidden; margin-right: 12px; margin-bottom: 8px; background: #fff; }
+.wiki-bracket-entry { display: flex; align-items: center; gap: 8px; padding: 4px 10px; font-size: 13px; color: #202122; }
+.wiki-bracket-entry + .wiki-bracket-entry { border-top: 1px solid #c8ccd1; }
+.wiki-bracket-entry-winner { background: #D8FFD8; font-weight: 700; }
+.wiki-bracket-entry-tbd { color: #72777d; font-style: italic; }
+.wiki-bracket-entry-name { min-width: 8rem; }
+.wiki-bracket-entry-score { font-family: monospace; font-size: 12px; margin-left: auto; }
+.wiki-bracket-entry-score-win { font-weight: 700; color: #008800; }
+.wiki-bracket-entry-score-lose { color: #72777d; }
 
-/* Title row spanning full table width */
-.wiki-table-title {
-  background: #eaecf0;
-  text-align: center;
-  font-weight: 700;
-  font-size: 14px;
-  padding: 8px;
-  border: 1px solid #a2a9b1;
-}
+.wiki-preview h2, .wiki-preview h3, .wiki-preview h4 { color: #202122; font-family: inherit; font-weight: 400; letter-spacing: normal; text-transform: none; line-height: 1.3; }
+.wiki-section-h2 { font-size: 20px; font-weight: 400; color: #000; border-bottom: 1px solid #a2a9b1; padding-bottom: 4px; margin-top: 20px; margin-bottom: 8px; }
+.wiki-section-h3 { font-size: 16px; font-weight: 700; color: #000; margin-top: 16px; margin-bottom: 6px; }
+.wiki-text-bold { font-weight: 700; color: #202122; font-size: 13px; margin-top: 8px; }
+.wiki-text-bullet { font-size: 13px; color: #202122; }
+.wiki-text-line { font-size: 13px; color: #54595d; }
+.wiki-full-section-title { font-size: 18px; font-weight: 400; color: #000; border-bottom: 1px solid #a2a9b1; padding-bottom: 2px; margin-top: 20px; margin-bottom: 12px; }
+.wiki-empty { color: #54595d; font-size: 13px; font-style: italic; }
+.wiki-place-col { text-align: center; font-weight: 700; color: #202122; width: 30px; }
+.wiki-team-col { font-weight: 400; color: #202122; }
+.wiki-team-first { font-weight: 700; }
+.wiki-stat-win { color: #008800; text-align: center; }
+.wiki-stat-loss { color: #CC0000; text-align: center; }
+.wiki-stat-center { text-align: center; }
+.wiki-stat-diff-pos { text-align: center; font-weight: 700; color: #008800; }
+.wiki-stat-diff-neg { text-align: center; font-weight: 700; color: #CC0000; }
+.wiki-stat-diff-zero { text-align: center; font-weight: 700; color: #54595d; }
 
-.wiki-table-subtitle {
-  background: #f0f0f0;
-  text-align: center;
-  font-size: 12px;
-  color: #54595d;
-  padding: 4px 8px;
-  border: 1px solid #a2a9b1;
-}
-
-/* ── Standings placement row colors (Liquipedia GroupTableSlot bg= values) ── */
-
-.wiki-row-up {
-  background: #D8FFD8;
-}
-.wiki-row-stayup {
-  background: #E2FFE2;
-}
-.wiki-row-stay {
-  background: #FFFFDD;
-}
-.wiki-row-staydown {
-  background: #FFE8D0;
-}
-.wiki-row-down {
-  background: #FFD0D0;
-}
-
-/* ── Match cards ── */
-
-.wiki-match-card {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 12px;
-  background: #ffffff;
-  border: 1px solid #c8ccd1;
-  border-radius: 3px;
-}
-
-.wiki-match-team {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex: 1;
-  color: #202122;
-  font-size: 13px;
-}
-
-.wiki-match-team-right {
-  justify-content: flex-end;
-}
-
-.wiki-match-winner {
-  font-weight: 700;
-  color: #202122;
-}
-
-.wiki-match-score {
-  display: flex;
-  align-items: center;
-  gap: 3px;
-  font-family: monospace;
-  font-size: 13px;
-  font-weight: 700;
-  min-width: 3rem;
-  justify-content: center;
-}
-
-.wiki-match-score-win {
-  color: #008800;
-}
-
-.wiki-match-score-lose {
-  color: #555555;
-}
-
-.wiki-match-maps {
-  display: flex;
-  gap: 4px;
-  margin-left: 8px;
-}
-
-.wiki-match-map {
-  font-size: 11px;
-  color: #54595d;
-  padding: 1px 5px;
-  background: #f0f0f0;
-  border: 1px solid #c8ccd1;
-  border-radius: 2px;
-}
-
-/* ── Bracket ── */
-
-.wiki-bracket-round-title {
-  font-size: 15px;
-  font-weight: 700;
-  color: #202122;
-  border-bottom: 1px solid #a2a9b1;
-  padding-bottom: 4px;
-  margin-bottom: 8px;
-  margin-top: 16px;
-}
-
-.wiki-bracket-matchup {
-  display: inline-flex;
-  flex-direction: column;
-  border: 1px solid #a2a9b1;
-  border-radius: 2px;
-  overflow: hidden;
-  margin-right: 12px;
-  margin-bottom: 8px;
-  background: #ffffff;
-}
-
-.wiki-bracket-entry {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 4px 10px;
-  font-size: 13px;
-  color: #202122;
-}
-
-.wiki-bracket-entry + .wiki-bracket-entry {
-  border-top: 1px solid #c8ccd1;
-}
-
-.wiki-bracket-entry-winner {
-  background: #D8FFD8;
-  font-weight: 700;
-}
-
-.wiki-bracket-entry-tbd {
-  color: #72777d;
-  font-style: italic;
-}
-
-.wiki-bracket-entry-name {
-  min-width: 8rem;
-}
-
-.wiki-bracket-entry-score {
-  font-family: monospace;
-  font-size: 12px;
-  margin-left: auto;
-}
-
-.wiki-bracket-entry-score-win {
-  font-weight: 700;
-  color: #008800;
-}
-
-.wiki-bracket-entry-score-lose {
-  color: #72777d;
-}
-
-/* ── Text bracket sections (double-elim, multi-tier text) ── */
-
-.wiki-preview h2,
-.wiki-preview h3,
-.wiki-preview h4 {
-  color: #202122;
-  font-family: inherit;
-  font-weight: 400;
-  letter-spacing: normal;
-  text-transform: none;
-  line-height: 1.3;
-}
-
-.wiki-section-h2 {
-  font-size: 20px;
-  font-weight: 400;
-  color: #000000;
-  border-bottom: 1px solid #a2a9b1;
-  padding-bottom: 4px;
-  margin-top: 20px;
-  margin-bottom: 8px;
-}
-
-.wiki-section-h3 {
-  font-size: 16px;
-  font-weight: 700;
-  color: #000000;
-  margin-top: 16px;
-  margin-bottom: 6px;
-}
-
-.wiki-text-bold {
-  font-weight: 700;
-  color: #202122;
-  font-size: 13px;
-  margin-top: 8px;
-}
-
-.wiki-text-bullet {
-  font-size: 13px;
-  color: #202122;
-}
-
-.wiki-text-line {
-  font-size: 13px;
-  color: #54595d;
-}
-
-/* ── Full page section headers ── */
-
-.wiki-full-section-title {
-  font-size: 18px;
-  font-weight: 400;
-  color: #000000;
-  border-bottom: 1px solid #a2a9b1;
-  padding-bottom: 2px;
-  margin-top: 20px;
-  margin-bottom: 12px;
-}
-
-/* ── Empty state messages ── */
-
-.wiki-empty {
-  color: #54595d;
-  font-size: 13px;
-  font-style: italic;
-}
-
-/* ── Standings-specific ── */
-
-.wiki-place-col {
-  text-align: center;
-  font-weight: 700;
-  color: #202122;
-  width: 30px;
-}
-
-.wiki-team-col {
-  font-weight: 400;
-  color: #202122;
-}
-
-.wiki-team-first {
-  font-weight: 700;
-}
-
-.wiki-stat-win {
-  color: #008800;
-  text-align: center;
-}
-
-.wiki-stat-loss {
-  color: #CC0000;
-  text-align: center;
-}
-
-.wiki-stat-center {
-  text-align: center;
-}
-
-.wiki-stat-diff-pos {
-  text-align: center;
-  font-weight: 700;
-  color: #008800;
-}
-
-.wiki-stat-diff-neg {
-  text-align: center;
-  font-weight: 700;
-  color: #CC0000;
-}
-
-.wiki-stat-diff-zero {
-  text-align: center;
-  font-weight: 700;
-  color: #54595d;
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   RESPONSIVE
-   ═══════════════════════════════════════════════════════════════════════════ */
+/* ── Responsive ────────────────────────────────────────────────────────── */
 
 @media (max-width: 768px) {
-  th, td {
-    padding: 0.5rem;
-    font-size: 0.8rem;
-  }
-
-  .qw-btn {
-    padding: 0.45rem 1rem;
-    font-size: 0.8rem;
-  }
+  th, td { padding: 0.4rem; font-size: 0.75rem; }
+  .qw-btn { padding: 0.4rem 0.85rem; font-size: 0.75rem; }
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   PRINT
-   ═══════════════════════════════════════════════════════════════════════════ */
+/* ── Print ─────────────────────────────────────────────────────────────── */
 
 @media print {
-  body {
-    background: #fff;
-    color: #1a1a1a;
-  }
-
-  .noise-overlay,
-  .scanline {
-    display: none !important;
-  }
-
-  .qw-panel {
-    border: 1px solid #ccc;
-    box-shadow: none;
-    background: #fff;
-  }
+  body { background: #fff; color: #1a1a1a; }
+  .noise-overlay, .scanline { display: none !important; }
+  .qw-panel { border: 1px solid #ccc; box-shadow: none; background: #fff; }
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   DRAG AND DROP
-   ═══════════════════════════════════════════════════════════════════════════ */
+/* ── Drag & drop ───────────────────────────────────────────────────────── */
 
 .drop-target-active {
-  outline: 2px dashed #FFB300;
-  outline-offset: -2px;
-  background-color: rgba(255, 179, 0, 0.05);
+  outline: 1px dashed var(--accent);
+  outline-offset: -1px;
+  background-color: rgba(167, 139, 250, 0.04);
 }

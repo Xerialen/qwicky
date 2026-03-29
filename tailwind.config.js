@@ -8,55 +8,55 @@ module.exports = {
     extend: {
       colors: {
         'qw': {
-          // Modern Dark Mode palette
-          'dark':    '#121212',   // app background
-          'darker':  '#0F0F0F',   // deepest nesting level
-          'panel':   '#1E1E2E',   // card / container surfaces
-          'border':  '#2A2A3C',   // borders + inactive-tab fill
+          // Zinc mono — minimal dark palette
+          'dark':    '#18181B',   // primary surface
+          'darker':  '#09090B',   // app background
+          'panel':   '#18181B',   // card surface (same as dark — panels blend)
+          'border':  '#27272A',   // subtle dividers, used sparingly
 
-          // Accent — Deep Amber / Gold
-          'accent':        '#FFB300',
-          'accent-dim':    '#E6A200',
-          'accent-bright': '#FFC933',
+          // Accent — quiet violet
+          'accent':        '#A78BFA',
+          'accent-dim':    '#8B5CF6',
+          'accent-bright': '#C4B5FD',
 
-          // Subdued blue (losers-bracket connectors, hover states)
-          'blue':     '#6B9BFF',
-          'blue-dim': '#5A8AE6',
+          // Utility blue
+          'blue':     '#7DD3FC',
+          'blue-dim': '#60A5FA',
 
-          // Status
-          'win':  '#00FF88',
-          'loss': '#FF3366',
-          'draw': '#FFB300',
+          // Status — desaturated
+          'win':  '#4ADE80',
+          'loss': '#F87171',
+          'draw': '#A78BFA',
 
           // Text hierarchy
-          'text':   '#E0E0E0',   // primary
-          'muted':  '#A0A0B0',   // secondary / labels
+          'text':   '#FAFAFA',
+          'muted':  '#A1A1AA',
           'bright': '#FFFFFF',
 
-          // Alias kept for any legacy references
-          'highlight': '#FFB300',
+          'highlight': '#A78BFA',
         }
       },
       fontFamily: {
-        // Everything in the UI uses Inter …
-        'display': ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
-        'body':    ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
-        'mono':    ['ui-monospace', 'SFMono-Regular', 'Consolas', 'monospace'],
-        // … except the QW logo badge
-        'logo':    ['Orbitron', 'sans-serif'],
+        'display': ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
+        'body':    ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
+        'mono':    ['"JetBrains Mono"', 'ui-monospace', 'Consolas', 'monospace'],
+        'logo':    ['"Plus Jakarta Sans"', 'sans-serif'],
       },
       boxShadow: {
-        'card':        '0 2px 8px  rgba(0,0,0,0.25)',
-        'card-hover':  '0 4px 16px rgba(0,0,0,0.35)',
-        'input-focus': '0 0 0 2px  rgba(255,179,0,0.3)',
+        'card':        'none',
+        'card-hover':  '0 1px 3px rgba(0,0,0,0.3)',
+        'input-focus': '0 0 0 1px rgba(167,139,250,0.4)',
+      },
+      borderRadius: {
+        'DEFAULT': '6px',
       },
       animation: {
-        'slide-up': 'slide-up 0.3s ease-out',
-        'fade-in':  'fade-in  0.2s ease-out',
+        'slide-up': 'slide-up 0.2s ease-out',
+        'fade-in':  'fade-in  0.15s ease-out',
       },
       keyframes: {
         'slide-up': {
-          '0%':   { opacity: '0', transform: 'translateY(10px)' },
+          '0%':   { opacity: '0', transform: 'translateY(4px)' },
           '100%': { opacity: '1', transform: 'translateY(0)'   },
         },
         'fade-in': {

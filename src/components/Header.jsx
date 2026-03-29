@@ -45,7 +45,6 @@ export default function Header({
         }
         if (!window.confirm('Replace current tournament with imported data?')) return;
         importTournament(data);
-        alert('Tournament imported successfully!');
       } catch (err) {
         alert('Failed to import: ' + err.message);
       }
@@ -60,155 +59,111 @@ export default function Header({
     setShowDivisionDropdown(false);
   };
 
+  const activeDivName = activeDivisionId
+    ? divisions.find(d => d.id === activeDivisionId)?.name
+    : null;
+
   return (
-    <header className="bg-qw-panel border-b border-qw-border sticky top-0 z-50">
+    <header className="sticky top-0 z-50 border-b border-qw-border/50 bg-qw-darker/95 backdrop-blur-sm">
       <div className="max-w-7xl mx-auto px-4">
-        <div className="flex items-center justify-between h-16">
-          {/* Logo */}
+        <div className="flex items-center justify-between h-12">
+          {/* Logo — text only */}
           <button
             onClick={() => onGoHome?.()}
-            className="flex items-center gap-3 hover:opacity-80 transition-opacity"
-            title="Back to home"
+            className="flex items-center gap-2 hover:opacity-70 transition-opacity"
           >
-            <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: '#FFB300' }}>
-              <span className="font-logo font-black text-lg" style={{ color: '#121212' }}>QW</span>
-            </div>
-            <div className="text-left">
-              <h1 className="font-display font-bold text-lg text-white">
-                QWICKY
-              </h1>
-              <p className="text-xs text-qw-muted -mt-0.5">tournament admin tools - by Xerial</p>
-            </div>
+            <span className="font-display font-bold text-sm tracking-tight text-qw-accent">QWICKY</span>
           </button>
 
-          {/* Navigation + Save Controls */}
-          <div className="flex items-center gap-3">
-            <nav className="flex items-center gap-1">
-            {/* Tournament Name (links to Info) */}
+          {/* Nav — flat text links */}
+          <nav className="flex items-center gap-1">
             <button
               onClick={() => setActiveTab('info')}
-              className={`
-                px-4 py-2 font-display font-semibold text-xs uppercase
-                transition-all duration-200 rounded
-                ${activeTab === 'info'
-                  ? 'bg-qw-accent text-qw-dark tab-active'
-                  : 'bg-qw-border text-qw-muted hover:text-white'
-                }
-              `}
+              className={`px-3 py-1.5 text-xs font-medium rounded transition-colors ${
+                activeTab === 'info'
+                  ? 'bg-qw-accent text-qw-darker'
+                  : 'text-qw-muted hover:text-white'
+              }`}
             >
-              {tournament.name || 'TOURNAMENT'}
+              {tournament.name || 'Tournament'}
             </button>
 
-            {/* Divisions Manager Tab */}
             <button
               onClick={() => setActiveTab('divisions')}
-              className={`
-                px-4 py-2 font-display font-semibold text-xs uppercase
-                transition-all duration-200 rounded flex items-center
-                ${activeTab === 'divisions'
-                  ? 'bg-qw-accent text-qw-dark tab-active'
-                  : 'bg-qw-border text-qw-muted hover:text-white'
-                }
-              `}
+              className={`px-3 py-1.5 text-xs font-medium rounded transition-colors ${
+                activeTab === 'divisions'
+                  ? 'bg-qw-accent text-qw-darker'
+                  : 'text-qw-muted hover:text-white'
+              }`}
             >
-              Division Mgr.
-              {divisions.length > 0 && (
-                <span className={`ml-1.5 px-1.5 py-0.5 rounded text-xs font-mono ${activeTab === 'divisions' ? 'bg-qw-dark/40 text-qw-dark' : 'bg-qw-accent/20 text-qw-accent'}`}>
-                  {divisions.length}
-                </span>
-              )}
+              Divisions{divisions.length > 0 ? ` (${divisions.length})` : ''}
             </button>
 
-            {/* Division Selector Dropdown */}
             {divisions.length > 0 && (
-              <>
-                <span className="text-qw-border text-xs">›</span>
-                <div className="relative">
+              <div className="relative">
                 <button
                   onClick={() => setShowDivisionDropdown(!showDivisionDropdown)}
-                  className="px-3 py-2 font-display font-semibold text-xs uppercase bg-qw-dark border border-qw-border text-white rounded flex items-center gap-2 hover:border-qw-accent transition-all"
+                  className={`px-3 py-1.5 text-xs font-medium rounded transition-colors flex items-center gap-1.5 ${
+                    activeTab === 'division'
+                      ? 'bg-qw-accent text-qw-darker'
+                      : 'text-qw-muted hover:text-white'
+                  }`}
                 >
-                  {activeDivisionId
-                    ? divisions.find(d => d.id === activeDivisionId)?.name || 'SELECT'
-                    : 'SELECT'
-                  }
+                  {activeDivName || 'Select'}
                   <svg className={`w-3 h-3 transition-transform ${showDivisionDropdown ? 'rotate-180' : ''}`} fill="currentColor" viewBox="0 0 12 12">
                     <path d="M6 8L1 3h10z" />
                   </svg>
                 </button>
 
-                {/* Dropdown */}
                 {showDivisionDropdown && (
                   <>
-                    <div 
-                      className="fixed inset-0 z-40" 
-                      onClick={() => setShowDivisionDropdown(false)}
-                    />
-                    <div className="absolute top-full right-0 mt-1 w-64 bg-qw-panel border border-qw-border rounded-lg z-50 overflow-hidden shadow-xl">
-                      <div className="px-3 py-2 border-b border-qw-border bg-qw-dark rounded-t-lg">
-                        <span className="text-xs text-qw-muted font-semibold uppercase">Select Division</span>
-                      </div>
-                      <div className="py-1">
-                        {divisions.map((div, idx) => (
-                          <button
-                            key={div.id}
-                            onClick={() => handleSelectDivision(div.id)}
-                            className={`
-                              w-full px-4 py-2.5 text-left text-sm font-mono
-                              flex items-center justify-between
-                              transition-all duration-150
-                              ${div.id === activeDivisionId 
-                                ? 'bg-qw-accent/20 text-qw-accent border-l-2 border-qw-accent' 
-                                : 'text-white hover:bg-qw-dark hover:text-qw-blue border-l-2 border-transparent'
-                              }
-                            `}
-                          >
-                            <span className="flex items-center gap-3">
-                              <span className="w-5 h-5 bg-qw-dark border border-qw-border rounded flex items-center justify-center text-xs font-semibold text-qw-muted">
-                                {idx + 1}
-                              </span>
-                              <span className="tracking-wide">{div.name}</span>
-                            </span>
-                            <span className="text-qw-muted text-xs">
-                              [{div.teams?.length || 0}]
-                            </span>
-                          </button>
-                        ))}
-                      </div>
+                    <div className="fixed inset-0 z-40" onClick={() => setShowDivisionDropdown(false)} />
+                    <div className="absolute top-full right-0 mt-1 w-48 bg-qw-dark border border-qw-border rounded-md z-50 overflow-hidden py-1">
+                      {divisions.map((div) => (
+                        <button
+                          key={div.id}
+                          onClick={() => handleSelectDivision(div.id)}
+                          className={`w-full px-3 py-2 text-left text-xs transition-colors ${
+                            div.id === activeDivisionId
+                              ? 'text-qw-accent bg-qw-accent/10'
+                              : 'text-qw-text hover:bg-qw-border/50'
+                          }`}
+                        >
+                          <span className="font-medium">{div.name}</span>
+                          <span className="text-qw-muted ml-2">{div.teams?.length || 0}</span>
+                        </button>
+                      ))}
                     </div>
                   </>
                 )}
               </div>
-              </>
             )}
-            </nav>
+          </nav>
 
-            {/* Save Controls */}
-            <input type="file" ref={fileInputRef} onChange={handleImport} accept=".json" className="hidden" />
-            <div className="flex items-center gap-1 pl-3 border-l border-qw-border">
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                className="px-3 py-1.5 rounded bg-qw-dark border border-qw-border text-qw-muted hover:text-white hover:border-qw-accent transition-all flex items-center gap-1.5 text-sm"
-                title="Load tournament"
-              >
-                📂 Load
-              </button>
-              <button
-                onClick={handleExport}
-                className="px-3 py-1.5 rounded font-semibold transition-all flex items-center gap-1.5 text-sm text-white hover:opacity-90"
-                style={{ backgroundColor: '#F97316' }}
-                title="Save tournament"
-              >
-                💾 Save
-              </button>
-              <button
-                onClick={resetTournament}
-                className="px-2 py-1.5 rounded text-red-400 hover:text-red-300 hover:bg-red-500/20 transition-all"
-                title="Reset all"
-              >
-                🗑️
-              </button>
-            </div>
+          {/* File controls — minimal */}
+          <input type="file" ref={fileInputRef} onChange={handleImport} accept=".json" className="hidden" />
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="text-xs text-qw-muted hover:text-white transition-colors"
+              title="Load"
+            >
+              Load
+            </button>
+            <button
+              onClick={handleExport}
+              className="text-xs text-qw-muted hover:text-white transition-colors"
+              title="Save"
+            >
+              Save
+            </button>
+            <button
+              onClick={resetTournament}
+              className="text-xs text-qw-muted hover:text-red-400 transition-colors"
+              title="Reset"
+            >
+              Reset
+            </button>
           </div>
         </div>
       </div>

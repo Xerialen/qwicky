@@ -580,14 +580,9 @@ function App() {
     );
   }
 
-  // ─── Full app (existing behavior) ─────────────────────────────
+  // ─── Full app ─────────────────────────────────────────────────
   return (
     <div className="min-h-screen bg-qw-darker">
-      {/* Decorative Elements */}
-      <div className="noise-overlay" />
-      <div className="scanline" />
-
-      {/* Header */}
       <Header
         tournament={tournament}
         divisions={tournament.divisions}
@@ -600,30 +595,9 @@ function App() {
         onGoHome={() => setAppMode('landing')}
       />
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 py-8 pb-24">
+      <main className="max-w-6xl mx-auto px-4 py-6">
         {renderContent()}
       </main>
-
-      {/* Status Bar */}
-      <div className="fixed bottom-0 left-0 right-0 bg-qw-panel border-t border-qw-border py-2 px-4 flex items-center justify-between text-xs font-mono text-qw-muted z-30">
-        <div className="flex items-center gap-4">
-          <span className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-qw-win"></span>
-            <span className="text-qw-text">{tournament.name || 'NEW_TOURNAMENT'}</span>
-          </span>
-          <span className="text-qw-accent">|</span>
-          <span><span className="text-qw-accent">{stats.divisions}</span> DIV</span>
-          <span className="text-qw-accent">|</span>
-          <span><span className="text-qw-accent">{stats.teams}</span> TEAMS</span>
-          <span className="text-qw-accent">|</span>
-          <span><span className="text-qw-win">{stats.completed}</span>/<span className="text-qw-text">{stats.matches}</span> MATCHES</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span>QW_ADMIN</span>
-          <span className="text-qw-blue">v0.4</span>
-        </div>
-      </div>
     </div>
   );
 }
