@@ -18,14 +18,21 @@ import {
 } from './wiki/_wikiClient.mjs';
 import { assembleBoilerplate } from './wiki/_boilerplate.mjs';
 import { createClient } from '@supabase/supabase-js';
+import { requireAdminAuth } from './_auth.mjs';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 function cors(res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 }
+
+// Actions that modify data and require admin authentication
+const WRITE_ACTIONS = new Set([
+  'scaffold', 'publish', 'publish-section', 'auto-publish',
+  'config-tournament', 'config-division',
+]);
 
 function getSupabase() {
   return createClient(process.env.QWICKY_SUPABASE_URL, process.env.QWICKY_SUPABASE_SERVICE_KEY);
@@ -444,6 +451,8 @@ export default async function handler(req, res) {
       error: `Missing or unknown action. Valid: ${Object.keys(actions).join(', ')}`,
     });
   }
+
+  if (WRITE_ACTIONS.has(action) && !requireAdminAuth(req, res)) return;
 
   try {
     return await fn(req, res);
