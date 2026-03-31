@@ -452,7 +452,7 @@ export default async function handler(req, res) {
     });
   }
 
-  if (WRITE_ACTIONS.has(action) && !requireAdminAuth(req, res)) return;
+  if (WRITE_ACTIONS.has(action) && !await requireAdminAuth(req, res)) return;
 
   try {
     return await fn(req, res);

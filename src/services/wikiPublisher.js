@@ -15,9 +15,10 @@ import {
  *
  * @param {object} division - Division data (teams, schedule, bracket, wikiConfig)
  * @param {object} tournament - Tournament data (settings)
+ * @param {string} [token] - Supabase session access_token for admin auth
  * @returns {Promise<Array>} Results per target
  */
-export async function publishDivisionWiki(division, tournament) {
+export async function publishDivisionWiki(division, tournament, token) {
   if (!tournament?.settings?.wikiAutoPublish) return [];
   if (!division?.wikiConfig?.enabled) return [];
 
@@ -53,9 +54,11 @@ export async function publishDivisionWiki(division, tournament) {
     if (!markup) continue;
 
     try {
+      const headers = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
       const res = await fetch('/api/wiki?action=publish-section', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           pageName: target.page,
           sectionHeading: target.section || null,
@@ -86,18 +89,19 @@ let pendingPublish = null;
  * @param {object} tournament - Tournament with settings
  * @param {function} [onResult] - Callback with publish results
  * @param {number} [debounceMs=10000] - Debounce delay
+ * @param {string} [token] - Supabase session access_token for admin auth
  */
-export function scheduleWikiPublish(division, tournament, onResult, debounceMs = 10000) {
+export function scheduleWikiPublish(division, tournament, onResult, debounceMs = 10000, token) {
   clearTimeout(wikiPublishTimer);
 
-  pendingPublish = { division, tournament };
+  pendingPublish = { division, tournament, token };
 
   wikiPublishTimer = setTimeout(async () => {
-    const { division: div, tournament: t } = pendingPublish;
+    const { division: div, tournament: t, token: tok } = pendingPublish;
     pendingPublish = null;
 
     try {
-      const results = await publishDivisionWiki(div, t);
+      const results = await publishDivisionWiki(div, t, tok);
       if (onResult) onResult(results);
     } catch (err) {
       if (onResult) onResult([{ ok: false, error: err.message }]);

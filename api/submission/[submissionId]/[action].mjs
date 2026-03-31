@@ -9,7 +9,7 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
   if (req.method === 'OPTIONS') return res.status(200).end();
-  if (!requireAdminAuth(req, res)) return;
+  if (!await requireAdminAuth(req, res)) return;
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   const { submissionId, action } = req.query;
@@ -47,7 +47,10 @@ export default async function handler(req, res) {
       const baseUrl = `https://${req.headers.host || 'qwicky.vercel.app'}`;
       fetch(`${baseUrl}/api/wiki?action=auto-publish`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.QWICKY_SUPABASE_SERVICE_KEY}`,
+        },
         body: JSON.stringify({
           tournamentId: data.tournament_id,
           divisionId: data.division_id || undefined,
