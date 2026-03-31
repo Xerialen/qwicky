@@ -1,4 +1,4 @@
-# QuakeWorld Tournament Admin
+QWICKY
 
 A React-based tournament administration application with full support for multiple divisions, each with their own teams, schedules, standings, and playoff brackets.
 
