@@ -15,6 +15,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { normalize } from '../src/utils/nameNormalizer.js';
 import { resolveTeamName } from '../src/utils/teamResolver.js';
+import { requireAdminAuth } from './_auth.mjs';
 
 const supabase = createClient(
   process.env.QWICKY_SUPABASE_URL,
@@ -144,9 +145,10 @@ function findBestScheduleMatch(game, schedule, opts = {}) {
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
   if (req.method === 'OPTIONS') return res.status(200).end();
+  if (!await requireAdminAuth(req, res)) return;
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
 
   const { submissionId, tournamentId, divisionId, gameData } = req.body || {};
@@ -297,11 +299,11 @@ export default async function handler(req, res) {
     // Fire-and-forget wiki auto-publish if enabled
     if (settings.wikiAutoPublish) {
       const baseUrl = `https://${req.headers.host || 'qwicky.vercel.app'}`;
-      fetch(`${baseUrl}/api/wiki/auto-publish`, {
+      await fetch(`${baseUrl}/api/wiki/auto-publish`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tournamentId, divisionId }),
-      }).catch(() => {}); // Best-effort — don't block the approval response
+      }).catch(() => {}); // Best-effort — errors are silently ignored
     }
 
     return res.json({

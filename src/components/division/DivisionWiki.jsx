@@ -3,6 +3,7 @@ import React, { useState, useMemo } from 'react';
 import { calculateStats, generateWikiTable } from '../../utils/statsLogic';
 import { renderWikiPreview } from '../../utils/wikiPreview';
 import { publishDivisionWiki } from '../../services/wikiPublisher';
+import { supabase } from '../../services/supabaseClient';
 import EmptyState from '../EmptyState';
 import {
   calculateStandings,
@@ -279,7 +280,8 @@ const handleCopy = async () => {
                             try {
                               // Build a minimal tournament object for the publisher
                               const fakeTournament = { settings: { wikiAutoPublish: true } };
-                              const results = await publishDivisionWiki(division, fakeTournament);
+                              const { data: { session } } = await supabase.auth.getSession();
+                              const results = await publishDivisionWiki(division, fakeTournament, session?.access_token);
                               const ok = results.filter(r => r.ok);
                               const fail = results.filter(r => !r.ok);
                               if (fail.length === 0) {

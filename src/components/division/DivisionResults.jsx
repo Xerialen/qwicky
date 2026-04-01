@@ -4,6 +4,7 @@ import { parseMatch, unicodeToAscii } from '../../utils/matchLogic';
 import { createTeamContext, resolveTeam as resolveTeamIdentity, resolveTeamFull } from '../../utils/teamIdentity';
 import { confidenceLabel, confidenceColor } from '../../utils/matchConfidence';
 import { scheduleWikiPublish } from '../../services/wikiPublisher';
+import { supabase } from '../../services/supabaseClient';
 import DivisionStats from './DivisionStats';
 import QWStatsService from '../../services/QWStatsService';
 
@@ -83,6 +84,24 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
     return matchingDivisions.length > 0 ? matchingDivisions : null;
   }, [tournament]);
 
+  useEffect(() => {
+    if (!supabase) return;
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      sessionTokenRef.current = session?.access_token ?? null;
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
+      sessionTokenRef.current = session?.access_token ?? null;
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const getAuthHeaders = async () => {
+    if (!supabase) return {};
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) return {};
+    return { 'Authorization': `Bearer ${session.access_token}` };
+  };
+
   const fetchSubmissions = async (includeApproved) => {
     if (!tournamentId) return;
     setSubmissionsLoading(true);
@@ -120,7 +139,8 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
         parsed = parseMatch(submission.game_id, gameData);
       }
 
-      const res = await fetch(`/api/submission/${submission.id}/approve`, { method: 'POST' });
+      const authHeaders = await getAuthHeaders();
+      const res = await fetch(`/api/submission/${submission.id}/approve`, { method: 'POST', headers: authHeaders });
       if (!res.ok) throw new Error('Failed to approve');
 
       if (parsed) addMapsInBatch([parsed], getTargetDiv(submission));
@@ -133,7 +153,8 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
 
   const handleReject = async (submission) => {
     try {
-      const res = await fetch(`/api/submission/${submission.id}/reject`, { method: 'POST' });
+      const authHeaders = await getAuthHeaders();
+      const res = await fetch(`/api/submission/${submission.id}/reject`, { method: 'POST', headers: authHeaders });
       if (!res.ok) throw new Error('Failed to reject');
       setSubmissions(prev => prev.filter(s => s.id !== submission.id));
     } catch (err) {
@@ -201,6 +222,7 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
     // Group parsed maps by target division for correct routing and series detection
     const byDiv = new Map(); // divId → { targetDiv, parsed[] }
     const approvedSubIds = [];
+    const authHeaders = await getAuthHeaders();
 
     // First: parse all game data and approve in DB
     for (const sub of pending) {
@@ -216,7 +238,7 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
           }
         }
 
-        const res = await fetch(`/api/submission/${sub.id}/approve`, { method: 'POST' });
+        const res = await fetch(`/api/submission/${sub.id}/approve`, { method: 'POST', headers: authHeaders });
         if (!res.ok) throw new Error(`Failed to approve ${sub.id}`);
         approvedSubIds.push(sub.id);
       } catch (err) {
@@ -611,7 +633,7 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
           setWikiToast({ type: 'error', message: `Wiki publish failed: ${fail[0]?.error || 'unknown error'}` });
         }
         setTimeout(() => setWikiToast(null), 6000);
-      });
+      }, 10000, sessionTokenRef.current);
     }
 
     return trulyUniqueMaps;
@@ -1260,6 +1282,7 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
                               scores[series.team2] = t2.frags ?? 0;
                               let timestamp = null;
                               if (game.timestamp) {
+                                // eslint-disable-next-line no-empty
                                 try { timestamp = new Date(game.timestamp).getTime(); } catch {}
                               }
                               newMaps.push({
