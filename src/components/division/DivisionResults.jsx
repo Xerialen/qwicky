@@ -22,7 +22,6 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
   const [error, setError] = useState(null);
   const [lastImported, setLastImported] = useState([]);
   const fileInputRef = useRef(null);
-  const sessionTokenRef = useRef(null);
 
   // Discord submission states
   const [submissions, setSubmissions] = useState([]);

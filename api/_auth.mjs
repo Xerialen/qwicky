@@ -31,7 +31,7 @@ export async function requireAdminAuth(req, res) {
   if (supabaseUrl && serviceKey) {
     const supabase = createClient(supabaseUrl, serviceKey);
     const { data: { user }, error } = await supabase.auth.getUser(token);
-    if (!error && user) return true;
+    if (!error && user && user.app_metadata?.role === 'admin') return true;
   }
 
   // 2. Accept QWICKY_SUPABASE_SERVICE_KEY for internal Vercel server-to-server calls

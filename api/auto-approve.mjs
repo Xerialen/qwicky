@@ -299,11 +299,11 @@ export default async function handler(req, res) {
     // Fire-and-forget wiki auto-publish if enabled
     if (settings.wikiAutoPublish) {
       const baseUrl = `https://${req.headers.host || 'qwicky.vercel.app'}`;
-      fetch(`${baseUrl}/api/wiki/auto-publish`, {
+      await fetch(`${baseUrl}/api/wiki/auto-publish`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tournamentId, divisionId }),
-      }).catch(() => {}); // Best-effort — don't block the approval response
+      }).catch(() => {}); // Best-effort — errors are silently ignored
     }
 
     return res.json({

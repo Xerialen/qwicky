@@ -25,7 +25,7 @@ export default function DivisionWiki({ division, tournamentName, updateDivision 
   });
   const [publishNowState, setPublishNowState] = useState({ status: 'idle', message: '' });
   const [options, setOptions] = useState({
-    title: division.name || 'Division',
+    title: division.name || 'Division'
   });
   const [showAutoConfig, setShowAutoConfig] = useState(false);
 
@@ -81,7 +81,9 @@ export default function DivisionWiki({ division, tournamentName, updateDivision 
   // Extract original ktxstats data for player stats calculation
   const ktxstatsData = useMemo(() => {
     if (!rawMaps || rawMaps.length === 0) return [];
-    return rawMaps.map((m) => m.originalData).filter((d) => d && d.players);
+    return rawMaps
+      .map(m => m.originalData)
+      .filter(d => d && d.players);
   }, [rawMaps]);
 
   // Calculate player stats
@@ -92,31 +94,24 @@ export default function DivisionWiki({ division, tournamentName, updateDivision 
 
   const wikiContent = useMemo(() => {
     switch (activeExport) {
-      case 'standings':
+      case 'standings': 
         return generateStandingsWiki(standings, teams, division, options);
-      case 'matches':
+      case 'matches': 
         return generateMatchListWiki(schedule, teams, division, options);
-      case 'bracket':
+      case 'bracket': 
         return generateBracketWiki(division.bracket, schedule, teams, division, options);
       case 'stats':
         return generateWikiTable(playersDb);
       case 'full':
-        return (
-          generateStandingsWiki(standings, teams, division, options) +
-          '\n' +
-          generateMatchListWiki(schedule, teams, division, options) +
-          '\n' +
-          generateBracketWiki(division.bracket, schedule, teams, division, {
-            ...options,
-            title: 'Playoffs',
-          })
-        );
-      default:
+        return generateStandingsWiki(standings, teams, division, options) + '\n' +
+               generateMatchListWiki(schedule, teams, division, options) + '\n' +
+               generateBracketWiki(division.bracket, schedule, teams, division, { ...options, title: 'Playoffs' });
+      default: 
         return '';
     }
   }, [activeExport, standings, schedule, division.bracket, teams, options, playersDb]);
 
-  const handleCopy = async () => {
+const handleCopy = async () => {
     // Check if the modern Clipboard API is available (requires HTTPS)
     if (navigator.clipboard && navigator.clipboard.writeText) {
       try {
@@ -135,13 +130,13 @@ export default function DivisionWiki({ division, tournamentName, updateDivision 
 
   // Helper function for the "Old School" copy method
   const fallbackCopy = () => {
-    const textArea = document.createElement('textarea');
+    const textArea = document.createElement("textarea");
     textArea.value = wikiContent;
-
+    
     // Prevent scrolling to bottom
-    textArea.style.top = '0';
-    textArea.style.left = '0';
-    textArea.style.position = 'fixed';
+    textArea.style.top = "0";
+    textArea.style.left = "0";
+    textArea.style.position = "fixed"; 
 
     document.body.appendChild(textArea);
     textArea.focus();
@@ -210,9 +205,7 @@ export default function DivisionWiki({ division, tournamentName, updateDivision 
             className="w-full flex items-center justify-between px-4 py-3 bg-qw-dark border-b border-qw-border hover:bg-qw-darker transition-colors"
           >
             <div className="flex items-center gap-3">
-              <span
-                className={`w-2 h-2 rounded-full ${wikiConfig.enabled ? 'bg-qw-win' : 'bg-qw-border'}`}
-              />
+              <span className={`w-2 h-2 rounded-full ${wikiConfig.enabled ? 'bg-qw-win' : 'bg-qw-border'}`} />
               <h3 className="font-display text-sm text-qw-accent">AUTO-PUBLISH</h3>
               <span className="text-xs text-qw-muted">
                 {wikiConfig.enabled ? `${(wikiConfig.targets || []).length} target(s)` : 'disabled'}
@@ -230,9 +223,7 @@ export default function DivisionWiki({ division, tournamentName, updateDivision 
                   onClick={() => updateWikiConfig({ enabled: !wikiConfig.enabled })}
                   className={`relative w-11 h-6 rounded-full transition-colors ${wikiConfig.enabled ? 'bg-qw-win' : 'bg-qw-border'}`}
                 >
-                  <span
-                    className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${wikiConfig.enabled ? 'translate-x-5' : 'translate-x-0.5'}`}
-                  />
+                  <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${wikiConfig.enabled ? 'translate-x-5' : 'translate-x-0.5'}`} />
                 </button>
               </div>
 
@@ -240,9 +231,7 @@ export default function DivisionWiki({ division, tournamentName, updateDivision 
                 <>
                   {/* Targets table */}
                   <div className="space-y-2">
-                    <label className="text-white text-sm font-semibold block">
-                      Publish Targets
-                    </label>
+                    <label className="text-white text-sm font-semibold block">Publish Targets</label>
                     {(wikiConfig.targets || []).map((target, idx) => (
                       <div key={idx} className="flex gap-2 items-center">
                         <select
@@ -269,31 +258,20 @@ export default function DivisionWiki({ division, tournamentName, updateDivision 
                           placeholder="Section (empty = full page)"
                           className="flex-1 bg-qw-darker border border-qw-border rounded px-2 py-1.5 text-sm text-white font-mono placeholder-qw-muted"
                         />
-                        <button
-                          onClick={() => removeTarget(idx)}
-                          className="text-qw-loss hover:text-red-400 px-2 text-lg"
-                        >
-                          x
-                        </button>
+                        <button onClick={() => removeTarget(idx)} className="text-qw-loss hover:text-red-400 px-2 text-lg">x</button>
                       </div>
                     ))}
                     <div className="flex gap-2">
-                      {['standings', 'matches', 'bracket']
-                        .filter((t) => !(wikiConfig.targets || []).some((x) => x.type === t))
-                        .map((type) => (
-                          <button
-                            key={type}
-                            onClick={() => addTarget(type)}
-                            className="qw-btn-secondary px-3 py-1 text-xs capitalize"
-                          >
-                            + {type}
-                          </button>
-                        ))}
+                      {['standings', 'matches', 'bracket'].filter(t => !(wikiConfig.targets || []).some(x => x.type === t)).map(type => (
+                        <button key={type} onClick={() => addTarget(type)} className="qw-btn-secondary px-3 py-1 text-xs capitalize">
+                          + {type}
+                        </button>
+                      ))}
                     </div>
                   </div>
 
                   {/* Publish Now button */}
-                  {(wikiConfig.targets || []).some((t) => t.page) && (
+                  {(wikiConfig.targets || []).some(t => t.page) && (
                     <div className="pt-3 border-t border-qw-border/30">
                       <div className="flex items-center gap-3">
                         <button
@@ -302,61 +280,36 @@ export default function DivisionWiki({ division, tournamentName, updateDivision 
                             try {
                               // Build a minimal tournament object for the publisher
                               const fakeTournament = { settings: { wikiAutoPublish: true } };
-                              const {
-                                data: { session },
-                              } = await supabase.auth.getSession();
-                              const results = await publishDivisionWiki(
-                                division,
-                                fakeTournament,
-                                session?.access_token,
-                              );
-                              const ok = results.filter((r) => r.ok);
-                              const fail = results.filter((r) => !r.ok);
+                              const { data: { session } } = await supabase.auth.getSession();
+                              const results = await publishDivisionWiki(division, fakeTournament, session?.access_token);
+                              const ok = results.filter(r => r.ok);
+                              const fail = results.filter(r => !r.ok);
                               if (fail.length === 0) {
-                                setPublishNowState({
-                                  status: 'success',
-                                  message: `Published ${ok.length} target(s)`,
-                                });
+                                setPublishNowState({ status: 'success', message: `Published ${ok.length} target(s)` });
                               } else if (ok.length > 0) {
-                                setPublishNowState({
-                                  status: 'warn',
-                                  message: `${ok.length} updated, ${fail.length} failed: ${fail[0]?.error}`,
-                                });
+                                setPublishNowState({ status: 'warn', message: `${ok.length} updated, ${fail.length} failed: ${fail[0]?.error}` });
                               } else {
-                                setPublishNowState({
-                                  status: 'error',
-                                  message: fail[0]?.error || 'Publish failed',
-                                });
+                                setPublishNowState({ status: 'error', message: fail[0]?.error || 'Publish failed' });
                               }
                             } catch (err) {
                               setPublishNowState({ status: 'error', message: err.message });
                             }
-                            setTimeout(
-                              () => setPublishNowState({ status: 'idle', message: '' }),
-                              8000,
-                            );
+                            setTimeout(() => setPublishNowState({ status: 'idle', message: '' }), 8000);
                           }}
                           disabled={publishNowState.status === 'publishing'}
                           className="qw-btn px-4 py-1.5 text-xs disabled:opacity-50"
                         >
-                          {publishNowState.status === 'publishing'
-                            ? 'Publishing...'
-                            : 'Publish Now'}
+                          {publishNowState.status === 'publishing' ? 'Publishing...' : 'Publish Now'}
                         </button>
-                        {publishNowState.status !== 'idle' &&
-                          publishNowState.status !== 'publishing' && (
-                            <span
-                              className={`text-xs ${
-                                publishNowState.status === 'success'
-                                  ? 'text-qw-win'
-                                  : publishNowState.status === 'warn'
-                                    ? 'text-amber-300'
-                                    : 'text-qw-loss'
-                              }`}
-                            >
-                              {publishNowState.message}
-                            </span>
-                          )}
+                        {publishNowState.status !== 'idle' && publishNowState.status !== 'publishing' && (
+                          <span className={`text-xs ${
+                            publishNowState.status === 'success' ? 'text-qw-win' :
+                            publishNowState.status === 'warn' ? 'text-amber-300' :
+                            'text-qw-loss'
+                          }`}>
+                            {publishNowState.message}
+                          </span>
+                        )}
                       </div>
                     </div>
                   )}
@@ -368,10 +321,10 @@ export default function DivisionWiki({ division, tournamentName, updateDivision 
       )}
 
       <div className="flex gap-2 flex-wrap">
-        {['standings', 'matches', 'bracket', 'stats', 'full'].map((type) => (
-          <button
-            key={type}
-            onClick={() => setActiveExport(type)}
+        {['standings', 'matches', 'bracket', 'stats', 'full'].map(type => (
+          <button 
+            key={type} 
+            onClick={() => setActiveExport(type)} 
             className={`px-4 py-2 rounded font-body font-semibold capitalize ${activeExport === type ? 'bg-qw-accent text-qw-dark' : 'bg-qw-panel border border-qw-border text-qw-muted hover:text-white'}`}
           >
             {type === 'full' ? 'Full Page' : type === 'stats' ? 'Player Stats' : type}
@@ -385,8 +338,7 @@ export default function DivisionWiki({ division, tournamentName, updateDivision 
             <div>
               <h3 className="font-display text-sm text-qw-accent">WIKI OUTPUT</h3>
               <span className="text-xs text-zinc-500">
-                {wikiContent.split('\n').length} lines · {wikiContent.length.toLocaleString()}{' '}
-                characters
+                {wikiContent.split('\n').length} lines · {wikiContent.length.toLocaleString()} characters
               </span>
             </div>
             <div className="flex gap-1">
@@ -423,17 +375,11 @@ export default function DivisionWiki({ division, tournamentName, updateDivision 
             >
               {copied ? '✓ Copied!' : 'Copy to Clipboard'}
             </button>
-            <button
-              onClick={handleDownload}
-              className="px-3 py-1.5 rounded text-xs bg-qw-accent text-qw-dark hover:bg-qw-accent-dim transition-colors"
-            >
+            <button onClick={handleDownload} className="px-3 py-1.5 rounded text-xs bg-qw-accent text-qw-dark hover:bg-qw-accent-dim transition-colors">
               ⬇ Download
             </button>
             <button
-              onClick={() => {
-                setShowPublishModal(true);
-                setPublishState({ status: 'idle', message: '' });
-              }}
+              onClick={() => { setShowPublishModal(true); setPublishState({ status: 'idle', message: '' }); }}
               className="px-3 py-1.5 rounded text-xs bg-blue-600 text-white hover:bg-blue-500 transition-colors"
             >
               Publish to Wiki
@@ -442,11 +388,11 @@ export default function DivisionWiki({ division, tournamentName, updateDivision 
         </div>
         <div className="p-4 max-h-[500px] overflow-auto">
           {viewMode === 'code' ? (
-            <pre className="font-mono text-xs text-qw-text whitespace-pre-wrap">
-              {wikiContent || ''}
-            </pre>
+            <pre className="font-mono text-xs text-qw-text whitespace-pre-wrap">{wikiContent || ''}</pre>
           ) : (
-            <div className="wiki-preview">{renderWikiPreview(wikiContent, activeExport)}</div>
+            <div className="wiki-preview">
+              {renderWikiPreview(wikiContent, activeExport)}
+            </div>
           )}
         </div>
       </div>
@@ -455,13 +401,12 @@ export default function DivisionWiki({ division, tournamentName, updateDivision 
       <div className="qw-panel p-4">
         <h4 className="font-display text-sm text-qw-accent mb-2">TEAM PLAYERS</h4>
         <p className="text-xs text-qw-muted mb-2">
-          To include player names in wiki output, add them to each team in the Teams tab. The wiki
-          templates use the format:{' '}
-          <code className="bg-qw-dark px-1 rounded">TeamName|player1, player2, player3</code>
+          To include player names in wiki output, add them to each team in the Teams tab. 
+          The wiki templates use the format: <code className="bg-qw-dark px-1 rounded">TeamName|player1, player2, player3</code>
         </p>
         {teams.length > 0 && (
           <div className="flex flex-wrap gap-2 text-xs">
-            {teams.slice(0, 4).map((t) => (
+            {teams.slice(0, 4).map(t => (
               <span key={t.id} className="px-2 py-1 bg-qw-dark rounded">
                 {t.name}: {t.players || <span className="text-qw-muted italic">no players</span>}
               </span>
@@ -472,14 +417,8 @@ export default function DivisionWiki({ division, tournamentName, updateDivision 
 
       {/* Publish to Wiki Modal */}
       {showPublishModal && (
-        <div
-          className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4"
-          onClick={() => setShowPublishModal(false)}
-        >
-          <div
-            className="bg-qw-panel border border-qw-border rounded-lg w-full max-w-md p-6 space-y-4"
-            onClick={(e) => e.stopPropagation()}
-          >
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={() => setShowPublishModal(false)}>
+          <div className="bg-qw-panel border border-qw-border rounded-lg w-full max-w-md p-6 space-y-4" onClick={e => e.stopPropagation()}>
             <h3 className="font-display text-sm text-qw-accent">PUBLISH TO WIKI</h3>
 
             <div className="space-y-3">
@@ -488,7 +427,7 @@ export default function DivisionWiki({ division, tournamentName, updateDivision 
                 <input
                   type="text"
                   value={publishFields.pageTitle}
-                  onChange={(e) => setPublishFields((f) => ({ ...f, pageTitle: e.target.value }))}
+                  onChange={e => setPublishFields(f => ({ ...f, pageTitle: e.target.value }))}
                   placeholder="QW_Champions_League/Season_5/Division_1"
                   className="w-full bg-qw-dark border border-qw-border rounded px-3 py-2 text-sm text-qw-text placeholder-zinc-600 focus:outline-none focus:border-qw-accent"
                 />
@@ -499,7 +438,7 @@ export default function DivisionWiki({ division, tournamentName, updateDivision 
                 <input
                   type="text"
                   value={publishFields.section}
-                  onChange={(e) => setPublishFields((f) => ({ ...f, section: e.target.value }))}
+                  onChange={e => setPublishFields(f => ({ ...f, section: e.target.value }))}
                   placeholder="Leave empty to edit entire page"
                   className="w-full bg-qw-dark border border-qw-border rounded px-3 py-2 text-sm text-qw-text placeholder-zinc-600 focus:outline-none focus:border-qw-accent"
                 />
@@ -510,7 +449,7 @@ export default function DivisionWiki({ division, tournamentName, updateDivision 
                 <input
                   type="text"
                   value={publishFields.summary}
-                  onChange={(e) => setPublishFields((f) => ({ ...f, summary: e.target.value }))}
+                  onChange={e => setPublishFields(f => ({ ...f, summary: e.target.value }))}
                   className="w-full bg-qw-dark border border-qw-border rounded px-3 py-2 text-sm text-qw-text placeholder-zinc-600 focus:outline-none focus:border-qw-accent"
                 />
               </div>
@@ -521,15 +460,11 @@ export default function DivisionWiki({ division, tournamentName, updateDivision 
             </div>
 
             {publishState.status !== 'idle' && (
-              <div
-                className={`text-xs px-3 py-2 rounded ${
-                  publishState.status === 'publishing'
-                    ? 'bg-blue-900/30 text-blue-300'
-                    : publishState.status === 'success'
-                      ? 'bg-qw-win/10 text-qw-win'
-                      : 'bg-qw-loss/10 text-qw-loss'
-                }`}
-              >
+              <div className={`text-xs px-3 py-2 rounded ${
+                publishState.status === 'publishing' ? 'bg-blue-900/30 text-blue-300' :
+                publishState.status === 'success' ? 'bg-qw-win/10 text-qw-win' :
+                'bg-qw-loss/10 text-qw-loss'
+              }`}>
                 {publishState.message}
               </div>
             )}
