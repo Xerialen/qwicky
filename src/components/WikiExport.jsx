@@ -7,7 +7,7 @@ import {
   generateScheduleWiki,
   generateBracketWiki,
   generateSimpleBracketWiki,
-  generateFullTournamentWiki
+  generateFullTournamentWiki,
 } from '../utils/wikiExport';
 
 export default function WikiExport({ matches, bracketConfig }) {
@@ -17,7 +17,7 @@ export default function WikiExport({ matches, bracketConfig }) {
     tournamentName: 'Tournament',
     useSimpleBracket: true,
     groupByDate: true,
-    showHeaders: true
+    showHeaders: true,
   });
 
   const standings = useMemo(() => calculateStandings(matches), [matches]);
@@ -26,15 +26,15 @@ export default function WikiExport({ matches, bracketConfig }) {
   const wikiContent = useMemo(() => {
     switch (activeExport) {
       case 'standings':
-        return generateStandingsWiki(standings, { 
+        return generateStandingsWiki(standings, {
           title: `${options.tournamentName} - Standings`,
-          showHeader: options.showHeaders 
+          showHeader: options.showHeaders,
         });
       case 'schedule':
-        return generateScheduleWiki(matches, { 
+        return generateScheduleWiki(matches, {
           title: `${options.tournamentName} - Schedule`,
           showHeader: options.showHeaders,
-          groupByDate: options.groupByDate 
+          groupByDate: options.groupByDate,
         });
       case 'bracket':
         if (options.useSimpleBracket) {
@@ -42,12 +42,18 @@ export default function WikiExport({ matches, bracketConfig }) {
           wiki += generateSimpleBracketWiki(bracketConfig, seriesSummary);
           return wiki;
         }
-        return generateBracketWiki(bracketConfig, seriesSummary, { 
+        return generateBracketWiki(bracketConfig, seriesSummary, {
           title: `${options.tournamentName} - Playoffs`,
-          showHeader: options.showHeaders 
+          showHeader: options.showHeaders,
         });
       case 'full':
-        return generateFullTournamentWiki(standings, matches, bracketConfig, seriesSummary, options);
+        return generateFullTournamentWiki(
+          standings,
+          matches,
+          bracketConfig,
+          seriesSummary,
+          options
+        );
       default:
         return '';
     }
@@ -93,14 +99,15 @@ export default function WikiExport({ matches, bracketConfig }) {
 
       {/* Export Type Selection */}
       <div className="flex gap-2 flex-wrap">
-        {exportTypes.map(type => (
+        {exportTypes.map((type) => (
           <button
             key={type.id}
             onClick={() => setActiveExport(type.id)}
             className={`px-4 py-2 rounded font-body font-semibold transition-all flex items-center gap-2
-              ${activeExport === type.id
-                ? 'bg-qw-accent text-qw-dark'
-                : 'bg-qw-panel border border-qw-border text-qw-muted hover:text-white hover:border-qw-accent'
+              ${
+                activeExport === type.id
+                  ? 'bg-qw-accent text-qw-dark'
+                  : 'bg-qw-panel border border-qw-border text-qw-muted hover:text-white hover:border-qw-accent'
               }`}
           >
             <span>{type.icon}</span>
@@ -122,7 +129,7 @@ export default function WikiExport({ matches, bracketConfig }) {
               className="w-full bg-qw-dark border border-qw-border rounded px-3 py-2 text-white font-mono text-sm"
             />
           </div>
-          
+
           <div className="flex items-center gap-2">
             <input
               type="checkbox"
@@ -131,7 +138,9 @@ export default function WikiExport({ matches, bracketConfig }) {
               onChange={(e) => setOptions({ ...options, showHeaders: e.target.checked })}
               className="w-4 h-4 accent-qw-accent"
             />
-            <label htmlFor="showHeaders" className="text-qw-muted text-sm">Include Headers</label>
+            <label htmlFor="showHeaders" className="text-qw-muted text-sm">
+              Include Headers
+            </label>
           </div>
 
           {activeExport === 'schedule' && (
@@ -143,7 +152,9 @@ export default function WikiExport({ matches, bracketConfig }) {
                 onChange={(e) => setOptions({ ...options, groupByDate: e.target.checked })}
                 className="w-4 h-4 accent-qw-accent"
               />
-              <label htmlFor="groupByDate" className="text-qw-muted text-sm">Group by Date</label>
+              <label htmlFor="groupByDate" className="text-qw-muted text-sm">
+                Group by Date
+              </label>
             </div>
           )}
 
@@ -156,7 +167,9 @@ export default function WikiExport({ matches, bracketConfig }) {
                 onChange={(e) => setOptions({ ...options, useSimpleBracket: e.target.checked })}
                 className="w-4 h-4 accent-qw-accent"
               />
-              <label htmlFor="useSimpleBracket" className="text-qw-muted text-sm">Simple Table Bracket</label>
+              <label htmlFor="useSimpleBracket" className="text-qw-muted text-sm">
+                Simple Table Bracket
+              </label>
             </div>
           )}
         </div>
@@ -170,22 +183,33 @@ export default function WikiExport({ matches, bracketConfig }) {
             <button
               onClick={handleCopy}
               className={`px-3 py-1 rounded text-sm font-body font-semibold transition-all flex items-center gap-2
-                ${copied 
-                  ? 'bg-qw-win text-white' 
-                  : 'bg-qw-panel border border-qw-border text-qw-muted hover:text-white hover:border-qw-accent'
+                ${
+                  copied
+                    ? 'bg-qw-win text-white'
+                    : 'bg-qw-panel border border-qw-border text-qw-muted hover:text-white hover:border-qw-accent'
                 }`}
             >
               {copied ? (
                 <>
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M5 13l4 4L19 7"
+                    />
                   </svg>
                   Copied!
                 </>
               ) : (
                 <>
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"
+                    />
                   </svg>
                   Copy
                 </>
@@ -196,13 +220,18 @@ export default function WikiExport({ matches, bracketConfig }) {
               className="px-3 py-1 rounded text-sm font-body font-semibold bg-qw-accent text-qw-dark hover:bg-qw-accent-dim transition-all flex items-center gap-2"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                />
               </svg>
               Download
             </button>
           </div>
         </div>
-        
+
         <div className="p-4 max-h-96 overflow-auto">
           <pre className="font-mono text-sm text-qw-text whitespace-pre-wrap break-words">
             {wikiContent || '<!-- No content to export -->'}
@@ -214,10 +243,21 @@ export default function WikiExport({ matches, bracketConfig }) {
       <div className="qw-panel p-4">
         <h3 className="font-display text-sm text-qw-accent mb-2">WIKI EXPORT TIPS</h3>
         <ul className="text-qw-muted text-sm space-y-1">
-          <li>• <strong>Standings:</strong> Uses standard ... ... ... wikitable format with <code>{'{{Abbr}}'}</code> for column headers</li>
-          <li>• <strong>Schedule:</strong> Groups matches by date with team templates</li>
-          <li>• <strong>Bracket:</strong> Simple table format works on most wikis; Liquipedia template requires the Bracket extension</li>
-          <li>• <strong>Team templates:</strong> Uses <code>{'{{Team|name}}'}</code> format - adjust if your wiki uses different templates</li>
+          <li>
+            • <strong>Standings:</strong> Uses standard ... ... ... wikitable format with{' '}
+            <code>{'{{Abbr}}'}</code> for column headers
+          </li>
+          <li>
+            • <strong>Schedule:</strong> Groups matches by date with team templates
+          </li>
+          <li>
+            • <strong>Bracket:</strong> Simple table format works on most wikis; Liquipedia template
+            requires the Bracket extension
+          </li>
+          <li>
+            • <strong>Team templates:</strong> Uses <code>{'{{Team|name}}'}</code> format - adjust
+            if your wiki uses different templates
+          </li>
         </ul>
       </div>
     </div>

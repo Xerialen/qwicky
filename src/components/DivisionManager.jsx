@@ -2,14 +2,14 @@
 import React, { useState } from 'react';
 import DangerButton from './DangerButton';
 
-export default function DivisionManager({ 
-  divisions, 
+export default function DivisionManager({
+  divisions,
   activeDivisionId,
   setActiveDivisionId,
-  addDivision, 
+  addDivision,
   removeDivision,
   duplicateDivision,
-  setActiveTab 
+  setActiveTab,
 }) {
   const [newDivName, setNewDivName] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
@@ -17,7 +17,7 @@ export default function DivisionManager({
   const handleAddDivision = (e) => {
     e.preventDefault();
     if (!newDivName.trim()) return;
-    
+
     addDivision(newDivName.trim());
     setNewDivName('');
     setShowAddForm(false);
@@ -34,7 +34,7 @@ export default function DivisionManager({
 
   const suggestedNames = [
     'Division 1',
-    'Division 2', 
+    'Division 2',
     'Division 3',
     'Pro Division',
     'Amateur Division',
@@ -43,7 +43,7 @@ export default function DivisionManager({
 
   // Filter out names that already exist
   const availableSuggestions = suggestedNames.filter(
-    name => !divisions.some(d => d.name.toLowerCase() === name.toLowerCase())
+    (name) => !divisions.some((d) => d.name.toLowerCase() === name.toLowerCase())
   );
 
   return (
@@ -53,10 +53,7 @@ export default function DivisionManager({
           <span className="text-qw-accent">📁</span>
           Division Manager
         </h2>
-        <button
-          onClick={() => setShowAddForm(!showAddForm)}
-          className="qw-btn"
-        >
+        <button onClick={() => setShowAddForm(!showAddForm)} className="qw-btn">
           + Add Division
         </button>
       </div>
@@ -77,13 +74,13 @@ export default function DivisionManager({
                 autoFocus
               />
             </div>
-            
+
             {/* Quick suggestions */}
             {availableSuggestions.length > 0 && (
               <div>
                 <label className="block text-qw-muted text-sm mb-2">Quick select:</label>
                 <div className="flex flex-wrap gap-2">
-                  {availableSuggestions.slice(0, 4).map(name => (
+                  {availableSuggestions.slice(0, 4).map((name) => (
                     <button
                       key={name}
                       type="button"
@@ -122,13 +119,11 @@ export default function DivisionManager({
           <div className="text-6xl mb-4">📁</div>
           <h3 className="font-display text-2xl text-white mb-2">No Divisions Yet</h3>
           <p className="text-qw-muted mb-6">
-            Create divisions to organize your tournament. Each division has its own teams, schedule, and standings.
+            Create divisions to organize your tournament. Each division has its own teams, schedule,
+            and standings.
           </p>
           {!showAddForm && (
-            <button
-              onClick={() => setShowAddForm(true)}
-              className="qw-btn"
-            >
+            <button onClick={() => setShowAddForm(true)} className="qw-btn">
               Create Your First Division
             </button>
           )}
@@ -136,13 +131,14 @@ export default function DivisionManager({
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {divisions.map((div, idx) => {
-            const completedMatches = div.schedule?.filter(m => m.status === 'completed').length || 0;
+            const completedMatches =
+              div.schedule?.filter((m) => m.status === 'completed').length || 0;
             const totalMatches = div.schedule?.length || 0;
             const isActive = div.id === activeDivisionId;
 
             return (
-              <div 
-                key={div.id} 
+              <div
+                key={div.id}
                 className={`qw-panel overflow-hidden transition-all ${isActive ? 'ring-2 ring-qw-accent' : ''}`}
               >
                 {/* Header */}
@@ -158,10 +154,7 @@ export default function DivisionManager({
                       </p>
                     </div>
                   </div>
-                  <button
-                    onClick={() => handleSelectDivision(div.id)}
-                    className="qw-btn text-sm"
-                  >
+                  <button onClick={() => handleSelectDivision(div.id)} className="qw-btn text-sm">
                     Open
                   </button>
                 </div>
@@ -192,7 +185,9 @@ export default function DivisionManager({
                   {/* Format info */}
                   <div className="flex items-center justify-between text-sm text-qw-muted mb-4">
                     <span>Groups: Bo{div.groupStageBestOf}</span>
-                    <span>QF/SF: Bo{div.playoffQFBestOf}/{div.playoffSFBestOf}</span>
+                    <span>
+                      QF/SF: Bo{div.playoffQFBestOf}/{div.playoffSFBestOf}
+                    </span>
                     <span>Final: Bo{div.playoffFinalBestOf}</span>
                   </div>
 

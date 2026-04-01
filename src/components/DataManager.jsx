@@ -10,7 +10,7 @@ export default function DataManager({ tournament, importTournament, resetTournam
     const data = {
       ...tournament,
       exportedAt: new Date().toISOString(),
-      version: 3
+      version: 3,
     };
 
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -33,7 +33,7 @@ export default function DataManager({ tournament, importTournament, resetTournam
     reader.onload = (event) => {
       try {
         const data = JSON.parse(event.target.result);
-        
+
         if (!data.divisions && !data.name) {
           throw new Error('Invalid tournament file');
         }
@@ -57,12 +57,12 @@ export default function DataManager({ tournament, importTournament, resetTournam
     let scheduleDups = 0;
     const cleaned = {
       ...tournament,
-      divisions: (tournament.divisions || []).map(div => {
+      divisions: (tournament.divisions || []).map((div) => {
         // Dedup rawMaps by normalized fingerprint
         const seen = new Map();
         const dedupedRawMaps = [];
-        for (const m of (div.rawMaps || [])) {
-          const teams = (m.teams || []).map(t => (t || '').toLowerCase()).sort();
+        for (const m of div.rawMaps || []) {
+          const teams = (m.teams || []).map((t) => (t || '').toLowerCase()).sort();
           const fp = `${(m.map || '').toLowerCase()}|${teams.join('vs')}|${m.timestamp || m.date || ''}`;
           if (!seen.has(fp)) {
             seen.set(fp, true);
@@ -73,12 +73,15 @@ export default function DataManager({ tournament, importTournament, resetTournam
         }
 
         // Dedup schedule match maps by map+scores
-        const dedupedSchedule = (div.schedule || []).map(match => {
+        const dedupedSchedule = (div.schedule || []).map((match) => {
           if (!match.maps || match.maps.length <= 1) return match;
           const mapSeen = new Set();
-          const cleanMaps = match.maps.filter(map => {
+          const cleanMaps = match.maps.filter((map) => {
             const fp = `${(map.map || '').toLowerCase()}|${map.score1}|${map.score2}`;
-            if (mapSeen.has(fp)) { scheduleDups++; return false; }
+            if (mapSeen.has(fp)) {
+              scheduleDups++;
+              return false;
+            }
             mapSeen.add(fp);
             return true;
           });
@@ -86,7 +89,7 @@ export default function DataManager({ tournament, importTournament, resetTournam
         });
 
         return { ...div, rawMaps: dedupedRawMaps, schedule: dedupedSchedule };
-      })
+      }),
     };
 
     if (rawDups === 0 && scheduleDups === 0) {
@@ -103,7 +106,7 @@ export default function DataManager({ tournament, importTournament, resetTournam
   const stats = {
     divisions: tournament.divisions?.length || 0,
     teams: tournament.divisions?.reduce((sum, d) => sum + (d.teams?.length || 0), 0) || 0,
-    matches: tournament.divisions?.reduce((sum, d) => sum + (d.schedule?.length || 0), 0) || 0
+    matches: tournament.divisions?.reduce((sum, d) => sum + (d.schedule?.length || 0), 0) || 0,
   };
 
   return (
@@ -115,7 +118,7 @@ export default function DataManager({ tournament, importTournament, resetTournam
         accept=".json"
         className="hidden"
       />
-      
+
       <div className="flex items-center gap-2 bg-qw-panel border border-qw-border rounded-lg p-2 shadow-lg">
         <div className="hidden md:flex items-center gap-3 px-3 text-xs font-mono text-qw-muted border-r border-qw-border">
           <span>{stats.divisions}D</span>

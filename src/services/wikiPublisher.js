@@ -35,13 +35,17 @@ export async function publishDivisionWiki(division, tournament, token) {
       return generateStandingsWiki(standings, teams, division, {});
     },
     matches: () => generateMatchListWiki(schedule, teams, division, {}),
-    bracket: () => division.bracket
-      ? generateBracketWiki(division.bracket, schedule, teams, division, {})
-      : null,
+    bracket: () =>
+      division.bracket
+        ? generateBracketWiki(division.bracket, schedule, teams, division, {})
+        : null,
     full: () => {
       const standings = calculateStandings(schedule, division);
-      return generateStandingsWiki(standings, teams, division, {})
-        + '\n' + generateMatchListWiki(schedule, teams, division, {});
+      return (
+        generateStandingsWiki(standings, teams, division, {}) +
+        '\n' +
+        generateMatchListWiki(schedule, teams, division, {})
+      );
     },
   };
 

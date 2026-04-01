@@ -9,10 +9,7 @@ export default function ErrorMessage({ error, onRetry }) {
         <h2 className="font-display text-xl text-qw-loss mb-2">Error Loading Data</h2>
         <p className="text-qw-muted mb-6 font-mono text-sm">{error}</p>
         {onRetry && (
-          <button
-            onClick={onRetry}
-            className="qw-btn"
-          >
+          <button onClick={onRetry} className="qw-btn">
             Try Again
           </button>
         )}

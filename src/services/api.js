@@ -23,7 +23,7 @@ const apiClient = axios.create({
  */
 const handleApiError = (error, endpoint) => {
   console.error(`API Error (${endpoint}):`, error);
-  
+
   if (error.response) {
     throw new Error(`Server error: ${error.response.status} - ${error.response.statusText}`);
   } else if (error.request) {
@@ -39,7 +39,7 @@ const handleApiError = (error, endpoint) => {
 export const fetchStandings = async () => {
   try {
     const response = await apiClient.get('', {
-      params: { endpoint: 'standings' }
+      params: { endpoint: 'standings' },
     });
     return response.data;
   } catch (error) {
@@ -53,7 +53,7 @@ export const fetchStandings = async () => {
 export const fetchPlayers = async () => {
   try {
     const response = await apiClient.get('', {
-      params: { endpoint: 'players' }
+      params: { endpoint: 'players' },
     });
     return response.data;
   } catch (error) {
@@ -67,7 +67,7 @@ export const fetchPlayers = async () => {
 export const fetchGroupGames = async () => {
   try {
     const response = await apiClient.get('', {
-      params: { endpoint: 'groupGames' }
+      params: { endpoint: 'groupGames' },
     });
     return response.data;
   } catch (error) {
@@ -81,7 +81,7 @@ export const fetchGroupGames = async () => {
 export const fetchPlayoffGames = async () => {
   try {
     const response = await apiClient.get('', {
-      params: { endpoint: 'playoffGames' }
+      params: { endpoint: 'playoffGames' },
     });
     return response.data;
   } catch (error) {
@@ -95,7 +95,7 @@ export const fetchPlayoffGames = async () => {
 export const fetchTeams = async () => {
   try {
     const response = await apiClient.get('', {
-      params: { endpoint: 'teams' }
+      params: { endpoint: 'teams' },
     });
     return response.data;
   } catch (error) {
@@ -109,7 +109,7 @@ export const fetchTeams = async () => {
 export const fetchScheduleConfig = async () => {
   try {
     const response = await apiClient.get('', {
-      params: { endpoint: 'scheduleConfig' }
+      params: { endpoint: 'scheduleConfig' },
     });
     return response.data;
   } catch (error) {
@@ -122,21 +122,16 @@ export const fetchScheduleConfig = async () => {
  */
 export const fetchAllTournamentData = async () => {
   try {
-    const [
-      standings,
-      players,
-      groupGames,
-      playoffGames,
-      teams,
-      scheduleConfig
-    ] = await Promise.all([
-      fetchStandings(),
-      fetchPlayers(),
-      fetchGroupGames(),
-      fetchPlayoffGames(),
-      fetchTeams(),
-      fetchScheduleConfig()
-    ]);
+    const [standings, players, groupGames, playoffGames, teams, scheduleConfig] = await Promise.all(
+      [
+        fetchStandings(),
+        fetchPlayers(),
+        fetchGroupGames(),
+        fetchPlayoffGames(),
+        fetchTeams(),
+        fetchScheduleConfig(),
+      ]
+    );
 
     return {
       standings,
@@ -144,7 +139,7 @@ export const fetchAllTournamentData = async () => {
       groupGames,
       playoffGames,
       teams,
-      scheduleConfig
+      scheduleConfig,
     };
   } catch (error) {
     console.error('Error fetching all tournament data:', error);
@@ -159,5 +154,5 @@ export default {
   fetchPlayoffGames,
   fetchTeams,
   fetchScheduleConfig,
-  fetchAllTournamentData
+  fetchAllTournamentData,
 };

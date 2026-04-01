@@ -6,7 +6,10 @@ const POLL_INTERVAL = 60000; // 60 seconds
 const countryToFlag = (code) => {
   if (!code || code.length !== 2) return '';
   return String.fromCodePoint(
-    ...code.toUpperCase().split('').map(c => 0x1F1E6 + c.charCodeAt(0) - 65)
+    ...code
+      .toUpperCase()
+      .split('')
+      .map((c) => 0x1f1e6 + c.charCodeAt(0) - 65)
   );
 };
 
@@ -23,7 +26,7 @@ function StandingsTable({ standings, division }) {
   const hasMultiTier = division.format === 'multi-tier' && division.playoffTiers;
 
   const getTeamCountry = (teamName) => {
-    const team = (division.teams || []).find(t => t.name === teamName);
+    const team = (division.teams || []).find((t) => t.name === teamName);
     return team?.country || '';
   };
 
@@ -47,8 +50,8 @@ function StandingsTable({ standings, division }) {
             let tierColor = null;
 
             if (hasMultiTier) {
-              const tier = division.playoffTiers.find(t => {
-                const [start, end] = t.positions.split('-').map(n => parseInt(n.trim()));
+              const tier = division.playoffTiers.find((t) => {
+                const [start, end] = t.positions.split('-').map((n) => parseInt(n.trim()));
                 return position >= start && position <= end;
               });
               if (tier) {
@@ -71,13 +74,15 @@ function StandingsTable({ standings, division }) {
               badgeClass = 'bg-qw-win/30 text-qw-win';
             }
 
-            const rowBg = advances ? (tierColor || 'bg-qw-win/5') : '';
+            const rowBg = advances ? tierColor || 'bg-qw-win/5' : '';
             const country = getTeamCountry(team.name);
 
             return (
               <tr key={team.name} className={`border-b border-qw-border/30 ${rowBg}`}>
                 <td className="text-center py-2">
-                  <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-[10px] font-display font-bold ${badgeClass}`}>
+                  <span
+                    className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-[10px] font-display font-bold ${badgeClass}`}
+                  >
                     {position}
                   </span>
                 </td>
@@ -88,7 +93,9 @@ function StandingsTable({ standings, division }) {
                         {countryToFlag(country)}
                       </span>
                     )}
-                    <span className={`font-body text-sm ${idx === 0 ? 'text-qw-accent font-semibold' : 'text-white'}`}>
+                    <span
+                      className={`font-body text-sm ${idx === 0 ? 'text-qw-accent font-semibold' : 'text-white'}`}
+                    >
                       {team.name}
                     </span>
                   </div>
@@ -101,7 +108,9 @@ function StandingsTable({ standings, division }) {
                   <span className="text-qw-loss">{team.mapsLost}</span>
                 </td>
                 <td className="text-center">
-                  <span className={`font-display font-bold ${idx === 0 ? 'text-qw-accent' : 'text-white'}`}>
+                  <span
+                    className={`font-display font-bold ${idx === 0 ? 'text-qw-accent' : 'text-white'}`}
+                  >
                     {team.points}
                   </span>
                 </td>
@@ -120,7 +129,7 @@ function RecentResults({ matches }) {
 
   // Get last 10 completed matches, newest first
   const recent = matches
-    .filter(m => m.status === 'completed' && m.maps?.length > 0)
+    .filter((m) => m.status === 'completed' && m.maps?.length > 0)
     .slice(-10)
     .reverse();
 
@@ -128,23 +137,32 @@ function RecentResults({ matches }) {
 
   return (
     <div className="mt-4">
-      <h4 className="text-xs font-display text-qw-muted uppercase tracking-wider mb-2">Recent Results</h4>
+      <h4 className="text-xs font-display text-qw-muted uppercase tracking-wider mb-2">
+        Recent Results
+      </h4>
       <div className="space-y-1">
-        {recent.map(match => {
-          const t1Maps = match.maps.filter(m => (m.score1 || 0) > (m.score2 || 0)).length;
-          const t2Maps = match.maps.filter(m => (m.score2 || 0) > (m.score1 || 0)).length;
+        {recent.map((match) => {
+          const t1Maps = match.maps.filter((m) => (m.score1 || 0) > (m.score2 || 0)).length;
+          const t2Maps = match.maps.filter((m) => (m.score2 || 0) > (m.score1 || 0)).length;
           const t1Won = t1Maps > t2Maps;
           const t2Won = t2Maps > t1Maps;
 
           return (
-            <div key={match.id} className="flex items-center gap-2 px-3 py-1.5 rounded bg-qw-dark/50 text-sm">
-              <span className={`flex-1 text-right truncate ${t1Won ? 'text-qw-win font-semibold' : 'text-white'}`}>
+            <div
+              key={match.id}
+              className="flex items-center gap-2 px-3 py-1.5 rounded bg-qw-dark/50 text-sm"
+            >
+              <span
+                className={`flex-1 text-right truncate ${t1Won ? 'text-qw-win font-semibold' : 'text-white'}`}
+              >
                 {match.team1}
               </span>
               <span className="font-mono text-xs px-2 py-0.5 rounded bg-qw-border/50 text-qw-accent flex-shrink-0">
                 {t1Maps}-{t2Maps}
               </span>
-              <span className={`flex-1 truncate ${t2Won ? 'text-qw-win font-semibold' : 'text-white'}`}>
+              <span
+                className={`flex-1 truncate ${t2Won ? 'text-qw-win font-semibold' : 'text-white'}`}
+              >
                 {match.team2}
               </span>
               {match.date && (
@@ -172,13 +190,19 @@ function SimpleBracket({ bracket, schedule }) {
 
     // Map roundHint to schedule round values
     const hintToRound = {
-      'quarter': 'quarter', 'semi': 'semi', 'final': 'final', 'third': 'third',
-      'grand-final': 'grand', 'losers-r1': 'lr1', 'losers-r2': 'lr2',
-      'losers-r3': 'lr3', 'losers-final': 'lfinal',
+      quarter: 'quarter',
+      semi: 'semi',
+      final: 'final',
+      third: 'third',
+      'grand-final': 'grand',
+      'losers-r1': 'lr1',
+      'losers-r2': 'lr2',
+      'losers-r3': 'lr3',
+      'losers-final': 'lfinal',
     };
     const scheduleRound = hintToRound[roundHint] || roundHint;
 
-    const match = schedule.find(m => {
+    const match = schedule.find((m) => {
       const mt1 = m.team1?.toLowerCase();
       const mt2 = m.team2?.toLowerCase();
       const roundMatch = !scheduleRound || m.round === scheduleRound;
@@ -186,8 +210,8 @@ function SimpleBracket({ bracket, schedule }) {
     });
 
     if (!match || !match.maps?.length) return null;
-    const s1 = match.maps.filter(m => (m.score1 || 0) > (m.score2 || 0)).length;
-    const s2 = match.maps.filter(m => (m.score2 || 0) > (m.score1 || 0)).length;
+    const s1 = match.maps.filter((m) => (m.score1 || 0) > (m.score2 || 0)).length;
+    const s2 = match.maps.filter((m) => (m.score2 || 0) > (m.score1 || 0)).length;
     // Flip scores if teams are reversed
     if (match.team1?.toLowerCase() === t2) return { s1: s2, s2: s1 };
     return { s1, s2 };
@@ -200,24 +224,40 @@ function SimpleBracket({ bracket, schedule }) {
     const hasTeams = match.team1 && match.team2;
 
     // Use scoreOverride first, then look up from schedule
-    let score = match.scoreOverride || (hasTeams ? findScore(match.team1, match.team2, roundHint) : null);
+    let score =
+      match.scoreOverride || (hasTeams ? findScore(match.team1, match.team2, roundHint) : null);
     const t1Won = score && score.s1 > score.s2;
     const t2Won = score && score.s2 > score.s1;
 
     return (
-      <div key={match.id} className="flex flex-col rounded bg-qw-dark border border-qw-border/50 overflow-hidden text-xs font-mono w-full max-w-[220px]">
-        <div className={`flex items-center justify-between px-2 py-1 ${t1Won ? 'bg-qw-win/10' : ''}`}>
-          <span className={`truncate ${t1Won ? 'text-qw-win font-semibold' : hasTeams ? 'text-white' : 'text-qw-muted'}`}>
+      <div
+        key={match.id}
+        className="flex flex-col rounded bg-qw-dark border border-qw-border/50 overflow-hidden text-xs font-mono w-full max-w-[220px]"
+      >
+        <div
+          className={`flex items-center justify-between px-2 py-1 ${t1Won ? 'bg-qw-win/10' : ''}`}
+        >
+          <span
+            className={`truncate ${t1Won ? 'text-qw-win font-semibold' : hasTeams ? 'text-white' : 'text-qw-muted'}`}
+          >
             {t1}
           </span>
-          {score && <span className={`ml-1 ${t1Won ? 'text-qw-win' : 'text-qw-muted'}`}>{score.s1}</span>}
+          {score && (
+            <span className={`ml-1 ${t1Won ? 'text-qw-win' : 'text-qw-muted'}`}>{score.s1}</span>
+          )}
         </div>
         <div className="border-t border-qw-border/30" />
-        <div className={`flex items-center justify-between px-2 py-1 ${t2Won ? 'bg-qw-win/10' : ''}`}>
-          <span className={`truncate ${t2Won ? 'text-qw-win font-semibold' : hasTeams ? 'text-white' : 'text-qw-muted'}`}>
+        <div
+          className={`flex items-center justify-between px-2 py-1 ${t2Won ? 'bg-qw-win/10' : ''}`}
+        >
+          <span
+            className={`truncate ${t2Won ? 'text-qw-win font-semibold' : hasTeams ? 'text-white' : 'text-qw-muted'}`}
+          >
             {t2}
           </span>
-          {score && <span className={`ml-1 ${t2Won ? 'text-qw-win' : 'text-qw-muted'}`}>{score.s2}</span>}
+          {score && (
+            <span className={`ml-1 ${t2Won ? 'text-qw-win' : 'text-qw-muted'}`}>{score.s2}</span>
+          )}
         </div>
       </div>
     );
@@ -231,9 +271,7 @@ function SimpleBracket({ bracket, schedule }) {
     return (
       <div className="space-y-2">
         <h5 className="text-[10px] font-display text-qw-muted uppercase tracking-wider">{label}</h5>
-        <div className="space-y-2">
-          {arr.map(m => renderMatch(m, roundHint))}
-        </div>
+        <div className="space-y-2">{arr.map((m) => renderMatch(m, roundHint))}</div>
       </div>
     );
   };
@@ -242,7 +280,9 @@ function SimpleBracket({ bracket, schedule }) {
 
   return (
     <div className="mt-4">
-      <h4 className="text-xs font-display text-qw-muted uppercase tracking-wider mb-3">Playoff Bracket</h4>
+      <h4 className="text-xs font-display text-qw-muted uppercase tracking-wider mb-3">
+        Playoff Bracket
+      </h4>
       <div className="flex flex-wrap gap-6 overflow-x-auto pb-2">
         {winners.round32 && renderRound('Round of 32', winners.round32, 'r32')}
         {winners.round16 && renderRound('Round of 16', winners.round16, 'r16')}
@@ -257,16 +297,16 @@ function SimpleBracket({ bracket, schedule }) {
       {/* Losers bracket (simplified) */}
       {bracket.losers && Object.keys(bracket.losers).length > 0 && (
         <div className="mt-4">
-          <h5 className="text-[10px] font-display text-qw-muted uppercase tracking-wider mb-2">Losers Bracket</h5>
+          <h5 className="text-[10px] font-display text-qw-muted uppercase tracking-wider mb-2">
+            Losers Bracket
+          </h5>
           <div className="flex flex-wrap gap-6 overflow-x-auto pb-2">
             {Object.entries(bracket.losers).map(([roundKey, matches]) => {
-              const label = roundKey === 'final' ? 'Losers Final' : `Losers ${roundKey.replace('round', 'R')}`;
-              const hint = roundKey === 'final' ? 'losers-final' : `losers-${roundKey.replace('round', 'r')}`;
-              return (
-                <div key={roundKey}>
-                  {renderRound(label, matches, hint)}
-                </div>
-              );
+              const label =
+                roundKey === 'final' ? 'Losers Final' : `Losers ${roundKey.replace('round', 'R')}`;
+              const hint =
+                roundKey === 'final' ? 'losers-final' : `losers-${roundKey.replace('round', 'r')}`;
+              return <div key={roundKey}>{renderRound(label, matches, hint)}</div>;
             })}
           </div>
         </div>
@@ -283,7 +323,7 @@ function DivisionSection({ division }) {
   const standingsByGroup = useMemo(() => {
     if (!division.standings) return {};
     const groups = {};
-    division.standings.forEach(team => {
+    division.standings.forEach((team) => {
       const g = team.group || 'A';
       if (!groups[g]) groups[g] = [];
       groups[g].push(team);
@@ -301,14 +341,10 @@ function DivisionSection({ division }) {
         onClick={() => setExpanded(!expanded)}
         className="w-full bg-qw-dark px-4 py-3 border-b border-qw-border flex items-center justify-between hover:bg-qw-dark/80 transition-colors"
       >
-        <h3 className="font-display font-bold text-lg text-qw-accent">
-          {division.name}
-        </h3>
+        <h3 className="font-display font-bold text-lg text-qw-accent">{division.name}</h3>
         <div className="flex items-center gap-3 text-xs text-qw-muted">
           <span>{teams.length} teams</span>
-          <span className={`transition-transform ${expanded ? 'rotate-180' : ''}`}>
-            &#9660;
-          </span>
+          <span className={`transition-transform ${expanded ? 'rotate-180' : ''}`}>&#9660;</span>
         </div>
       </button>
 
@@ -317,16 +353,18 @@ function DivisionSection({ division }) {
           {/* Standings per group */}
           {numGroups > 0 && (
             <div className={`grid gap-4 ${numGroups > 1 ? 'md:grid-cols-2' : ''}`}>
-              {Object.entries(standingsByGroup).sort().map(([groupName, groupStandings]) => (
-                <div key={groupName}>
-                  {numGroups > 1 && (
-                    <h4 className="text-xs font-display text-qw-muted uppercase tracking-wider mb-2">
-                      Group {groupName}
-                    </h4>
-                  )}
-                  <StandingsTable standings={groupStandings} division={division} />
-                </div>
-              ))}
+              {Object.entries(standingsByGroup)
+                .sort()
+                .map(([groupName, groupStandings]) => (
+                  <div key={groupName}>
+                    {numGroups > 1 && (
+                      <h4 className="text-xs font-display text-qw-muted uppercase tracking-wider mb-2">
+                        Group {groupName}
+                      </h4>
+                    )}
+                    <StandingsTable standings={groupStandings} division={division} />
+                  </div>
+                ))}
             </div>
           )}
 
@@ -341,23 +379,25 @@ function DivisionSection({ division }) {
           <RecentResults matches={schedule} />
 
           {/* Bracket */}
-          {division.bracket && (division.bracket.winners?.semiFinals || division.bracket.winners?.final) && (
-            <SimpleBracket bracket={division.bracket} schedule={schedule} />
-          )}
+          {division.bracket &&
+            (division.bracket.winners?.semiFinals || division.bracket.winners?.final) && (
+              <SimpleBracket bracket={division.bracket} schedule={schedule} />
+            )}
 
           {/* Multi-tier brackets */}
           {division.playoffTiers && division.playoffTiers.length > 0 && (
             <div className="space-y-4 mt-4">
-              {division.playoffTiers.map(tier => (
-                tier.bracket && (
-                  <div key={tier.id}>
-                    <h4 className="text-xs font-display text-qw-accent uppercase tracking-wider mb-2">
-                      {tier.name}
-                    </h4>
-                    <SimpleBracket bracket={tier.bracket} schedule={schedule} />
-                  </div>
-                )
-              ))}
+              {division.playoffTiers.map(
+                (tier) =>
+                  tier.bracket && (
+                    <div key={tier.id}>
+                      <h4 className="text-xs font-display text-qw-accent uppercase tracking-wider mb-2">
+                        {tier.name}
+                      </h4>
+                      <SimpleBracket bracket={tier.bracket} schedule={schedule} />
+                    </div>
+                  )
+              )}
             </div>
           )}
         </div>
@@ -436,10 +476,7 @@ export default function PublicTournament({ slug }) {
               ? `No tournament with slug "${slug}" was found.`
               : `Failed to load tournament: ${error}`}
           </p>
-          <a
-            href="/"
-            className="qw-btn inline-block px-6 py-2 text-sm font-display font-semibold"
-          >
+          <a href="/" className="qw-btn inline-block px-6 py-2 text-sm font-display font-semibold">
             Go to QWICKY
           </a>
         </div>
@@ -453,8 +490,10 @@ export default function PublicTournament({ slug }) {
   // Stats
   const totalTeams = divisions.reduce((sum, d) => sum + (d.teams?.length || 0), 0);
   const totalMatches = divisions.reduce((sum, d) => sum + (d.schedule?.length || 0), 0);
-  const completedMatches = divisions.reduce((sum, d) =>
-    sum + (d.schedule?.filter(m => m.status === 'completed')?.length || 0), 0);
+  const completedMatches = divisions.reduce(
+    (sum, d) => sum + (d.schedule?.filter((m) => m.status === 'completed')?.length || 0),
+    0
+  );
 
   return (
     <div className="min-h-screen bg-qw-darker">
@@ -465,7 +504,9 @@ export default function PublicTournament({ slug }) {
             <div className="flex items-center gap-3">
               <span className="font-logo text-lg text-qw-accent tracking-wider">QW</span>
               <span className="text-qw-border">|</span>
-              <span className="text-xs text-qw-muted font-mono uppercase tracking-wider">Tournament</span>
+              <span className="text-xs text-qw-muted font-mono uppercase tracking-wider">
+                Tournament
+              </span>
             </div>
             <div className="text-xs text-qw-muted font-mono">
               {lastUpdated && (
@@ -506,7 +547,8 @@ export default function PublicTournament({ slug }) {
               <span className="text-qw-accent">{totalTeams}</span> teams
             </span>
             <span className="font-mono text-xs">
-              <span className="text-qw-win">{completedMatches}</span>/<span className="text-white">{totalMatches}</span> matches
+              <span className="text-qw-win">{completedMatches}</span>/
+              <span className="text-white">{totalMatches}</span> matches
             </span>
           </div>
         </div>
@@ -518,7 +560,7 @@ export default function PublicTournament({ slug }) {
           </div>
         ) : (
           <div className="space-y-4">
-            {divisions.map(div => (
+            {divisions.map((div) => (
               <DivisionSection key={div.id} division={div} />
             ))}
           </div>

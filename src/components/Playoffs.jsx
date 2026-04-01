@@ -17,23 +17,30 @@ const DEFAULT_BRACKET = {
 };
 
 function BracketMatch({ match, seriesSummary, onUpdateTeam }) {
-  const result = match.team1 && match.team2 
-    ? findBracketMatch(match.team1, match.team2, seriesSummary)
-    : null;
+  const result =
+    match.team1 && match.team2 ? findBracketMatch(match.team1, match.team2, seriesSummary) : null;
 
   const score1 = result?.team1Score || 0;
   const score2 = result?.team2Score || 0;
   const hasResult = result && (score1 > 0 || score2 > 0);
-  const winner = hasResult ? (score1 > score2 ? match.team1 : score2 > score1 ? match.team2 : null) : null;
+  const winner = hasResult
+    ? score1 > score2
+      ? match.team1
+      : score2 > score1
+        ? match.team2
+        : null
+    : null;
 
   return (
     <div className="qw-panel w-64 overflow-hidden">
       {/* Team 1 */}
-      <div className={`
+      <div
+        className={`
         flex items-center justify-between px-3 py-2 border-b border-qw-border
         ${winner === match.team1 ? 'bg-qw-win/20' : ''}
         ${winner && winner !== match.team1 ? 'opacity-50' : ''}
-      `}>
+      `}
+      >
         <input
           type="text"
           value={match.team1}
@@ -42,20 +49,24 @@ function BracketMatch({ match, seriesSummary, onUpdateTeam }) {
           className="bg-transparent border-none outline-none font-body font-semibold text-white w-36 placeholder:text-qw-muted/50"
         />
         {hasResult && (
-          <span className={`font-mono font-bold text-lg w-8 text-center
+          <span
+            className={`font-mono font-bold text-lg w-8 text-center
             ${score1 > score2 ? 'text-qw-win' : score1 < score2 ? 'text-qw-loss' : 'text-white'}
-          `}>
+          `}
+          >
             {score1}
           </span>
         )}
       </div>
 
       {/* Team 2 */}
-      <div className={`
+      <div
+        className={`
         flex items-center justify-between px-3 py-2
         ${winner === match.team2 ? 'bg-qw-win/20' : ''}
         ${winner && winner !== match.team2 ? 'opacity-50' : ''}
-      `}>
+      `}
+      >
         <input
           type="text"
           value={match.team2}
@@ -64,9 +75,11 @@ function BracketMatch({ match, seriesSummary, onUpdateTeam }) {
           className="bg-transparent border-none outline-none font-body font-semibold text-white w-36 placeholder:text-qw-muted/50"
         />
         {hasResult && (
-          <span className={`font-mono font-bold text-lg w-8 text-center
+          <span
+            className={`font-mono font-bold text-lg w-8 text-center
             ${score2 > score1 ? 'text-qw-win' : score2 < score1 ? 'text-qw-loss' : 'text-white'}
-          `}>
+          `}
+          >
             {score2}
           </span>
         )}
@@ -101,31 +114,35 @@ export default function Playoffs({ matches, bracketConfig, setBracketConfig }) {
   }, [matches]);
 
   const handleUpdateTeam = (matchId, teamSlot, value) => {
-    setBracketConfig(prev => {
+    setBracketConfig((prev) => {
       const updated = { ...prev };
-      
+
       // Find and update the match
-      ['quarterFinals', 'semiFinals'].forEach(round => {
-        const matchIdx = updated[round].findIndex(m => m.id === matchId);
+      ['quarterFinals', 'semiFinals'].forEach((round) => {
+        const matchIdx = updated[round].findIndex((m) => m.id === matchId);
         if (matchIdx !== -1) {
           updated[round] = [...updated[round]];
           updated[round][matchIdx] = {
             ...updated[round][matchIdx],
-            [teamSlot]: value
+            [teamSlot]: value,
           };
         }
       });
-      
+
       if (updated.final.id === matchId) {
         updated.final = { ...updated.final, [teamSlot]: value };
       }
-      
+
       return updated;
     });
   };
 
   const handleResetBracket = () => {
-    if (window.confirm('Are you sure you want to reset the bracket? This will clear all team assignments.')) {
+    if (
+      window.confirm(
+        'Are you sure you want to reset the bracket? This will clear all team assignments.'
+      )
+    ) {
       setBracketConfig(DEFAULT_BRACKET);
     }
   };
@@ -146,17 +163,18 @@ export default function Playoffs({ matches, bracketConfig, setBracketConfig }) {
       </div>
 
       <p className="text-qw-muted text-sm">
-        Enter team names in the bracket slots. Scores will automatically update when matches 
-        between those teams are found in the fetched matches.
+        Enter team names in the bracket slots. Scores will automatically update when matches between
+        those teams are found in the fetched matches.
       </p>
 
       {/* Bracket Visualization */}
       <div className="qw-panel p-8 overflow-x-auto">
         <div className="flex items-center justify-center gap-4 min-w-[900px]">
-          
           {/* Quarter Finals */}
           <div className="flex flex-col gap-4">
-            <div className="text-center font-display text-sm text-qw-accent mb-2">QUARTER FINALS</div>
+            <div className="text-center font-display text-sm text-qw-accent mb-2">
+              QUARTER FINALS
+            </div>
             <div className="flex flex-col gap-16">
               {/* QF 1 & 2 */}
               <div className="flex flex-col gap-4">
@@ -255,7 +273,8 @@ export default function Playoffs({ matches, bracketConfig, setBracketConfig }) {
                 key={key}
                 className="px-2 py-1 bg-qw-dark rounded text-xs font-mono text-qw-muted"
               >
-                {data.teams[0]} vs {data.teams[1]} ({data.mapWins[data.teams[0]]}-{data.mapWins[data.teams[1]]})
+                {data.teams[0]} vs {data.teams[1]} ({data.mapWins[data.teams[0]]}-
+                {data.mapWins[data.teams[1]]})
               </span>
             ))
           )}

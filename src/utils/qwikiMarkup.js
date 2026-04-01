@@ -27,7 +27,7 @@ function calculateStandings(schedule, division) {
 
   // Initialize ALL teams from division.teams first
   const teams = division.teams || [];
-  teams.forEach(team => {
+  teams.forEach((team) => {
     standings[team.name] = {
       name: team.name,
       group: team.group || 'A',
@@ -36,35 +36,43 @@ function calculateStandings(schedule, division) {
       mapsWon: 0,
       mapsLost: 0,
       matchesWon: 0,
-      matchesLost: 0
+      matchesLost: 0,
     };
   });
 
-  const groupMatches = schedule.filter(m => m.round === 'group' && m.maps?.length > 0);
+  const groupMatches = schedule.filter((m) => m.round === 'group' && m.maps?.length > 0);
 
-  groupMatches.forEach(match => {
+  groupMatches.forEach((match) => {
     const { team1, team2, maps, group } = match;
     // Ensure teams exist (in case schedule has teams not in teams list)
-    [team1, team2].forEach(t => {
-      if (!standings[t]) standings[t] = {
-        name: t, group: group || 'A', played: 0, points: 0,
-        mapsWon: 0, mapsLost: 0, matchesWon: 0, matchesLost: 0
-      };
+    [team1, team2].forEach((t) => {
+      if (!standings[t])
+        standings[t] = {
+          name: t,
+          group: group || 'A',
+          played: 0,
+          points: 0,
+          mapsWon: 0,
+          mapsLost: 0,
+          matchesWon: 0,
+          matchesLost: 0,
+        };
     });
 
-    let t1 = 0, t2 = 0;
-    maps.forEach(m => {
-      if (m.score1 > m.score2) { 
-        t1++; 
-        standings[team1].mapsWon++; 
+    let t1 = 0,
+      t2 = 0;
+    maps.forEach((m) => {
+      if (m.score1 > m.score2) {
+        t1++;
+        standings[team1].mapsWon++;
         standings[team2].mapsLost++;
         if (isPlayAll) {
           standings[team1].points += pointsWin;
           standings[team2].points += pointsLoss;
         }
-      } else if (m.score2 > m.score1) { 
-        t2++; 
-        standings[team2].mapsWon++; 
+      } else if (m.score2 > m.score1) {
+        t2++;
+        standings[team2].mapsWon++;
         standings[team1].mapsLost++;
         if (isPlayAll) {
           standings[team2].points += pointsWin;
@@ -74,15 +82,16 @@ function calculateStandings(schedule, division) {
     });
 
     if (t1 > 0 || t2 > 0) {
-      standings[team1].played++; standings[team2].played++;
-      if (t1 > t2) { 
+      standings[team1].played++;
+      standings[team2].played++;
+      if (t1 > t2) {
         standings[team1].matchesWon++;
         standings[team2].matchesLost++;
         if (!isPlayAll) {
           standings[team1].points += pointsWin;
           standings[team2].points += pointsLoss;
         }
-      } else if (t2 > t1) { 
+      } else if (t2 > t1) {
         standings[team2].matchesWon++;
         standings[team1].matchesLost++;
         if (!isPlayAll) {
@@ -93,10 +102,11 @@ function calculateStandings(schedule, division) {
     }
   });
 
-  return Object.values(standings).sort((a, b) => 
-    b.points - a.points || 
-    (b.mapsWon - b.mapsLost) - (a.mapsWon - a.mapsLost) || 
-    b.mapsWon - a.mapsWon
+  return Object.values(standings).sort(
+    (a, b) =>
+      b.points - a.points ||
+      b.mapsWon - b.mapsLost - (a.mapsWon - a.mapsLost) ||
+      b.mapsWon - a.mapsWon
   );
 }
 
@@ -105,7 +115,7 @@ function getTierForPosition(position, playoffTiers) {
   if (!playoffTiers || playoffTiers.length === 0) return null;
 
   for (const tier of playoffTiers) {
-    const [start, end] = tier.positions.split('-').map(n => parseInt(n.trim()));
+    const [start, end] = tier.positions.split('-').map((n) => parseInt(n.trim()));
     if (position >= start && position <= end) {
       return tier;
     }
@@ -118,13 +128,13 @@ function getTierBackgroundColor(tierId, isFirst) {
   if (isFirst) return 'up'; // First place always gets 'up' (green)
 
   const tierBgColors = {
-    gold: 'up',       // Green background for gold tier
+    gold: 'up', // Green background for gold tier
     silver: 'stayup', // Light green/teal for silver tier
-    bronze: 'stay',   // Yellow/neutral for bronze tier
+    bronze: 'stay', // Yellow/neutral for bronze tier
     copper: 'stay',
     iron: 'staydown',
     wood: 'staydown',
-    stone: 'down'
+    stone: 'down',
   };
   return tierBgColors[tierId] || 'stay';
 }
@@ -132,7 +142,7 @@ function getTierBackgroundColor(tierId, isFirst) {
 // Generate Liquipedia GroupTableStart format
 function generateStandingsWiki(standings, teams, division, options) {
   const groups = {};
-  standings.forEach(t => {
+  standings.forEach((t) => {
     const g = t.group || 'A';
     if (!groups[g]) groups[g] = [];
     groups[g].push(t);
@@ -140,114 +150,122 @@ function generateStandingsWiki(standings, teams, division, options) {
 
   let wiki = '';
 
-  Object.entries(groups).sort().forEach(([groupName, gs]) => {
-    // Build info message based on format
-    let info = '';
-    if (division.format === 'multi-tier' && division.playoffTiers) {
-      const tierDescriptions = division.playoffTiers.map(tier =>
-        `${tier.positions}: ${tier.name}`
-      ).join(', ');
-      info = `Playoff Tiers: ${tierDescriptions}`;
-    } else {
-      info = division.advanceCount ? `Top ${division.advanceCount} advance to Playoffs.` : '';
-    }
-
-    wiki += `{{GroupTableStart|${options.title || division.name} - Group ${groupName}|width=100%|finished=|date=|info=${info}}}\n`;
-    wiki += `{{GroupTableColHeader|Team|games=1|maps=1|diff=1}}\n`;
-
-    gs.forEach((t, i) => {
-      const teamInfo = getTeamInfo(teams, t.name);
-      const cleanName = unicodeToAscii(t.name).trim();
-      const diff = t.mapsWon - t.mapsLost;
-      const diffStr = diff > 0 ? `+${diff}` : `${diff}`;
-      const position = i + 1;
-
-      // Determine background based on format
-      let bg = 'stay';
-
+  Object.entries(groups)
+    .sort()
+    .forEach(([groupName, gs]) => {
+      // Build info message based on format
+      let info = '';
       if (division.format === 'multi-tier' && division.playoffTiers) {
-        // Multi-tier playoffs: use tier-based coloring
-        const tier = getTierForPosition(position, division.playoffTiers);
-        if (tier) {
-          bg = getTierBackgroundColor(tier.id, i === 0);
-        } else {
-          bg = 'stay'; // Not in any tier
-        }
+        const tierDescriptions = division.playoffTiers
+          .map((tier) => `${tier.positions}: ${tier.name}`)
+          .join(', ');
+        info = `Playoff Tiers: ${tierDescriptions}`;
       } else {
-        // Standard playoffs: use advanceCount
-        if (i < (division.advanceCount || 2)) bg = 'up';
-        else if (i < (division.advanceCount || 2) + 2) bg = 'stayup';
-        else if (i >= gs.length - 2) bg = 'staydown';
+        info = division.advanceCount ? `Top ${division.advanceCount} advance to Playoffs.` : '';
       }
-      
-      const players = teamInfo.players || '';
-      const flag = teamInfo.country || 'eu';
-      
-      wiki += `{{GroupTableSlot|{{TeamAbbr|link=false|${cleanName}|${players}|flag=${flag}}}|place=${i + 1}|win_m=${t.matchesWon}|lose_m=${t.matchesLost}|win_g=${t.mapsWon}|lose_g=${t.mapsLost}|diff=${diffStr}|bg=${bg}}}\n`;
+
+      wiki += `{{GroupTableStart|${options.title || division.name} - Group ${groupName}|width=100%|finished=|date=|info=${info}}}\n`;
+      wiki += `{{GroupTableColHeader|Team|games=1|maps=1|diff=1}}\n`;
+
+      gs.forEach((t, i) => {
+        const teamInfo = getTeamInfo(teams, t.name);
+        const cleanName = unicodeToAscii(t.name).trim();
+        const diff = t.mapsWon - t.mapsLost;
+        const diffStr = diff > 0 ? `+${diff}` : `${diff}`;
+        const position = i + 1;
+
+        // Determine background based on format
+        let bg = 'stay';
+
+        if (division.format === 'multi-tier' && division.playoffTiers) {
+          // Multi-tier playoffs: use tier-based coloring
+          const tier = getTierForPosition(position, division.playoffTiers);
+          if (tier) {
+            bg = getTierBackgroundColor(tier.id, i === 0);
+          } else {
+            bg = 'stay'; // Not in any tier
+          }
+        } else {
+          // Standard playoffs: use advanceCount
+          if (i < (division.advanceCount || 2)) bg = 'up';
+          else if (i < (division.advanceCount || 2) + 2) bg = 'stayup';
+          else if (i >= gs.length - 2) bg = 'staydown';
+        }
+
+        const players = teamInfo.players || '';
+        const flag = teamInfo.country || 'eu';
+
+        wiki += `{{GroupTableSlot|{{TeamAbbr|link=false|${cleanName}|${players}|flag=${flag}}}|place=${i + 1}|win_m=${t.matchesWon}|lose_m=${t.matchesLost}|win_g=${t.mapsWon}|lose_g=${t.mapsLost}|diff=${diffStr}|bg=${bg}}}\n`;
+      });
+
+      wiki += `{{GroupTableEnd}}\n\n`;
     });
-    
-    wiki += `{{GroupTableEnd}}\n\n`;
-  });
-  
+
   return wiki;
 }
 
 // Generate Liquipedia MatchList format
-function generateMatchListWiki(schedule, teams, division, options) {
-  const groupMatches = schedule.filter(m => m.round === 'group' && m.maps?.length > 0);
+function generateMatchListWiki(schedule, teams, _division, _options) {
+  const groupMatches = schedule.filter((m) => m.round === 'group' && m.maps?.length > 0);
   if (!groupMatches.length) return '';
 
   // Group matches by week/date
   const weeks = {};
-  groupMatches.forEach(m => {
+  groupMatches.forEach((m) => {
     const weekKey = m.date || 'TBD';
     if (!weeks[weekKey]) weeks[weekKey] = [];
     weeks[weekKey].push(m);
   });
 
   let wiki = `{{MatchList\n|width=100%\n|title=Detailed Results\n|uncollapsed-maps=false\n\n`;
-  
+
   let matchNum = 1;
-  Object.entries(weeks).sort((a, b) => a[0].localeCompare(b[0])).forEach(([weekDate, matches], weekIdx) => {
-    matches.forEach((match, matchIdx) => {
-      const team1Info = getTeamInfo(teams, match.team1);
-      const team2Info = getTeamInfo(teams, match.team2);
-      const cleanTeam1 = unicodeToAscii(match.team1).trim();
-      const cleanTeam2 = unicodeToAscii(match.team2).trim();
-      
-      // Calculate series score
-      let s1 = 0, s2 = 0;
-      (match.maps || []).forEach(map => {
-        if (map.score1 > map.score2) s1++;
-        else if (map.score2 > map.score1) s2++;
+  Object.entries(weeks)
+    .sort((a, b) => a[0].localeCompare(b[0]))
+    .forEach(([weekDate, matches], weekIdx) => {
+      matches.forEach((match, matchIdx) => {
+        const team1Info = getTeamInfo(teams, match.team1);
+        const team2Info = getTeamInfo(teams, match.team2);
+        const cleanTeam1 = unicodeToAscii(match.team1).trim();
+        const cleanTeam2 = unicodeToAscii(match.team2).trim();
+
+        // Calculate series score
+        let s1 = 0,
+          s2 = 0;
+        (match.maps || []).forEach((map) => {
+          if (map.score1 > map.score2) s1++;
+          else if (map.score2 > map.score1) s2++;
+        });
+
+        const winner = s1 > s2 ? 1 : s2 > s1 ? 2 : '';
+
+        // Add week title for first match of each week
+        const titleLine =
+          matchIdx === 0
+            ? `|title=Week ${weekIdx + 1}\n|date=${weekDate} 23:59 {{Abbr/CET}}\n`
+            : '';
+
+        wiki += `|match${matchNum}={{MatchMaps\n`;
+        if (titleLine) wiki += titleLine;
+        wiki += `|player1={{Abbr|${cleanTeam1}|${team1Info.players || ''}}}|player1flag=${team1Info.country || 'eu'}\n`;
+        wiki += `|player2={{Abbr|${cleanTeam2}|${team2Info.players || ''}}}|player2flag=${team2Info.country || 'eu'}\n`;
+        wiki += `|winner=${winner}\n`;
+        wiki += `|games1=${s1} |games2=${s2}\n`;
+        wiki += `|details={{BracketMatchSummary\n`;
+        wiki += `|date=\n`;
+
+        // Add individual maps
+        (match.maps || []).forEach((map, mapIdx) => {
+          const mapWinner = map.score1 > map.score2 ? 1 : map.score2 > map.score1 ? 2 : '';
+          const mapName = (map.map || '').toUpperCase();
+          wiki += `|map${mapIdx + 1}win=${mapWinner}|map${mapIdx + 1}=${mapName}|map${mapIdx + 1}p1frags=${map.score1 || ''}|map${mapIdx + 1}p2frags=${map.score2 || ''}|map${mapIdx + 1}p1lineup=|map${mapIdx + 1}p2lineup=\n`;
+        });
+
+        wiki += `}}\n}}\n\n`;
+        matchNum++;
       });
-      
-      const winner = s1 > s2 ? 1 : s2 > s1 ? 2 : '';
-      
-      // Add week title for first match of each week
-      const titleLine = matchIdx === 0 ? `|title=Week ${weekIdx + 1}\n|date=${weekDate} 23:59 {{Abbr/CET}}\n` : '';
-      
-      wiki += `|match${matchNum}={{MatchMaps\n`;
-      if (titleLine) wiki += titleLine;
-      wiki += `|player1={{Abbr|${cleanTeam1}|${team1Info.players || ''}}}|player1flag=${team1Info.country || 'eu'}\n`;
-      wiki += `|player2={{Abbr|${cleanTeam2}|${team2Info.players || ''}}}|player2flag=${team2Info.country || 'eu'}\n`;
-      wiki += `|winner=${winner}\n`;
-      wiki += `|games1=${s1} |games2=${s2}\n`;
-      wiki += `|details={{BracketMatchSummary\n`;
-      wiki += `|date=\n`;
-      
-      // Add individual maps
-      (match.maps || []).forEach((map, mapIdx) => {
-        const mapWinner = map.score1 > map.score2 ? 1 : map.score2 > map.score1 ? 2 : '';
-        const mapName = (map.map || '').toUpperCase();
-        wiki += `|map${mapIdx + 1}win=${mapWinner}|map${mapIdx + 1}=${mapName}|map${mapIdx + 1}p1frags=${map.score1 || ''}|map${mapIdx + 1}p2frags=${map.score2 || ''}|map${mapIdx + 1}p1lineup=|map${mapIdx + 1}p2lineup=\n`;
-      });
-      
-      wiki += `}}\n}}\n\n`;
-      matchNum++;
     });
-  });
-  
+
   wiki += `}}\n`;
   return wiki;
 }
@@ -296,7 +314,7 @@ function generateMultiTierBracketWiki(tiers, schedule, teams, division, options)
     return orderA - orderB;
   });
 
-  sortedTiers.forEach(tier => {
+  sortedTiers.forEach((tier) => {
     // Generate subsection header
     wiki += `=== ${tier.name} (Positions ${tier.positions}) ===\n\n`;
 
@@ -314,7 +332,7 @@ function generateMultiTierBracketWiki(tiers, schedule, teams, division, options)
     const tierOptions = {
       ...options,
       title: tier.name, // Use tier name as title
-      skipSectionHeader: true // Flag to skip section header in generators
+      skipSectionHeader: true, // Flag to skip section header in generators
     };
 
     if (isDoubleElim) {
@@ -339,7 +357,7 @@ function generateMultiTierBracketWiki(tiers, schedule, teams, division, options)
 }
 
 // Tier-specific bracket generators (without section headers)
-function generateTier4SEBracket(bracket, schedule, teams, tier, options) {
+function generateTier4SEBracket(bracket, schedule, teams, _tier, _options) {
   const getMatchResult = (t1, t2, roundHint) => getMatchResultHelper(t1, t2, schedule, roundHint);
   const formatTeamData = (t, score, isWinner) => formatTeamHelper(t, teams, score, isWinner);
   const getDetails = (t1, t2, roundHint) => generateMatchDetailsHelper(t1, t2, schedule, roundHint);
@@ -403,7 +421,7 @@ function generateTier4SEBracket(bracket, schedule, teams, tier, options) {
   return wiki;
 }
 
-function generateTier8SEBracket(bracket, schedule, teams, tier, options) {
+function generateTier8SEBracket(bracket, schedule, teams, _tier, _options) {
   const getMatchResult = (t1, t2, roundHint) => getMatchResultHelper(t1, t2, schedule, roundHint);
   const formatTeamData = (t, score, isWinner) => formatTeamHelper(t, teams, score, isWinner);
   const getDetails = (t1, t2, roundHint) => generateMatchDetailsHelper(t1, t2, schedule, roundHint);
@@ -478,7 +496,7 @@ function generateTier8SEBracket(bracket, schedule, teams, tier, options) {
   return wiki;
 }
 
-function generateTier16SEBracket(bracket, schedule, teams, tier, options) {
+function generateTier16SEBracket(bracket, schedule, teams, _tier, _options) {
   const getMatchResult = (t1, t2, roundHint) => getMatchResultHelper(t1, t2, schedule, roundHint);
   const formatTeamData = (t, score, isWinner) => formatTeamHelper(t, teams, score, isWinner);
   const getDetails = (t1, t2, roundHint) => generateMatchDetailsHelper(t1, t2, schedule, roundHint);
@@ -571,7 +589,7 @@ function generateTier16SEBracket(bracket, schedule, teams, tier, options) {
   return wiki;
 }
 
-function generateTier32SEBracket(bracket, schedule, teams, tier, options) {
+function generateTier32SEBracket(_bracket, _schedule, _teams, _tier, _options) {
   // For 32-team tiers, we use a simplified listing approach
   // Full 32SE bracket is quite large
   let wiki = `{{32SEBracket\n`;
@@ -582,7 +600,7 @@ function generateTier32SEBracket(bracket, schedule, teams, tier, options) {
   return wiki;
 }
 
-function generateTierDoubleElimBracket(bracket, schedule, teams, tier, options) {
+function generateTierDoubleElimBracket(bracket, schedule, teams, tier, _options) {
   // For double elim tiers, output a structured list
   let wiki = `\n`;
   wiki += `'''Winners Bracket'''\n`;
@@ -616,12 +634,22 @@ function generateTierDoubleElimBracket(bracket, schedule, teams, tier, options) 
 }
 
 const ROUND_HINT_TO_SCHEDULE = {
-  'round32': 'r32',    'round16': 'r16',
-  'quarter': 'quarter', 'semi': 'semi', 'final': 'final',
-  'losers-r1': 'lr1',  'losers-r2': 'lr2', 'losers-r3': 'lr3',
-  'losers-r4': 'lr4',  'losers-r5': 'lr5', 'losers-r6': 'lr6',
-  'losers-semi': 'lsemi', 'losers-final': 'lfinal',
-  'grand-final': 'grand', 'bracket-reset': 'bracket-reset', 'third': 'third',
+  round32: 'r32',
+  round16: 'r16',
+  quarter: 'quarter',
+  semi: 'semi',
+  final: 'final',
+  'losers-r1': 'lr1',
+  'losers-r2': 'lr2',
+  'losers-r3': 'lr3',
+  'losers-r4': 'lr4',
+  'losers-r5': 'lr5',
+  'losers-r6': 'lr6',
+  'losers-semi': 'lsemi',
+  'losers-final': 'lfinal',
+  'grand-final': 'grand',
+  'bracket-reset': 'bracket-reset',
+  third: 'third',
 };
 
 // Helper functions for bracket generation
@@ -634,57 +662,59 @@ function getMatchResultHelper(team1, team2, schedule, roundHint) {
   const teamMatch = (m) => {
     const mt1 = normalize(m.team1);
     const mt2 = normalize(m.team2);
-    return (mt1 === t1Norm && mt2 === t2Norm) ||
-           (mt1 === t2Norm && mt2 === t1Norm);
+    return (mt1 === t1Norm && mt2 === t2Norm) || (mt1 === t2Norm && mt2 === t1Norm);
   };
 
   // Round-aware disambiguation
   let match = null;
   if (roundHint) {
-    match = schedule.find(m => m.round === roundHint && teamMatch(m));
+    match = schedule.find((m) => m.round === roundHint && teamMatch(m));
     if (!match) {
       const translated = ROUND_HINT_TO_SCHEDULE[roundHint];
       if (translated && translated !== roundHint) {
-        match = schedule.find(m => m.round === translated && teamMatch(m));
+        match = schedule.find((m) => m.round === translated && teamMatch(m));
       }
     }
     // roundHint was provided but no match found — match not played yet
   } else {
-    match = schedule.filter(m => m.round !== 'group').find(m => teamMatch(m));
+    match = schedule.filter((m) => m.round !== 'group').find((m) => teamMatch(m));
     if (!match) {
-      match = schedule.find(m => teamMatch(m));
+      match = schedule.find((m) => teamMatch(m));
     }
   }
 
   if (!match?.maps?.length) return { maps: [], s1: 0, s2: 0 };
 
-  let s1 = 0, s2 = 0;
+  let s1 = 0,
+    s2 = 0;
   const isNormal = normalize(match.team1) === t1Norm;
-  
-  match.maps.forEach(map => {
+
+  match.maps.forEach((map) => {
     // Handle forfeit - team that forfeited loses the map
     if (map.forfeit) {
       if (isNormal) {
-        if (map.forfeit === 'team1') s2++;  // team1 forfeited, team2 wins
-        else s1++;  // team2 forfeited, team1 wins
+        if (map.forfeit === 'team1')
+          s2++; // team1 forfeited, team2 wins
+        else s1++; // team2 forfeited, team1 wins
       } else {
-        if (map.forfeit === 'team2') s2++;  // team2 forfeited, team1 (swapped) wins
-        else s1++;  // team1 forfeited, team2 (swapped) wins
+        if (map.forfeit === 'team2')
+          s2++; // team2 forfeited, team1 (swapped) wins
+        else s1++; // team1 forfeited, team2 (swapped) wins
       }
     } else {
       // Normal scoring
       if (isNormal) {
-        if (map.score1 > map.score2) s1++; 
+        if (map.score1 > map.score2) s1++;
         else if (map.score2 > map.score1) s2++;
       } else {
-        if (map.score2 > map.score1) s1++; 
+        if (map.score2 > map.score1) s1++;
         else if (map.score1 > map.score2) s2++;
       }
     }
   });
-  
-  return { 
-    maps: match.maps.map(m => ({
+
+  return {
+    maps: match.maps.map((m) => ({
       map: m.map,
       p1frags: isNormal ? m.score1 : m.score2,
       p2frags: isNormal ? m.score2 : m.score1,
@@ -692,22 +722,30 @@ function getMatchResultHelper(team1, team2, schedule, roundHint) {
         if (m.forfeit) {
           // If forfeited, determine winner based on who forfeited
           if (isNormal) {
-            return m.forfeit === 'team1' ? 2 : 1;  // team1 FF -> team2 wins (2), team2 FF -> team1 wins (1)
+            return m.forfeit === 'team1' ? 2 : 1; // team1 FF -> team2 wins (2), team2 FF -> team1 wins (1)
           } else {
-            return m.forfeit === 'team2' ? 2 : 1;  // reversed
+            return m.forfeit === 'team2' ? 2 : 1; // reversed
           }
         } else {
           // Normal winner determination
-          return isNormal ? 
-            (m.score1 > m.score2 ? 1 : m.score2 > m.score1 ? 2 : '') : 
-            (m.score2 > m.score1 ? 1 : m.score1 > m.score2 ? 2 : '');
+          return isNormal
+            ? m.score1 > m.score2
+              ? 1
+              : m.score2 > m.score1
+                ? 2
+                : ''
+            : m.score2 > m.score1
+              ? 1
+              : m.score1 > m.score2
+                ? 2
+                : '';
         }
       })(),
-      forfeit: m.forfeit,  // Pass through forfeit info
-      isNormal: isNormal  // Pass through team order
+      forfeit: m.forfeit, // Pass through forfeit info
+      isNormal: isNormal, // Pass through team order
     })),
-    s1, 
-    s2 
+    s1,
+    s2,
   };
 }
 
@@ -720,7 +758,7 @@ function formatTeamHelper(teamName, teams, score, isWinner) {
     name: cleanName,
     flag: info.country || 'eu',
     score: score !== undefined && score !== null ? score : '',
-    win: isWinner ? '1' : ''
+    win: isWinner ? '1' : '',
   };
 }
 
@@ -731,43 +769,42 @@ function generateMatchDetailsHelper(team1, team2, schedule, roundHint) {
   const teamMatch = (m) => {
     const mt1 = normalize(m.team1);
     const mt2 = normalize(m.team2);
-    return (mt1 === t1Norm && mt2 === t2Norm) ||
-           (mt1 === t2Norm && mt2 === t1Norm);
+    return (mt1 === t1Norm && mt2 === t2Norm) || (mt1 === t2Norm && mt2 === t1Norm);
   };
 
   // Use same round-aware lookup as getMatchResultHelper
   let match = null;
   if (roundHint) {
-    match = schedule.find(m => m.round === roundHint && teamMatch(m));
+    match = schedule.find((m) => m.round === roundHint && teamMatch(m));
     if (!match) {
       const translated = ROUND_HINT_TO_SCHEDULE[roundHint];
       if (translated && translated !== roundHint) {
-        match = schedule.find(m => m.round === translated && teamMatch(m));
+        match = schedule.find((m) => m.round === translated && teamMatch(m));
       }
     }
   } else {
-    match = schedule.filter(m => m.round !== 'group').find(m => teamMatch(m));
+    match = schedule.filter((m) => m.round !== 'group').find((m) => teamMatch(m));
     if (!match) {
-      match = schedule.find(m => teamMatch(m));
+      match = schedule.find((m) => teamMatch(m));
     }
   }
-  
+
   if (!result.maps.length) return '';
-  
+
   let details = `{{BracketMatchSummary\n|date=\n|finished=\n|stream=\n`;
-  
+
   // Check if any maps have forfeits
-  const hasMapForfeits = result.maps.some(m => m.forfeit);
+  const _hasMapForfeits = result.maps.some((m) => m.forfeit);
   const forfeitedMaps = [];
-  
+
   result.maps.forEach((m, i) => {
     const mapNum = i + 1;
-    
+
     if (m.forfeit) {
       // Map forfeited - show W/L instead of frags
       const isNormal = m.isNormal;
       let p1display, p2display;
-      
+
       if (isNormal) {
         // Normal order: team1 vs team2
         p1display = m.forfeit === 'team1' ? 'L' : 'W';
@@ -777,9 +814,9 @@ function generateMatchDetailsHelper(team1, team2, schedule, roundHint) {
         p1display = m.forfeit === 'team2' ? 'L' : 'W';
         p2display = m.forfeit === 'team2' ? 'W' : 'L';
       }
-      
+
       details += `|map${mapNum}=${(m.map || '').toLowerCase()} |map${mapNum}win=${m.winner} |map${mapNum}p1frags=${p1display} |map${mapNum}p2frags=${p2display}\n`;
-      
+
       // Track which map was forfeited for comment
       // m.forfeit stores which team in the MATCH forfeited ('team1' or 'team2')
       // We need to map this to the actual team name from match object
@@ -795,7 +832,7 @@ function generateMatchDetailsHelper(team1, team2, schedule, roundHint) {
       details += `|map${mapNum}=${(m.map || '').toLowerCase()} |map${mapNum}win=${m.winner} |map${mapNum}p1frags=${m.p1frags || ''} |map${mapNum}p2frags=${m.p2frags || ''}\n`;
     }
   });
-  
+
   // Add forfeit comments
   if (match?.forfeit) {
     const forfeitTeam = match.forfeit === 'team1' ? match.team1 : match.team2;
@@ -803,7 +840,7 @@ function generateMatchDetailsHelper(team1, team2, schedule, roundHint) {
   } else if (forfeitedMaps.length > 0) {
     details += `|comment=${forfeitedMaps.join('; ')}\n`;
   }
-  
+
   details += `}}`;
   return details;
 }
@@ -1170,7 +1207,7 @@ function generateDoubleElimBracket(bracket, schedule, teams, division, options) 
   wiki += `\n`;
   wiki += `\n`;
   wiki += `\n\n`;
-  
+
   // List teams for manual formatting
   wiki += `=== Winners Bracket ===\n`;
   if (bracket.winners?.quarterFinals) {
@@ -1184,13 +1221,13 @@ function generateDoubleElimBracket(bracket, schedule, teams, division, options) 
     wiki += `  Match ${i + 1}: ${m.team1 || 'TBD'} vs ${m.team2 || 'TBD'}\n`;
   });
   wiki += `Final: ${bracket.winners?.final?.team1 || 'TBD'} vs ${bracket.winners?.final?.team2 || 'TBD'}\n\n`;
-  
+
   wiki += `=== Losers Bracket ===\n`;
   wiki += `(Losers bracket structure varies by tournament size)\n\n`;
-  
+
   wiki += `=== Grand Final ===\n`;
   wiki += `${bracket.grandFinal?.team1 || 'TBD'} vs ${bracket.grandFinal?.team2 || 'TBD'}\n`;
-  
+
   return wiki;
 }
 
@@ -1228,8 +1265,14 @@ function generatePageHeader(tournament, opts = {}) {
 
   // Maps from first division
   const firstDiv = divisions[0];
-  const maps = [...new Set((firstDiv?.schedule || []).flatMap(m => (m.maps || []).map(mp => mp.map)).filter(Boolean))];
-  maps.slice(0, 5).forEach((map, i) => { header += `|map${i + 1}=${map}\n`; });
+  const maps = [
+    ...new Set(
+      (firstDiv?.schedule || []).flatMap((m) => (m.maps || []).map((mp) => mp.map)).filter(Boolean)
+    ),
+  ];
+  maps.slice(0, 5).forEach((map, i) => {
+    header += `|map${i + 1}=${map}\n`;
+  });
 
   header += `}}\n`;
 
@@ -1263,7 +1306,8 @@ function generateDivisionPage(division, tournament, opts = {}) {
   let body = generateStandingsWiki(standings, division.teams || [], division, {});
 
   if (includeMatches) {
-    body += '\n' + generateMatchListWiki(division.schedule || [], division.teams || [], division, {});
+    body +=
+      '\n' + generateMatchListWiki(division.schedule || [], division.teams || [], division, {});
   }
 
   return header + body + '\n__NOTOC__\n';
@@ -1305,12 +1349,18 @@ function generateOverviewPage(tournament, opts = {}) {
   let body = `'''${tournament.name}''' is a [[${tournament.mode || '4on4'}]] event.\n\n`;
   body += '== Maps ==\n';
 
-  const maps = [...new Set((tournament.divisions || []).flatMap(d =>
-    (d.schedule || []).flatMap(m => (m.maps || []).map(mp => mp.map)).filter(Boolean)
-  ))];
+  const maps = [
+    ...new Set(
+      (tournament.divisions || []).flatMap((d) =>
+        (d.schedule || []).flatMap((m) => (m.maps || []).map((mp) => mp.map)).filter(Boolean)
+      )
+    ),
+  ];
   if (maps.length > 0) {
     body += '{{Maps\n|title=\n';
-    maps.slice(0, 10).forEach((map, i) => { body += `|map${i + 1}=${map}\n`; });
+    maps.slice(0, 10).forEach((map, i) => {
+      body += `|map${i + 1}=${map}\n`;
+    });
     body += '}}\n';
   }
 

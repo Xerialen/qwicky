@@ -76,7 +76,7 @@ export const useAllTournamentData = (divisionName = 'Division 1') => {
     try {
       const result = await api.fetchAllTournamentData();
       setRawData(result);
-      
+
       // Transform to division format for wiki components
       const division = transformToDivision(result, divisionName);
       setData(division);

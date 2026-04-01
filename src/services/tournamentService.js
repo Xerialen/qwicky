@@ -12,10 +12,12 @@ import { supabase, isSupabaseEnabled } from './supabaseClient.js';
  * Matches the ID used by the Discord bot and match_submissions table.
  */
 export function tournamentSlug(name) {
-  return (name || '')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '') || 'unnamed';
+  return (
+    (name || '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '') || 'unnamed'
+  );
 }
 
 // ── DB ↔ UI converters ────────────────────────────────────────────────────────
@@ -106,9 +108,7 @@ function uiDivisionToDB(div, tournamentId, sortOrder = 0) {
 
 function dbTeamToUI(row) {
   // players stored as JSONB string array in DB; as comma-sep string in UI
-  const players = Array.isArray(row.players)
-    ? row.players.join(', ')
-    : (row.players || '');
+  const players = Array.isArray(row.players) ? row.players.join(', ') : row.players || '';
   return {
     id: row.id,
     name: row.name,
@@ -120,9 +120,15 @@ function dbTeamToUI(row) {
 }
 
 function uiTeamToDB(team, divisionId, tournamentId, sortOrder = 0) {
-  const players = typeof team.players === 'string'
-    ? team.players.split(',').map(p => p.trim()).filter(Boolean)
-    : (Array.isArray(team.players) ? team.players : []);
+  const players =
+    typeof team.players === 'string'
+      ? team.players
+          .split(',')
+          .map((p) => p.trim())
+          .filter(Boolean)
+      : Array.isArray(team.players)
+        ? team.players
+        : [];
   return {
     id: team.id,
     division_id: divisionId,
@@ -206,9 +212,8 @@ export async function syncTournament(tournament, activeDivisionId = null) {
 
   try {
     // 1. Upsert tournament row
-    const { error: tErr } = await supabase
-      .from('tournaments')
-      .upsert({
+    const { error: tErr } = await supabase.from('tournaments').upsert(
+      {
         id: tid,
         name: tournament.name,
         mode: tournament.mode || '4on4',
@@ -217,7 +222,9 @@ export async function syncTournament(tournament, activeDivisionId = null) {
         active_division_id: activeDivisionId || null,
         settings: tournament.settings || {},
         updated_at: new Date().toISOString(),
-      }, { onConflict: 'id' });
+      },
+      { onConflict: 'id' }
+    );
     if (tErr) throw tErr;
 
     // 2. Upsert each division and its nested data
@@ -240,15 +247,15 @@ export async function syncTournament(tournament, activeDivisionId = null) {
 
       // 4. Upsert matches
       if (div.schedule?.length) {
-        const matchRows = div.schedule.map(m => uiMatchToDB(m, div.id, tid));
+        const matchRows = div.schedule.map((m) => uiMatchToDB(m, div.id, tid));
         const { error: matchErr } = await supabase
           .from('matches')
           .upsert(matchRows, { onConflict: 'id' });
         if (matchErr) throw matchErr;
 
         // Upsert match_maps for all matches that have maps
-        const allMaps = div.schedule.flatMap(m =>
-          (m.maps || []).map(mp => uiMapToDB(mp, m.id, div.id))
+        const allMaps = div.schedule.flatMap((m) =>
+          (m.maps || []).map((mp) => uiMapToDB(mp, m.id, div.id))
         );
         if (allMaps.length) {
           const { error: mapErr } = await supabase
@@ -260,14 +267,15 @@ export async function syncTournament(tournament, activeDivisionId = null) {
 
       // 5. Upsert bracket JSONB
       if (div.bracket && Object.keys(div.bracket).length) {
-        const { error: bErr } = await supabase
-          .from('brackets')
-          .upsert({
+        const { error: bErr } = await supabase.from('brackets').upsert(
+          {
             division_id: div.id,
             tier_id: null,
             bracket_data: div.bracket,
             updated_at: new Date().toISOString(),
-          }, { onConflict: 'division_id,tier_id' });
+          },
+          { onConflict: 'division_id,tier_id' }
+        );
         if (bErr) throw bErr;
       }
     }
@@ -298,7 +306,7 @@ export async function listTournaments() {
     return [];
   }
 
-  return (data || []).map(t => ({
+  return (data || []).map((t) => ({
     id: t.id,
     name: t.name,
     mode: t.mode,
@@ -328,63 +336,65 @@ export async function loadTournament(tournamentId) {
     .eq('tournament_id', tournamentId)
     .order('sort_order');
 
-  const divisions = await Promise.all((divData || []).map(async divRow => {
-    const div = dbDivisionToUI(divRow);
+  const divisions = await Promise.all(
+    (divData || []).map(async (divRow) => {
+      const div = dbDivisionToUI(divRow);
 
-    // Teams
-    const { data: teamData } = await supabase
-      .from('teams')
-      .select('*')
-      .eq('division_id', div.id)
-      .order('sort_order');
-    div.teams = (teamData || []).map(dbTeamToUI);
-
-    // Matches
-    const { data: matchData } = await supabase
-      .from('matches')
-      .select('*')
-      .eq('division_id', div.id)
-      .order('round_num')
-      .order('id');
-
-    // Match maps (batch fetch for all matches)
-    const matchMapsByMatchId = {};
-    if (matchData?.length) {
-      const matchIds = matchData.map(m => m.id);
-      const { data: mapData } = await supabase
-        .from('match_maps')
+      // Teams
+      const { data: teamData } = await supabase
+        .from('teams')
         .select('*')
-        .in('match_id', matchIds);
-      (mapData || []).forEach(mp => {
-        if (!matchMapsByMatchId[mp.match_id]) matchMapsByMatchId[mp.match_id] = [];
-        matchMapsByMatchId[mp.match_id].push({
-          id: mp.id,
-          map: mp.map_name,
-          score1: mp.score1,
-          score2: mp.score2,
-          forfeit: mp.forfeit,
+        .eq('division_id', div.id)
+        .order('sort_order');
+      div.teams = (teamData || []).map(dbTeamToUI);
+
+      // Matches
+      const { data: matchData } = await supabase
+        .from('matches')
+        .select('*')
+        .eq('division_id', div.id)
+        .order('round_num')
+        .order('id');
+
+      // Match maps (batch fetch for all matches)
+      const matchMapsByMatchId = {};
+      if (matchData?.length) {
+        const matchIds = matchData.map((m) => m.id);
+        const { data: mapData } = await supabase
+          .from('match_maps')
+          .select('*')
+          .in('match_id', matchIds);
+        (mapData || []).forEach((mp) => {
+          if (!matchMapsByMatchId[mp.match_id]) matchMapsByMatchId[mp.match_id] = [];
+          matchMapsByMatchId[mp.match_id].push({
+            id: mp.id,
+            map: mp.map_name,
+            score1: mp.score1,
+            score2: mp.score2,
+            forfeit: mp.forfeit,
+          });
         });
-      });
-    }
+      }
 
-    div.schedule = (matchData || []).map(m => ({
-      ...dbMatchToUI(m),
-      maps: matchMapsByMatchId[m.id] || [],
-    }));
+      div.schedule = (matchData || []).map((m) => ({
+        ...dbMatchToUI(m),
+        maps: matchMapsByMatchId[m.id] || [],
+      }));
 
-    // Bracket
-    const { data: bracketData } = await supabase
-      .from('brackets')
-      .select('bracket_data')
-      .eq('division_id', div.id)
-      .is('tier_id', null)
-      .maybeSingle();
-    if (bracketData) {
-      div.bracket = bracketData.bracket_data;
-    }
+      // Bracket
+      const { data: bracketData } = await supabase
+        .from('brackets')
+        .select('bracket_data')
+        .eq('division_id', div.id)
+        .is('tier_id', null)
+        .maybeSingle();
+      if (bracketData) {
+        div.bracket = bracketData.bracket_data;
+      }
 
-    return div;
-  }));
+      return div;
+    })
+  );
 
   return {
     id: tData.id,
@@ -421,7 +431,14 @@ export async function getAliases(tournamentId) {
 /**
  * Add a new alias mapping.
  */
-export async function addAlias({ tournamentId, teamId, alias, canonical, isGlobal = false, source = 'manual' }) {
+export async function addAlias({
+  tournamentId,
+  teamId,
+  alias,
+  canonical,
+  isGlobal = false,
+  source = 'manual',
+}) {
   if (!isSupabaseEnabled) return null;
 
   const { data, error } = await supabase
@@ -446,7 +463,14 @@ export async function addAlias({ tournamentId, teamId, alias, canonical, isGloba
 /**
  * Write an audit log entry (fire-and-forget).
  */
-export async function logAudit({ tournamentId, action, entityType, entityId, actor = 'admin', diff }) {
+export async function logAudit({
+  tournamentId,
+  action,
+  entityType,
+  entityId,
+  actor = 'admin',
+  diff,
+}) {
   if (!isSupabaseEnabled) return;
   await supabase.from('audit_log').insert({
     tournament_id: tournamentId,

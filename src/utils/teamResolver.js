@@ -12,13 +12,7 @@
 //    60 — fuzzy medium (Jaro-Winkler ≥ 0.80 or Dice coefficient ≥ 0.70)
 //     0 — no match
 
-import {
-  normalize,
-  normalizeFull,
-  normalizeToCore,
-  describe,
-  generateTagVariants,
-} from './nameNormalizer.js';
+import { normalize, normalizeToCore, describe, generateTagVariants } from './nameNormalizer.js';
 
 // ── Jaro-Winkler distance ─────────────────────────────────────────────────────
 
@@ -129,9 +123,9 @@ export function resolveTeamName(rawName, divisionTeams, globalAliases = []) {
   const { normalized, normalizedFull, core, tag, tagVariants } = desc;
 
   // ── Build lookup maps from division teams ──────────────────────────────────
-  const teamsByName = new Map();   // normalizedName → team
-  const teamsByTag  = new Map();   // normalizedTag (and variants) → team
-  const teamsByCore = new Map();   // normalizedCore → team
+  const teamsByName = new Map(); // normalizedName → team
+  const teamsByTag = new Map(); // normalizedTag (and variants) → team
+  const teamsByCore = new Map(); // normalizedCore → team
 
   for (const team of divisionTeams) {
     const normName = normalize(team.name);
@@ -236,7 +230,7 @@ export function resolveTeamName(rawName, divisionTeams, globalAliases = []) {
   if (aliasCanonical) {
     const aliasMatch =
       teamsByName.get(normalize(aliasCanonical)) ||
-      divisionTeams.find(t => t.name.toLowerCase() === aliasCanonical.toLowerCase());
+      divisionTeams.find((t) => t.name.toLowerCase() === aliasCanonical.toLowerCase());
     if (aliasMatch) {
       return { match: aliasMatch, confidence: 80, method: 'alias', normalized };
     }
@@ -274,7 +268,7 @@ export function resolveTeamName(rawName, divisionTeams, globalAliases = []) {
   }
 
   // Tier 7: Medium-confidence fuzzy (JW ≥ 0.80 or Dice ≥ 0.70)
-  if (bestJWTeam && bestJW >= 0.80) {
+  if (bestJWTeam && bestJW >= 0.8) {
     return { match: bestJWTeam, confidence: 60, method: 'fuzzy-jw', normalized };
   }
 
@@ -289,7 +283,7 @@ export function resolveTeamName(rawName, divisionTeams, globalAliases = []) {
       bestDiceTeam = team;
     }
   }
-  if (bestDiceTeam && bestDice >= 0.70) {
+  if (bestDiceTeam && bestDice >= 0.7) {
     return { match: bestDiceTeam, confidence: 60, method: 'fuzzy-dice', normalized };
   }
 
@@ -301,7 +295,7 @@ export function resolveTeamName(rawName, divisionTeams, globalAliases = []) {
  * Returns array of two resolution results.
  */
 export function resolveTeams(rawNames, divisionTeams, globalAliases = []) {
-  return rawNames.map(name => resolveTeamName(name, divisionTeams, globalAliases));
+  return rawNames.map((name) => resolveTeamName(name, divisionTeams, globalAliases));
 }
 
 /**

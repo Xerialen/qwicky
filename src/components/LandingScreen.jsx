@@ -51,7 +51,13 @@ export default function LandingScreen({
 
   return (
     <div className="min-h-screen bg-qw-darker flex flex-col items-center justify-center px-4">
-      <input type="file" ref={fileInputRef} onChange={handleFileChange} accept=".json" className="hidden" />
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileChange}
+        accept=".json"
+        className="hidden"
+      />
 
       {/* Branding */}
       <div className="mb-12 text-center">
@@ -70,8 +76,10 @@ export default function LandingScreen({
 
         {!isLoading && hasTournaments && (
           <>
-            <div className="text-[10px] text-qw-muted uppercase tracking-widest">Your tournaments</div>
-            {cloudTournaments.map(t => (
+            <div className="text-[10px] text-qw-muted uppercase tracking-widest">
+              Your tournaments
+            </div>
+            {cloudTournaments.map((t) => (
               <button
                 key={t.id}
                 onClick={() => onLoadFromCloud(t.id)}

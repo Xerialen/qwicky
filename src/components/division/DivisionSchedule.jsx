@@ -40,17 +40,28 @@ function dateForRound(startDate, roundIndex, pace) {
   if (!startDate) return '';
   const daysPerRound = { daily: 1, 'twice-weekly': 4, weekly: 7, biweekly: 14 };
   const interval = daysPerRound[pace];
-  if (!interval) return '';                          // 'flexible' → no date
-  const d = new Date(startDate + 'T00:00:00');      // force local midnight, avoid tz shift
+  if (!interval) return ''; // 'flexible' → no date
+  const d = new Date(startDate + 'T00:00:00'); // force local midnight, avoid tz shift
   d.setDate(d.getDate() + roundIndex * interval);
   return d.toISOString().split('T')[0];
 }
 
-export default function DivisionSchedule({ division, updateDivision, tournamentStartDate, allDivisions = [], tournamentId }) {
+export default function DivisionSchedule({
+  division,
+  updateDivision,
+  tournamentStartDate,
+  allDivisions = [],
+  tournamentId,
+}) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingMatch, setEditingMatch] = useState(null);
   const [newMatch, setNewMatch] = useState({
-    team1: '', team2: '', date: '', time: '', group: '', round: 'group'
+    team1: '',
+    team2: '',
+    date: '',
+    time: '',
+    group: '',
+    round: 'group',
   });
   const [draggedMatchId, setDraggedMatchId] = useState(null);
   const [dragOverRound, setDragOverRound] = useState(null);
@@ -72,12 +83,18 @@ export default function DivisionSchedule({ division, updateDivision, tournamentS
 
   const getDefaultBestOf = (round) => {
     switch (round) {
-      case 'group': return division.groupStageBestOf;
-      case 'quarter': return division.playoffQFBestOf || 3;
-      case 'semi': return division.playoffSFBestOf || 3;
-      case 'final': return division.playoffFinalBestOf;
-      case 'third': return division.playoff3rdBestOf || 3;
-      default: return 3;
+      case 'group':
+        return division.groupStageBestOf;
+      case 'quarter':
+        return division.playoffQFBestOf || 3;
+      case 'semi':
+        return division.playoffSFBestOf || 3;
+      case 'final':
+        return division.playoffFinalBestOf;
+      case 'third':
+        return division.playoff3rdBestOf || 3;
+      default:
+        return 3;
     }
   };
 
@@ -86,17 +103,19 @@ export default function DivisionSchedule({ division, updateDivision, tournamentS
   // tournament has a start date and the pace is not 'flexible'.
   const generateGroupSchedule = () => {
     const teamsByGroup = {};
-    groups.forEach(g => teamsByGroup[g] = []);
+    groups.forEach((g) => (teamsByGroup[g] = []));
 
-    teams.forEach(team => {
+    teams.forEach((team) => {
       if (team.group && teamsByGroup[team.group]) {
         teamsByGroup[team.group].push(team);
       }
     });
 
-    const unassignedCount = teams.filter(t => !t.group).length;
+    const unassignedCount = teams.filter((t) => !t.group).length;
     if (unassignedCount > 0) {
-      alert(`${unassignedCount} team(s) are not assigned to groups. Please assign all teams first in the Teams tab.`);
+      alert(
+        `${unassignedCount} team(s) are not assigned to groups. Please assign all teams first in the Teams tab.`
+      );
       return;
     }
 
@@ -134,7 +153,7 @@ export default function DivisionSchedule({ division, updateDivision, tournamentS
               date,
               time: '',
               status: '',
-              maps: []
+              maps: [],
             });
           });
         });
@@ -146,7 +165,11 @@ export default function DivisionSchedule({ division, updateDivision, tournamentS
       return;
     }
 
-    if (window.confirm(`Generate ${newSchedule.length} group stage matches (${meetings}x round-robin)? This replaces existing schedule.`)) {
+    if (
+      window.confirm(
+        `Generate ${newSchedule.length} group stage matches (${meetings}x round-robin)? This replaces existing schedule.`
+      )
+    ) {
       updateDivision({ schedule: newSchedule });
     }
   };
@@ -168,7 +191,7 @@ export default function DivisionSchedule({ division, updateDivision, tournamentS
       date: newMatch.date,
       time: newMatch.time,
       status: '',
-      maps: []
+      maps: [],
     };
 
     updateDivision({ schedule: [...schedule, match] });
@@ -178,12 +201,12 @@ export default function DivisionSchedule({ division, updateDivision, tournamentS
 
   const handleUpdateMatch = (matchId, updates) => {
     updateDivision({
-      schedule: schedule.map(m => m.id === matchId ? { ...m, ...updates } : m)
+      schedule: schedule.map((m) => (m.id === matchId ? { ...m, ...updates } : m)),
     });
   };
 
   const handleRemoveMatch = (matchId) => {
-    updateDivision({ schedule: schedule.filter(m => m.id !== matchId) });
+    updateDivision({ schedule: schedule.filter((m) => m.id !== matchId) });
   };
 
   const handleDragStart = (e, match) => {
@@ -216,8 +239,9 @@ export default function DivisionSchedule({ division, updateDivision, tournamentS
     const matchId = e.dataTransfer.getData('text/plain');
     if (!matchId) return;
 
-    const sourceMatch = schedule.find(m => m.id === matchId);
-    if (!sourceMatch || sourceMatch.group !== groupName || sourceMatch.roundNum === roundNum) return;
+    const sourceMatch = schedule.find((m) => m.id === matchId);
+    if (!sourceMatch || sourceMatch.group !== groupName || sourceMatch.roundNum === roundNum)
+      return;
 
     const pace = division.matchPace || 'weekly';
     const newDate = dateForRound(tournamentStartDate, roundNum - 1, pace);
@@ -249,7 +273,11 @@ export default function DivisionSchedule({ division, updateDivision, tournamentS
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed');
-      setDiscordToast({ type: data.channels > 0 ? 'success' : 'warn', message: data.channels > 0 ? `Posted to ${data.channels} channel(s)` : 'No registered channels' });
+      setDiscordToast({
+        type: data.channels > 0 ? 'success' : 'warn',
+        message:
+          data.channels > 0 ? `Posted to ${data.channels} channel(s)` : 'No registered channels',
+      });
     } catch (err) {
       setDiscordToast({ type: 'error', message: err.message });
     } finally {
@@ -260,8 +288,8 @@ export default function DivisionSchedule({ division, updateDivision, tournamentS
 
   const groupedMatches = useMemo(() => {
     const grouped = { groups: {}, playoffs: [] };
-    
-    schedule.forEach(match => {
+
+    schedule.forEach((match) => {
       if (match.round === 'group' && match.group) {
         if (!grouped.groups[match.group]) grouped.groups[match.group] = [];
         grouped.groups[match.group].push(match);
@@ -284,7 +312,7 @@ export default function DivisionSchedule({ division, updateDivision, tournamentS
 
     // Multi-tier playoffs
     if (division.format === 'multi-tier' && division.playoffTiers) {
-      division.playoffTiers.forEach(tier => {
+      division.playoffTiers.forEach((tier) => {
         const tierName = tier.name.replace(' Playoffs', ''); // "Gold Playoffs" → "Gold"
         const tierTeams = tier.teams || 4;
 
@@ -307,8 +335,10 @@ export default function DivisionSchedule({ division, updateDivision, tournamentS
       const teamCount = division.playoffTeams || 4;
       if (teamCount >= 32) list.push({ id: 'r32', label: 'Round of 32' });
       if (teamCount >= 16) list.push({ id: 'r16', label: 'Round of 16' });
-      if (division.playoffQFBestOf > 0 || teamCount >= 8) list.push({ id: 'quarter', label: 'Quarter Final' });
-      if (division.playoffSFBestOf > 0 || teamCount >= 4) list.push({ id: 'semi', label: 'Semi Final' });
+      if (division.playoffQFBestOf > 0 || teamCount >= 8)
+        list.push({ id: 'quarter', label: 'Quarter Final' });
+      if (division.playoffSFBestOf > 0 || teamCount >= 4)
+        list.push({ id: 'semi', label: 'Semi Final' });
       list.push({ id: 'final', label: isDouble ? 'Winners Final' : 'Final' });
       if (isDouble) {
         list.push({ id: 'lr1', label: 'Losers R1' });
@@ -325,7 +355,15 @@ export default function DivisionSchedule({ division, updateDivision, tournamentS
     }
 
     return list;
-  }, [division.format, division.playoffFormat, division.playoffTeams, division.playoffTiers, division.playoffQFBestOf, division.playoffSFBestOf, division.playoff3rdBestOf]);
+  }, [
+    division.format,
+    division.playoffFormat,
+    division.playoffTeams,
+    division.playoffTiers,
+    division.playoffQFBestOf,
+    division.playoffSFBestOf,
+    division.playoff3rdBestOf,
+  ]);
 
   // Helper to render round options with optgroups for edit form
   const renderRoundOptions = () => {
@@ -338,7 +376,7 @@ export default function DivisionSchedule({ division, updateDivision, tournamentS
 
         {isMultiTier && division.playoffTiers ? (
           // Multi-tier playoffs: one optgroup per tier
-          division.playoffTiers.map(tier => {
+          division.playoffTiers.map((tier) => {
             const tierName = tier.name.replace(' Playoffs', '');
             const tierTeams = tier.teams || 4;
 
@@ -353,7 +391,9 @@ export default function DivisionSchedule({ division, updateDivision, tournamentS
                     <option value={`${tier.id}-final`}>{tierName} Final</option>
                   </>
                 )}
-                {tier.bracket?.thirdPlace && <option value={`${tier.id}-third`}>{tierName} 3rd</option>}
+                {tier.bracket?.thirdPlace && (
+                  <option value={`${tier.id}-third`}>{tierName} 3rd</option>
+                )}
               </optgroup>
             );
           })
@@ -388,18 +428,30 @@ export default function DivisionSchedule({ division, updateDivision, tournamentS
   return (
     <div className="space-y-6">
       {discordToast && (
-        <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg text-sm font-semibold transition-all ${
-          discordToast.type === 'success' ? 'bg-qw-win/20 border border-qw-win/40 text-qw-win' :
-          discordToast.type === 'warn' ? 'bg-amber-500/20 border border-amber-500/40 text-amber-300' :
-          'bg-qw-loss/20 border border-qw-loss/40 text-qw-loss'
-        }`}>
+        <div
+          className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg text-sm font-semibold transition-all ${
+            discordToast.type === 'success'
+              ? 'bg-qw-win/20 border border-qw-win/40 text-qw-win'
+              : discordToast.type === 'warn'
+                ? 'bg-amber-500/20 border border-amber-500/40 text-amber-300'
+                : 'bg-qw-loss/20 border border-qw-loss/40 text-qw-loss'
+          }`}
+        >
           {discordToast.message}
-          <button onClick={() => setDiscordToast(null)} className="ml-3 text-xs opacity-60 hover:opacity-100">&times;</button>
+          <button
+            onClick={() => setDiscordToast(null)}
+            className="ml-3 text-xs opacity-60 hover:opacity-100"
+          >
+            &times;
+          </button>
         </div>
       )}
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div className="flex gap-2">
-          <button onClick={generateGroupSchedule} className="px-4 py-2 rounded border border-qw-border text-qw-muted hover:text-white hover:border-qw-accent">
+          <button
+            onClick={generateGroupSchedule}
+            className="px-4 py-2 rounded border border-qw-border text-qw-muted hover:text-white hover:border-qw-accent"
+          >
             🎲 Generate Groups
           </button>
           <button onClick={() => setShowAddForm(!showAddForm)} className="qw-btn">
@@ -424,7 +476,7 @@ export default function DivisionSchedule({ division, updateDivision, tournamentS
       {teams.length > 0 && (
         <div className="p-3 bg-qw-dark rounded border border-qw-border text-sm">
           <span className="text-qw-muted">
-            Teams: {teams.filter(t => t.group).length}/{teams.length} assigned to groups
+            Teams: {teams.filter((t) => t.group).length}/{teams.length} assigned to groups
             {' • '}
             Format: {division.groupMeetings || 1}× round-robin (Bo{division.groupStageBestOf})
             {' • '}
@@ -435,13 +487,18 @@ export default function DivisionSchedule({ division, updateDivision, tournamentS
                 {' • '}
                 <span className="text-white font-semibold">{schedule.length}</span> matches
                 {' • '}
-                <span className="text-qw-win">{schedule.filter(m => m.status === 'completed').length}</span> played
+                <span className="text-qw-win">
+                  {schedule.filter((m) => m.status === 'completed').length}
+                </span>{' '}
+                played
                 {' • '}
-                {schedule.filter(m => m.status !== 'completed').length} pending
+                {schedule.filter((m) => m.status !== 'completed').length} pending
                 {conflicts.length > 0 && (
                   <>
                     {' • '}
-                    <span className="text-yellow-400 font-semibold">{conflicts.length} conflict{conflicts.length !== 1 ? 's' : ''}</span>
+                    <span className="text-yellow-400 font-semibold">
+                      {conflicts.length} conflict{conflicts.length !== 1 ? 's' : ''}
+                    </span>
                   </>
                 )}
               </span>
@@ -456,45 +513,99 @@ export default function DivisionSchedule({ division, updateDivision, tournamentS
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div>
               <label className="block text-qw-muted text-sm mb-1">Team 1</label>
-              <select value={newMatch.team1} onChange={(e) => setNewMatch({ ...newMatch, team1: e.target.value })} className="w-full bg-qw-dark border border-qw-border rounded px-3 py-2 text-white" required>
+              <select
+                value={newMatch.team1}
+                onChange={(e) => setNewMatch({ ...newMatch, team1: e.target.value })}
+                className="w-full bg-qw-dark border border-qw-border rounded px-3 py-2 text-white"
+                required
+              >
                 <option value="">Select...</option>
-                {teams.map(t => <option key={t.id} value={t.name}>{t.name}</option>)}
+                {teams.map((t) => (
+                  <option key={t.id} value={t.name}>
+                    {t.name}
+                  </option>
+                ))}
               </select>
             </div>
             <div>
               <label className="block text-qw-muted text-sm mb-1">Team 2</label>
-              <select value={newMatch.team2} onChange={(e) => setNewMatch({ ...newMatch, team2: e.target.value })} className="w-full bg-qw-dark border border-qw-border rounded px-3 py-2 text-white" required>
+              <select
+                value={newMatch.team2}
+                onChange={(e) => setNewMatch({ ...newMatch, team2: e.target.value })}
+                className="w-full bg-qw-dark border border-qw-border rounded px-3 py-2 text-white"
+                required
+              >
                 <option value="">Select...</option>
-                {teams.filter(t => t.name !== newMatch.team1).map(t => <option key={t.id} value={t.name}>{t.name}</option>)}
+                {teams
+                  .filter((t) => t.name !== newMatch.team1)
+                  .map((t) => (
+                    <option key={t.id} value={t.name}>
+                      {t.name}
+                    </option>
+                  ))}
               </select>
             </div>
             <div>
               <label className="block text-qw-muted text-sm mb-1">Round</label>
-              <select value={newMatch.round} onChange={(e) => setNewMatch({ ...newMatch, round: e.target.value })} className="w-full bg-qw-dark border border-qw-border rounded px-3 py-2 text-white">
-                {rounds.map(r => <option key={r.id} value={r.id}>{r.label}</option>)}
+              <select
+                value={newMatch.round}
+                onChange={(e) => setNewMatch({ ...newMatch, round: e.target.value })}
+                className="w-full bg-qw-dark border border-qw-border rounded px-3 py-2 text-white"
+              >
+                {rounds.map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.label}
+                  </option>
+                ))}
               </select>
             </div>
             {newMatch.round === 'group' && (
               <div>
                 <label className="block text-qw-muted text-sm mb-1">Group</label>
-                <select value={newMatch.group} onChange={(e) => setNewMatch({ ...newMatch, group: e.target.value })} className="w-full bg-qw-dark border border-qw-border rounded px-3 py-2 text-white">
+                <select
+                  value={newMatch.group}
+                  onChange={(e) => setNewMatch({ ...newMatch, group: e.target.value })}
+                  className="w-full bg-qw-dark border border-qw-border rounded px-3 py-2 text-white"
+                >
                   <option value="">Select...</option>
-                  {groups.map(g => <option key={g} value={g}>Group {g}</option>)}
+                  {groups.map((g) => (
+                    <option key={g} value={g}>
+                      Group {g}
+                    </option>
+                  ))}
                 </select>
               </div>
             )}
             <div>
               <label className="block text-qw-muted text-sm mb-1">Date</label>
-              <input type="date" value={newMatch.date} onChange={(e) => setNewMatch({ ...newMatch, date: e.target.value })} className="w-full bg-qw-dark border border-qw-border rounded px-3 py-2 text-white" />
+              <input
+                type="date"
+                value={newMatch.date}
+                onChange={(e) => setNewMatch({ ...newMatch, date: e.target.value })}
+                className="w-full bg-qw-dark border border-qw-border rounded px-3 py-2 text-white"
+              />
             </div>
             <div>
               <label className="block text-qw-muted text-sm mb-1">Time</label>
-              <input type="time" value={newMatch.time} onChange={(e) => setNewMatch({ ...newMatch, time: e.target.value })} className="w-full bg-qw-dark border border-qw-border rounded px-3 py-2 text-white" />
+              <input
+                type="time"
+                value={newMatch.time}
+                onChange={(e) => setNewMatch({ ...newMatch, time: e.target.value })}
+                className="w-full bg-qw-dark border border-qw-border rounded px-3 py-2 text-white"
+              />
             </div>
           </div>
           <div className="flex gap-2 mt-4">
-            <button type="submit" className="qw-btn">Add Match</button>
-            <button type="button" onClick={() => setShowAddForm(false)} className="px-4 py-2 text-qw-muted hover:text-white">Cancel</button>
+            <button type="submit" className="qw-btn">
+              Add Match
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowAddForm(false)}
+              className="px-4 py-2 text-qw-muted hover:text-white"
+            >
+              Cancel
+            </button>
           </div>
         </form>
       )}
@@ -510,79 +621,105 @@ export default function DivisionSchedule({ division, updateDivision, tournamentS
           {Object.keys(groupedMatches.groups).length > 0 && (
             <div className="space-y-4">
               <h3 className="font-display text-lg text-qw-accent">GROUP STAGE</h3>
-              <div className={`grid gap-4 ${Object.keys(groupedMatches.groups).length > 1 ? 'grid-cols-1 md:grid-cols-2' : ''}`}>
-                {Object.entries(groupedMatches.groups).sort().map(([groupName, matches]) => {
-                  // Bucket matches by round so we can render wave headers
-                  const byRound = {};
-                  matches.forEach(m => {
-                    const rn = m.roundNum || 1;
-                    if (!byRound[rn]) byRound[rn] = [];
-                    byRound[rn].push(m);
-                  });
-                  const roundNums = Object.keys(byRound).map(Number).sort((a, b) => a - b);
-                  const showRoundHeaders = roundNums.length > 1;
+              <div
+                className={`grid gap-4 ${Object.keys(groupedMatches.groups).length > 1 ? 'grid-cols-1 md:grid-cols-2' : ''}`}
+              >
+                {Object.entries(groupedMatches.groups)
+                  .sort()
+                  .map(([groupName, matches]) => {
+                    // Bucket matches by round so we can render wave headers
+                    const byRound = {};
+                    matches.forEach((m) => {
+                      const rn = m.roundNum || 1;
+                      if (!byRound[rn]) byRound[rn] = [];
+                      byRound[rn].push(m);
+                    });
+                    const roundNums = Object.keys(byRound)
+                      .map(Number)
+                      .sort((a, b) => a - b);
+                    const showRoundHeaders = roundNums.length > 1;
 
-                  return (
-                    <div key={groupName} className="qw-panel overflow-hidden">
-                      <div className="bg-qw-dark px-4 py-2 border-b border-qw-border flex justify-between">
-                        <h4 className="font-display font-bold text-white">Group {groupName}</h4>
-                        <span className="text-xs text-qw-muted">{matches.length} matches</span>
-                      </div>
-                      <div className="max-h-[70vh] overflow-y-auto">
-                        {roundNums.map(rn => {
-                          const isDropTarget = dragOverRound?.group === groupName && dragOverRound?.roundNum === rn;
-                          return (
-                            <div
-                              key={rn}
-                              onDragOver={(e) => handleRoundDragOver(e, groupName, rn)}
-                              onDrop={(e) => handleRoundDrop(e, groupName, rn)}
-                              className={isDropTarget ? 'bg-qw-accent/10 ring-1 ring-inset ring-qw-accent/40' : ''}
-                            >
-                              {showRoundHeaders && (
-                                <div className="px-3 py-1 bg-qw-darker border-b border-qw-border/50 flex items-center gap-2">
-                                  <span className="text-xs font-mono text-qw-accent">Round {rn}</span>
-                                  {byRound[rn][0]?.date && (
-                                    <span className="text-xs font-mono text-qw-muted">— {byRound[rn][0].date}</span>
-                                  )}
-                                  {tournamentId && (
-                                    <button
-                                      onClick={() => postRoundToDiscord(rn, groupName, byRound[rn])}
-                                      disabled={postingRound === `${groupName}-${rn}`}
-                                      className="ml-auto text-xs text-zinc-500 hover:text-[#5865F2] transition-colors disabled:opacity-40"
-                                      title="Post this round to Discord"
-                                    >
-                                      <svg width="16" height="12" viewBox="0 0 71 55" fill="currentColor"><path d="M60.1 4.9A58.5 58.5 0 0045.4.2a.2.2 0 00-.2.1 40.7 40.7 0 00-1.8 3.7 54 54 0 00-16.2 0A26.4 26.4 0 0025.4.3a.2.2 0 00-.2-.1A58.4 58.4 0 0010.5 5 59.6 59.6 0 00.4 45.2a.3.3 0 00.1.2 58.9 58.9 0 0017.7 9 .2.2 0 00.3-.1 42 42 0 003.6-5.9.2.2 0 00-.1-.3 38.8 38.8 0 01-5.5-2.7.2.2 0 01 0-.4c.4-.3.7-.6 1.1-.8a.2.2 0 01.2 0 42 42 0 0035.8 0 .2.2 0 01.2 0l1.1.9a.2.2 0 010 .3 36.4 36.4 0 01-5.5 2.7.2.2 0 00-.1.3 47.2 47.2 0 003.6 5.9.2.2 0 00.3.1A58.7 58.7 0 0070 45.4a.3.3 0 00.1-.2c1.6-16.7-2.7-31.2-11.5-44A.2.2 0 0058 .5zM23.7 37.1c-3.8 0-6.9-3.5-6.9-7.8s3-7.8 6.9-7.8c3.9 0 7 3.5 6.9 7.8 0 4.3-3 7.8-6.9 7.8zm25.5 0c-3.8 0-6.9-3.5-6.9-7.8s3-7.8 6.9-7.8c3.9 0 7 3.5 6.9 7.8 0 4.3-3.1 7.8-6.9 7.8z"/></svg>
-                                    </button>
-                                  )}
-                                  {isDropTarget && <span className="text-xs text-qw-accent/70">↓ drop here</span>}
+                    return (
+                      <div key={groupName} className="qw-panel overflow-hidden">
+                        <div className="bg-qw-dark px-4 py-2 border-b border-qw-border flex justify-between">
+                          <h4 className="font-display font-bold text-white">Group {groupName}</h4>
+                          <span className="text-xs text-qw-muted">{matches.length} matches</span>
+                        </div>
+                        <div className="max-h-[70vh] overflow-y-auto">
+                          {roundNums.map((rn) => {
+                            const isDropTarget =
+                              dragOverRound?.group === groupName && dragOverRound?.roundNum === rn;
+                            return (
+                              <div
+                                key={rn}
+                                onDragOver={(e) => handleRoundDragOver(e, groupName, rn)}
+                                onDrop={(e) => handleRoundDrop(e, groupName, rn)}
+                                className={
+                                  isDropTarget
+                                    ? 'bg-qw-accent/10 ring-1 ring-inset ring-qw-accent/40'
+                                    : ''
+                                }
+                              >
+                                {showRoundHeaders && (
+                                  <div className="px-3 py-1 bg-qw-darker border-b border-qw-border/50 flex items-center gap-2">
+                                    <span className="text-xs font-mono text-qw-accent">
+                                      Round {rn}
+                                    </span>
+                                    {byRound[rn][0]?.date && (
+                                      <span className="text-xs font-mono text-qw-muted">
+                                        — {byRound[rn][0].date}
+                                      </span>
+                                    )}
+                                    {tournamentId && (
+                                      <button
+                                        onClick={() =>
+                                          postRoundToDiscord(rn, groupName, byRound[rn])
+                                        }
+                                        disabled={postingRound === `${groupName}-${rn}`}
+                                        className="ml-auto text-xs text-zinc-500 hover:text-[#5865F2] transition-colors disabled:opacity-40"
+                                        title="Post this round to Discord"
+                                      >
+                                        <svg
+                                          width="16"
+                                          height="12"
+                                          viewBox="0 0 71 55"
+                                          fill="currentColor"
+                                        >
+                                          <path d="M60.1 4.9A58.5 58.5 0 0045.4.2a.2.2 0 00-.2.1 40.7 40.7 0 00-1.8 3.7 54 54 0 00-16.2 0A26.4 26.4 0 0025.4.3a.2.2 0 00-.2-.1A58.4 58.4 0 0010.5 5 59.6 59.6 0 00.4 45.2a.3.3 0 00.1.2 58.9 58.9 0 0017.7 9 .2.2 0 00.3-.1 42 42 0 003.6-5.9.2.2 0 00-.1-.3 38.8 38.8 0 01-5.5-2.7.2.2 0 01 0-.4c.4-.3.7-.6 1.1-.8a.2.2 0 01.2 0 42 42 0 0035.8 0 .2.2 0 01.2 0l1.1.9a.2.2 0 010 .3 36.4 36.4 0 01-5.5 2.7.2.2 0 00-.1.3 47.2 47.2 0 003.6 5.9.2.2 0 00.3.1A58.7 58.7 0 0070 45.4a.3.3 0 00.1-.2c1.6-16.7-2.7-31.2-11.5-44A.2.2 0 0058 .5zM23.7 37.1c-3.8 0-6.9-3.5-6.9-7.8s3-7.8 6.9-7.8c3.9 0 7 3.5 6.9 7.8 0 4.3-3 7.8-6.9 7.8zm25.5 0c-3.8 0-6.9-3.5-6.9-7.8s3-7.8 6.9-7.8c3.9 0 7 3.5 6.9 7.8 0 4.3-3.1 7.8-6.9 7.8z" />
+                                        </svg>
+                                      </button>
+                                    )}
+                                    {isDropTarget && (
+                                      <span className="text-xs text-qw-accent/70">↓ drop here</span>
+                                    )}
+                                  </div>
+                                )}
+                                <div className="divide-y divide-qw-border">
+                                  {byRound[rn].map((match) => (
+                                    <MatchRow
+                                      key={match.id}
+                                      match={match}
+                                      onUpdate={handleUpdateMatch}
+                                      onRemove={handleRemoveMatch}
+                                      isEditing={editingMatch === match.id}
+                                      setEditing={setEditingMatch}
+                                      showDragHandle={showRoundHeaders}
+                                      isDragging={draggedMatchId === match.id}
+                                      onDragStart={(e) => handleDragStart(e, match)}
+                                      onDragEnd={handleDragEnd}
+                                      division={division}
+                                      renderRoundOptions={renderRoundOptions}
+                                      conflicts={getMatchConflicts(match.id, conflicts)}
+                                    />
+                                  ))}
                                 </div>
-                              )}
-                              <div className="divide-y divide-qw-border">
-                                {byRound[rn].map(match => (
-                                  <MatchRow
-                                    key={match.id}
-                                    match={match}
-                                    onUpdate={handleUpdateMatch}
-                                    onRemove={handleRemoveMatch}
-                                    isEditing={editingMatch === match.id}
-                                    setEditing={setEditingMatch}
-                                    showDragHandle={showRoundHeaders}
-                                    isDragging={draggedMatchId === match.id}
-                                    onDragStart={(e) => handleDragStart(e, match)}
-                                    onDragEnd={handleDragEnd}
-                                    division={division}
-                                    renderRoundOptions={renderRoundOptions}
-                                    conflicts={getMatchConflicts(match.id, conflicts)}
-                                  />
-                                ))}
                               </div>
-                            </div>
-                          );
-                        })}
+                            );
+                          })}
+                        </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
               </div>
             </div>
           )}
@@ -592,8 +729,19 @@ export default function DivisionSchedule({ division, updateDivision, tournamentS
               <h3 className="font-display text-lg text-qw-accent">PLAYOFFS</h3>
               <div className="qw-panel overflow-hidden">
                 <div className="divide-y divide-qw-border">
-                  {groupedMatches.playoffs.map(match => (
-                    <MatchRow key={match.id} match={match} onUpdate={handleUpdateMatch} onRemove={handleRemoveMatch} isEditing={editingMatch === match.id} setEditing={setEditingMatch} showRound division={division} renderRoundOptions={renderRoundOptions} conflicts={getMatchConflicts(match.id, conflicts)} />
+                  {groupedMatches.playoffs.map((match) => (
+                    <MatchRow
+                      key={match.id}
+                      match={match}
+                      onUpdate={handleUpdateMatch}
+                      onRemove={handleRemoveMatch}
+                      isEditing={editingMatch === match.id}
+                      setEditing={setEditingMatch}
+                      showRound
+                      division={division}
+                      renderRoundOptions={renderRoundOptions}
+                      conflicts={getMatchConflicts(match.id, conflicts)}
+                    />
                   ))}
                 </div>
               </div>
@@ -601,16 +749,30 @@ export default function DivisionSchedule({ division, updateDivision, tournamentS
           )}
         </>
       )}
-
     </div>
   );
 }
 
-function MatchRow({ match, onUpdate, onRemove, isEditing, setEditing, showRound, showDragHandle, isDragging, onDragStart, onDragEnd, division, renderRoundOptions, conflicts = [] }) {
+function MatchRow({
+  match,
+  onUpdate,
+  onRemove,
+  isEditing,
+  setEditing,
+  showRound,
+  showDragHandle,
+  isDragging,
+  onDragStart,
+  onDragEnd,
+  division,
+  renderRoundOptions,
+  conflicts = [],
+}) {
   const score = (() => {
     if (!match.maps || match.maps.length === 0) return null;
-    let t1 = 0, t2 = 0;
-    match.maps.forEach(m => {
+    let t1 = 0,
+      t2 = 0;
+    match.maps.forEach((m) => {
       if (m.score1 > m.score2) t1++;
       else if (m.score2 > m.score1) t2++;
     });
@@ -632,78 +794,142 @@ function MatchRow({ match, onUpdate, onRemove, isEditing, setEditing, showRound,
               title="Drag to reorder between rounds"
             >
               <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
-                <circle cx="3" cy="2" r="1.2"/>
-                <circle cx="9" cy="2" r="1.2"/>
-                <circle cx="3" cy="6" r="1.2"/>
-                <circle cx="9" cy="6" r="1.2"/>
-                <circle cx="3" cy="10" r="1.2"/>
-                <circle cx="9" cy="10" r="1.2"/>
+                <circle cx="3" cy="2" r="1.2" />
+                <circle cx="9" cy="2" r="1.2" />
+                <circle cx="3" cy="6" r="1.2" />
+                <circle cx="9" cy="6" r="1.2" />
+                <circle cx="3" cy="10" r="1.2" />
+                <circle cx="9" cy="10" r="1.2" />
               </svg>
             </span>
           )}
           <div className="w-16 text-xs text-qw-muted font-mono">
             <div>{match.date || 'TBD'}</div>
           </div>
-          {showRound && <span className="px-1.5 py-0.5 bg-qw-accent/20 text-qw-accent text-xs rounded uppercase">{match.round}</span>}
+          {showRound && (
+            <span className="px-1.5 py-0.5 bg-qw-accent/20 text-qw-accent text-xs rounded uppercase">
+              {match.round}
+            </span>
+          )}
           {match.meeting > 1 && <span className="text-qw-muted text-xs">#{match.meeting}</span>}
           <div className="flex items-center gap-1.5 flex-1">
-            <span className={`font-body ${score?.t1 > score?.t2 ? 'text-qw-win font-semibold' : 'text-white'}`}>{match.team1}</span>
+            <span
+              className={`font-body ${score?.t1 > score?.t2 ? 'text-qw-win font-semibold' : 'text-white'}`}
+            >
+              {match.team1}
+            </span>
             {score ? (
               <span className="px-1.5 py-0.5 bg-qw-dark rounded font-mono text-xs">
                 <span className={score.t1 > score.t2 ? 'text-qw-win' : ''}>{score.t1}</span>
                 <span className="text-qw-muted mx-0.5">-</span>
                 <span className={score.t2 > score.t1 ? 'text-qw-win' : ''}>{score.t2}</span>
               </span>
-            ) : <span className="text-qw-muted text-xs">vs</span>}
-            <span className={`font-body ${score?.t2 > score?.t1 ? 'text-qw-win font-semibold' : 'text-white'}`}>{match.team2}</span>
-            {match.forfeit && (
-              <span className="px-1.5 py-0.5 bg-red-900/30 border border-red-500/50 text-red-300 text-xs rounded font-semibold">FF</span>
+            ) : (
+              <span className="text-qw-muted text-xs">vs</span>
             )}
-            {!match.forfeit && match.maps?.some(m => m.forfeit) && (
-              <span className="px-1.5 py-0.5 bg-orange-900/30 border border-orange-500/50 text-orange-300 text-xs rounded font-semibold">Map FF</span>
+            <span
+              className={`font-body ${score?.t2 > score?.t1 ? 'text-qw-win font-semibold' : 'text-white'}`}
+            >
+              {match.team2}
+            </span>
+            {match.forfeit && (
+              <span className="px-1.5 py-0.5 bg-red-900/30 border border-red-500/50 text-red-300 text-xs rounded font-semibold">
+                FF
+              </span>
+            )}
+            {!match.forfeit && match.maps?.some((m) => m.forfeit) && (
+              <span className="px-1.5 py-0.5 bg-orange-900/30 border border-orange-500/50 text-orange-300 text-xs rounded font-semibold">
+                Map FF
+              </span>
             )}
             {conflicts.length > 0 && (
               <span
                 className="px-1.5 py-0.5 bg-yellow-900/30 border border-yellow-500/50 text-yellow-400 text-xs rounded font-semibold cursor-help"
-                title={conflicts.map(c => `Conflict: ${c.team} also plays on ${c.date}${c.type === 'cross-division' ? ' (cross-division)' : ''}`).join('\n')}
+                title={conflicts
+                  .map(
+                    (c) =>
+                      `Conflict: ${c.team} also plays on ${c.date}${c.type === 'cross-division' ? ' (cross-division)' : ''}`
+                  )
+                  .join('\n')}
               >
-                {conflicts.length > 1 ? `${conflicts.length} conflicts` : `${conflicts[0].team} double-booked`}
+                {conflicts.length > 1
+                  ? `${conflicts.length} conflicts`
+                  : `${conflicts[0].team} double-booked`}
               </span>
             )}
           </div>
           {match.status === 'scheduled' && (
-            <span className="text-blue-400 text-sm" title="Scheduled">📅</span>
+            <span className="text-blue-400 text-sm" title="Scheduled">
+              📅
+            </span>
           )}
           {match.status === 'live' && (
-            <span className="text-red-400 text-sm animate-pulse" title="Live">🔴</span>
+            <span className="text-red-400 text-sm animate-pulse" title="Live">
+              🔴
+            </span>
           )}
           {match.status === 'completed' && (
-            <span className="text-green-400 text-sm font-bold" title="Completed">✓</span>
+            <span className="text-green-400 text-sm font-bold" title="Completed">
+              ✓
+            </span>
           )}
           <span className="text-qw-muted text-xs">
-            {match.round === 'group' && division?.groupStageType === 'playall' ? 'Go' : 'Bo'}{match.bestOf}
+            {match.round === 'group' && division?.groupStageType === 'playall' ? 'Go' : 'Bo'}
+            {match.bestOf}
           </span>
         </div>
         <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          <button onClick={() => setEditing(isEditing ? null : match.id)} className="p-1 text-qw-muted hover:text-white text-xs">✏️</button>
-          <button onClick={() => onRemove(match.id)} className="p-1 text-red-400 hover:text-red-300 text-xs">✕</button>
+          <button
+            onClick={() => setEditing(isEditing ? null : match.id)}
+            className="p-1 text-qw-muted hover:text-white text-xs"
+          >
+            ✏️
+          </button>
+          <button
+            onClick={() => onRemove(match.id)}
+            className="p-1 text-red-400 hover:text-red-300 text-xs"
+          >
+            ✕
+          </button>
         </div>
       </div>
       {isEditing && (
         <div className="mt-2 pt-2 border-t border-qw-border space-y-2">
           <div className="grid grid-cols-5 gap-2">
-            <input type="date" value={match.date} onChange={(e) => onUpdate(match.id, { date: e.target.value })} className="bg-qw-darker border border-qw-border rounded px-2 py-1 text-white text-xs" />
-            <input type="time" value={match.time} onChange={(e) => onUpdate(match.id, { time: e.target.value })} className="bg-qw-darker border border-qw-border rounded px-2 py-1 text-white text-xs" />
-            <select value={match.round || 'group'} onChange={(e) => onUpdate(match.id, { round: e.target.value })} className="bg-qw-darker border border-qw-border rounded px-2 py-1 text-white text-xs">
+            <input
+              type="date"
+              value={match.date}
+              onChange={(e) => onUpdate(match.id, { date: e.target.value })}
+              className="bg-qw-darker border border-qw-border rounded px-2 py-1 text-white text-xs"
+            />
+            <input
+              type="time"
+              value={match.time}
+              onChange={(e) => onUpdate(match.id, { time: e.target.value })}
+              className="bg-qw-darker border border-qw-border rounded px-2 py-1 text-white text-xs"
+            />
+            <select
+              value={match.round || 'group'}
+              onChange={(e) => onUpdate(match.id, { round: e.target.value })}
+              className="bg-qw-darker border border-qw-border rounded px-2 py-1 text-white text-xs"
+            >
               {renderRoundOptions()}
             </select>
-            <select value={match.status || ''} onChange={(e) => onUpdate(match.id, { status: e.target.value })} className="bg-qw-darker border border-qw-border rounded px-2 py-1 text-white text-xs">
+            <select
+              value={match.status || ''}
+              onChange={(e) => onUpdate(match.id, { status: e.target.value })}
+              className="bg-qw-darker border border-qw-border rounded px-2 py-1 text-white text-xs"
+            >
               <option value="">No Status</option>
               <option value="scheduled">Scheduled</option>
               <option value="live">Live</option>
               <option value="completed">Completed</option>
             </select>
-            <select value={match.bestOf} onChange={(e) => onUpdate(match.id, { bestOf: parseInt(e.target.value) })} className="bg-qw-darker border border-qw-border rounded px-2 py-1 text-white text-xs">
+            <select
+              value={match.bestOf}
+              onChange={(e) => onUpdate(match.id, { bestOf: parseInt(e.target.value) })}
+              className="bg-qw-darker border border-qw-border rounded px-2 py-1 text-white text-xs"
+            >
               <option value={1}>Bo1</option>
               <option value={3}>Bo3</option>
               <option value={5}>Bo5</option>
@@ -718,16 +944,20 @@ function MatchRow({ match, onUpdate, onRemove, isEditing, setEditing, showRound,
                 onChange={(e) => onUpdate(match.id, { roundNum: parseInt(e.target.value) })}
                 className="bg-qw-darker border border-qw-border rounded px-2 py-1 text-white text-xs"
               >
-                {Array.from({ length: 20 }, (_, i) => i + 1).map(n => (
-                  <option key={n} value={n}>Round {n}</option>
+                {Array.from({ length: 20 }, (_, i) => i + 1).map((n) => (
+                  <option key={n} value={n}>
+                    Round {n}
+                  </option>
                 ))}
               </select>
             </div>
           )}
           <div className="grid grid-cols-1">
-            <select 
-              value={match.forfeit || 'none'} 
-              onChange={(e) => onUpdate(match.id, { forfeit: e.target.value === 'none' ? null : e.target.value })} 
+            <select
+              value={match.forfeit || 'none'}
+              onChange={(e) =>
+                onUpdate(match.id, { forfeit: e.target.value === 'none' ? null : e.target.value })
+              }
               className="bg-qw-darker border border-qw-border rounded px-2 py-1 text-white text-xs"
             >
               <option value="none">No Forfeit (Match Level)</option>
@@ -739,14 +969,14 @@ function MatchRow({ match, onUpdate, onRemove, isEditing, setEditing, showRound,
             <div className="pt-2 border-t border-qw-border/50">
               <div className="flex items-center justify-between mb-2">
                 <div className="text-xs text-qw-muted font-semibold">Map-Level Forfeits:</div>
-                <button 
+                <button
                   onClick={() => {
                     const newMap = {
                       id: `manual-ff-${Date.now()}`,
                       map: 'Unknown',
                       score1: 0,
                       score2: 0,
-                      forfeit: null
+                      forfeit: null,
                     };
                     onUpdate(match.id, { maps: [...match.maps, newMap] });
                   }}
@@ -757,11 +987,14 @@ function MatchRow({ match, onUpdate, onRemove, isEditing, setEditing, showRound,
               </div>
               <div className="space-y-1">
                 {match.maps.map((map, idx) => (
-                  <div key={idx} className="flex items-center gap-2 bg-qw-darker/50 rounded px-2 py-1.5">
+                  <div
+                    key={idx}
+                    className="flex items-center gap-2 bg-qw-darker/50 rounded px-2 py-1.5"
+                  >
                     <span className="text-xs font-mono text-qw-muted w-6">{idx + 1}.</span>
-                    <input 
-                      type="text" 
-                      value={map.map || ''} 
+                    <input
+                      type="text"
+                      value={map.map || ''}
                       onChange={(e) => {
                         const newMaps = [...match.maps];
                         newMaps[idx] = { ...map, map: e.target.value };
@@ -770,12 +1003,17 @@ function MatchRow({ match, onUpdate, onRemove, isEditing, setEditing, showRound,
                       placeholder="Map name"
                       className="bg-qw-dark border border-qw-border rounded px-2 py-0.5 text-white text-xs flex-1"
                     />
-                    <span className="text-xs text-qw-muted font-mono">{map.score1}-{map.score2}</span>
-                    <select 
-                      value={map.forfeit || 'none'} 
+                    <span className="text-xs text-qw-muted font-mono">
+                      {map.score1}-{map.score2}
+                    </span>
+                    <select
+                      value={map.forfeit || 'none'}
                       onChange={(e) => {
                         const newMaps = [...match.maps];
-                        newMaps[idx] = { ...map, forfeit: e.target.value === 'none' ? null : e.target.value };
+                        newMaps[idx] = {
+                          ...map,
+                          forfeit: e.target.value === 'none' ? null : e.target.value,
+                        };
                         onUpdate(match.id, { maps: newMaps });
                       }}
                       className="bg-qw-dark border border-qw-border rounded px-2 py-0.5 text-white text-xs"
@@ -784,7 +1022,7 @@ function MatchRow({ match, onUpdate, onRemove, isEditing, setEditing, showRound,
                       <option value="team1">{match.team1} FF</option>
                       <option value="team2">{match.team2} FF</option>
                     </select>
-                    <button 
+                    <button
                       onClick={() => {
                         const newMaps = match.maps.filter((_, i) => i !== idx);
                         onUpdate(match.id, { maps: newMaps });
@@ -802,14 +1040,14 @@ function MatchRow({ match, onUpdate, onRemove, isEditing, setEditing, showRound,
           {(!match.maps || match.maps.length === 0) && (
             <div className="pt-2 border-t border-qw-border/50">
               <div className="text-xs text-qw-muted mb-2">No maps yet. Add a forfeited map:</div>
-              <button 
+              <button
                 onClick={() => {
                   const newMap = {
                     id: `manual-ff-${Date.now()}`,
                     map: '',
                     score1: 0,
                     score2: 0,
-                    forfeit: 'team2'  // Default to team2 FF
+                    forfeit: 'team2', // Default to team2 FF
                   };
                   onUpdate(match.id, { maps: [newMap] });
                 }}

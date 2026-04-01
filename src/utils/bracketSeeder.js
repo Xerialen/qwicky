@@ -9,14 +9,17 @@ import { calculateStandings } from '../components/division/DivisionStandings';
  */
 export function isGroupStageComplete(division) {
   const schedule = division.schedule || [];
-  const groupMatches = schedule.filter(m => m.round === 'group');
+  const groupMatches = schedule.filter((m) => m.round === 'group');
 
   // No group matches means group stage isn't even set up
   if (groupMatches.length === 0) return false;
 
   // Every group match must have at least one map with a score
-  return groupMatches.every(m =>
-    m.maps && m.maps.length > 0 && m.maps.some(map => (map.score1 || 0) > 0 || (map.score2 || 0) > 0)
+  return groupMatches.every(
+    (m) =>
+      m.maps &&
+      m.maps.length > 0 &&
+      m.maps.some((map) => (map.score1 || 0) > 0 || (map.score2 || 0) > 0)
   );
 }
 
@@ -39,11 +42,11 @@ export function seedBracket(standings, bracket, advanceCount) {
   if (!firstRound) return newBracket;
 
   const { key, matches } = firstRound;
-  const slotCount = matches.length * 2; // Each match has 2 teams
+  const _slotCount = matches.length * 2; // Each match has 2 teams
 
   // Group standings by group
   const groups = {};
-  standings.forEach(team => {
+  standings.forEach((team) => {
     const g = team.group || 'A';
     if (!groups[g]) groups[g] = [];
     groups[g].push(team);
@@ -54,13 +57,13 @@ export function seedBracket(standings, bracket, advanceCount) {
 
   // Get top N teams per group
   const qualifiers = [];
-  groupNames.forEach(g => {
+  groupNames.forEach((g) => {
     const topTeams = groups[g].slice(0, advanceCount);
     topTeams.forEach((team, idx) => {
       qualifiers.push({
         name: team.name,
         group: g,
-        position: idx + 1 // 1-based position within group
+        position: idx + 1, // 1-based position within group
       });
     });
   });
@@ -100,7 +103,11 @@ function getFirstRound(bracket) {
   const roundOrder = ['round32', 'round16', 'round12', 'quarterFinals', 'semiFinals'];
 
   for (const key of roundOrder) {
-    if (bracket.winners[key] && Array.isArray(bracket.winners[key]) && bracket.winners[key].length > 0) {
+    if (
+      bracket.winners[key] &&
+      Array.isArray(bracket.winners[key]) &&
+      bracket.winners[key].length > 0
+    ) {
       return { key, matches: bracket.winners[key] };
     }
   }
@@ -159,8 +166,8 @@ function seedMultiGroup(qualifiers, groupNames, advanceCount, matchCount) {
 
   for (let pos = 1; pos <= advanceCount; pos++) {
     // Get all teams at this position across groups
-    const teamsAtPosition = groupNames.map(g => {
-      const team = qualifiers.find(q => q.group === g && q.position === pos);
+    const teamsAtPosition = groupNames.map((g) => {
+      const team = qualifiers.find((q) => q.group === g && q.position === pos);
       return team ? team.name : '';
     });
 
@@ -200,7 +207,7 @@ function seedTwoGroups(qualifiers, groupNames, advanceCount, matchCount) {
   const teamA = {};
   const teamB = {};
 
-  qualifiers.forEach(q => {
+  qualifiers.forEach((q) => {
     if (q.group === gA) teamA[q.position] = q.name;
     if (q.group === gB) teamB[q.position] = q.name;
   });
@@ -249,7 +256,7 @@ export function getStandingsForSeeding(division) {
 
   // Group standings by group
   const groups = {};
-  standings.forEach(team => {
+  standings.forEach((team) => {
     const g = team.group || 'A';
     if (!groups[g]) groups[g] = [];
     groups[g].push(team);
@@ -257,15 +264,17 @@ export function getStandingsForSeeding(division) {
 
   // Add position within each group
   const result = [];
-  Object.entries(groups).sort().forEach(([groupName, groupTeams]) => {
-    groupTeams.forEach((team, idx) => {
-      result.push({
-        name: team.name,
-        group: groupName,
-        position: idx + 1
+  Object.entries(groups)
+    .sort()
+    .forEach(([groupName, groupTeams]) => {
+      groupTeams.forEach((team, idx) => {
+        result.push({
+          name: team.name,
+          group: groupName,
+          position: idx + 1,
+        });
       });
     });
-  });
 
   return result;
 }

@@ -44,10 +44,7 @@ function readLocalStorage() {
 
 function writeLocalStorage(tournament, activeDivisionId) {
   try {
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({ ...tournament, activeDivisionId })
-    );
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...tournament, activeDivisionId }));
   } catch (err) {
     console.error('[useTournamentState] Failed to save to localStorage:', err);
   }
@@ -128,7 +125,9 @@ export function useTournamentState() {
       }
     })();
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // ── Background Supabase fetch on mount (merge if newer) ────────────────────
@@ -163,7 +162,9 @@ export function useTournamentState() {
       }
     })();
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
     // Only run on mount — tournament.name from initial localStorage read
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

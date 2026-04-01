@@ -31,10 +31,12 @@ export function stripColorCodes(name) {
  */
 export function normalizeHighBit(name) {
   if (typeof name !== 'string') return name;
-  return [...name].map(c => {
-    const code = c.charCodeAt(0);
-    return code < 256 ? QW_ASCII_TABLE[code] : c;
-  }).join('');
+  return [...name]
+    .map((c) => {
+      const code = c.charCodeAt(0);
+      return code < 256 ? QW_ASCII_TABLE[code] : c;
+    })
+    .join('');
 }
 
 /**
@@ -57,8 +59,8 @@ export function stripDecorators(name) {
   if (typeof name !== 'string') return name;
   return name
     .replace(/^[xX]{2,}([^xX].+[^xX])[xX]{2,}$/, '$1') // xXfooXx → foo
-    .replace(/^_+|_+$/g, '')                              // strip outer underscores
-    .replace(/^\.+|\.+$/g, '')                            // strip outer dots
+    .replace(/^_+|_+$/g, '') // strip outer underscores
+    .replace(/^\.+|\.+$/g, '') // strip outer dots
     .trim();
 }
 
@@ -85,13 +87,13 @@ export function normalizeLeet(name) {
 // Also reversed: name[tag], name(tag).
 // Tag length 1–8 chars is typical for QW clans.
 const CLAN_TAG_PATTERNS = [
-  /^\[([^\]]{1,8})\]/,   // [TAG] prefix
-  /^\(([^)]{1,8})\)/,    // (TAG) prefix
-  /^\.([^.]{1,8})\./,    // .tag. prefix
-  /^-([^-]{1,8})-/,      // -tag- prefix
-  /^\|([^|]{1,8})\|/,    // |tag| prefix
-  /\[([^\]]{1,8})\]$/,   // [TAG] suffix
-  /\(([^)]{1,8})\)$/,    // (TAG) suffix
+  /^\[([^\]]{1,8})\]/, // [TAG] prefix
+  /^\(([^)]{1,8})\)/, // (TAG) prefix
+  /^\.([^.]{1,8})\./, // .tag. prefix
+  /^-([^-]{1,8})-/, // -tag- prefix
+  /^\|([^|]{1,8})\|/, // |tag| prefix
+  /\[([^\]]{1,8})\]$/, // [TAG] suffix
+  /\(([^)]{1,8})\)$/, // (TAG) suffix
 ];
 
 /**
@@ -122,13 +124,7 @@ export function generateTagVariants(tag) {
   if (!tag) return [];
   const t = tag.toLowerCase().replace(/[[\]().|_-]/g, '');
   if (!t) return [];
-  return [
-    `[${t}]`,
-    t,
-    `(${t})`,
-    `.${t}.`,
-    `-${t}-`,
-  ];
+  return [`[${t}]`, t, `(${t})`, `.${t}.`, `-${t}-`];
 }
 
 // ── Pipeline compositions ─────────────────────────────────────────────────────
@@ -139,10 +135,10 @@ export function generateTagVariants(tag) {
  */
 export function normalize(rawName) {
   if (typeof rawName !== 'string') return '';
-  let name = stripColorCodes(rawName);  // Stage 1
-  name = normalizeHighBit(name);        // Stage 2
-  name = normalizeDiacritics(name);     // Stage 3
-  name = stripDecorators(name);         // Stage 4
+  let name = stripColorCodes(rawName); // Stage 1
+  name = normalizeHighBit(name); // Stage 2
+  name = normalizeDiacritics(name); // Stage 3
+  name = stripDecorators(name); // Stage 4
   return name.toLowerCase().trim();
 }
 
@@ -152,7 +148,7 @@ export function normalize(rawName) {
  */
 export function normalizeFull(rawName) {
   let name = normalize(rawName);
-  name = normalizeLeet(name);           // Stage 5
+  name = normalizeLeet(name); // Stage 5
   return name;
 }
 

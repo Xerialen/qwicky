@@ -1,14 +1,24 @@
 // src/components/division/DivisionResults.jsx
 import React, { useState, useRef, useMemo, useCallback, useEffect } from 'react';
 import { parseMatch, unicodeToAscii } from '../../utils/matchLogic';
-import { createTeamContext, resolveTeam as resolveTeamIdentity, resolveTeamFull } from '../../utils/teamIdentity';
+import {
+  createTeamContext,
+  resolveTeam as resolveTeamIdentity,
+  resolveTeamFull,
+} from '../../utils/teamIdentity';
 import { confidenceLabel, confidenceColor } from '../../utils/matchConfidence';
 import { scheduleWikiPublish } from '../../services/wikiPublisher';
 import { supabase } from '../../services/supabaseClient';
 import DivisionStats from './DivisionStats';
 import QWStatsService from '../../services/QWStatsService';
 
-export default function DivisionResults({ division, updateDivision, updateAnyDivision, tournamentId, tournament }) {
+export default function DivisionResults({
+  division,
+  updateDivision,
+  updateAnyDivision,
+  tournamentId,
+  tournament,
+}) {
   const [mode, setMode] = useState('discord');
   const [showStats, setShowStats] = useState(false);
   const [showRawMaps, setShowRawMaps] = useState(false);
@@ -51,45 +61,52 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
   const [browseSelected, setBrowseSelected] = useState(new Set());
 
   // Helper function to detect which division(s) a submission belongs to
-  const detectSubmissionDivision = useCallback((submission) => {
-    if (!submission?.game_data?.teams || !tournament?.divisions) return null;
+  const detectSubmissionDivision = useCallback(
+    (submission) => {
+      if (!submission?.game_data?.teams || !tournament?.divisions) return null;
 
-    // Extract raw team names from submission
-    const gameTeams = submission.game_data.teams.map(t => {
-      const name = typeof t === 'object' ? t.name : t;
-      return name || '';
-    }).filter(Boolean);
+      // Extract raw team names from submission
+      const gameTeams = submission.game_data.teams
+        .map((t) => {
+          const name = typeof t === 'object' ? t.name : t;
+          return name || '';
+        })
+        .filter(Boolean);
 
-    if (gameTeams.length === 0) return null;
+      if (gameTeams.length === 0) return null;
 
-    // Check each division to see if it contains these teams (using teamResolver)
-    const matchingDivisions = [];
-    tournament.divisions.forEach(div => {
-      const divTeams = div.teams || [];
-      if (divTeams.length === 0) return;
+      // Check each division to see if it contains these teams (using teamResolver)
+      const matchingDivisions = [];
+      tournament.divisions.forEach((div) => {
+        const divTeams = div.teams || [];
+        if (divTeams.length === 0) return;
 
-      // Count how many game teams resolve to a known team in this division
-      const divCtx = createTeamContext(divTeams);
-      const matchCount = gameTeams.filter(gt => {
-        const result = resolveTeamFull(gt, divCtx);
-        return result.match !== null;
-      }).length;
+        // Count how many game teams resolve to a known team in this division
+        const divCtx = createTeamContext(divTeams);
+        const matchCount = gameTeams.filter((gt) => {
+          const result = resolveTeamFull(gt, divCtx);
+          return result.match !== null;
+        }).length;
 
-      // If all teams are in this division, it's a match
-      if (matchCount === gameTeams.length) {
-        matchingDivisions.push(div);
-      }
-    });
+        // If all teams are in this division, it's a match
+        if (matchCount === gameTeams.length) {
+          matchingDivisions.push(div);
+        }
+      });
 
-    return matchingDivisions.length > 0 ? matchingDivisions : null;
-  }, [tournament]);
+      return matchingDivisions.length > 0 ? matchingDivisions : null;
+    },
+    [tournament]
+  );
 
   useEffect(() => {
     if (!supabase) return;
     supabase.auth.getSession().then(({ data: { session } }) => {
       sessionTokenRef.current = session?.access_token ?? null;
     });
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_, session) => {
       sessionTokenRef.current = session?.access_token ?? null;
     });
     return () => subscription.unsubscribe();
@@ -97,9 +114,11 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
 
   const getAuthHeaders = async () => {
     if (!supabase) return {};
-    const { data: { session } } = await supabase.auth.getSession();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
     if (!session?.access_token) return {};
-    return { 'Authorization': `Bearer ${session.access_token}` };
+    return { Authorization: `Bearer ${session.access_token}` };
   };
 
   const fetchSubmissions = async (includeApproved) => {
@@ -108,7 +127,9 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
     setSubmissionsError(null);
     try {
       const status = includeApproved ? 'all' : 'pending';
-      const res = await fetch(`/api/submissions/${encodeURIComponent(tournamentId)}?status=${status}`);
+      const res = await fetch(
+        `/api/submissions/${encodeURIComponent(tournamentId)}?status=${status}`
+      );
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to fetch');
 
@@ -119,7 +140,9 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
     setSubmissionsLoading(false);
   };
 
-  useEffect(() => { fetchSubmissions(showApproved); }, [tournamentId]);
+  useEffect(() => {
+    fetchSubmissions(showApproved);
+  }, [tournamentId]);
 
   // Find the target division for a submission (returns null for current division)
   const getTargetDiv = (submission) => {
@@ -140,12 +163,15 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
       }
 
       const authHeaders = await getAuthHeaders();
-      const res = await fetch(`/api/submission/${submission.id}/approve`, { method: 'POST', headers: authHeaders });
+      const res = await fetch(`/api/submission/${submission.id}/approve`, {
+        method: 'POST',
+        headers: authHeaders,
+      });
       if (!res.ok) throw new Error('Failed to approve');
 
       if (parsed) addMapsInBatch([parsed], getTargetDiv(submission));
 
-      setSubmissions(prev => prev.filter(s => s.id !== submission.id));
+      setSubmissions((prev) => prev.filter((s) => s.id !== submission.id));
     } catch (err) {
       setSubmissionsError(err.message);
     }
@@ -154,9 +180,12 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
   const handleReject = async (submission) => {
     try {
       const authHeaders = await getAuthHeaders();
-      const res = await fetch(`/api/submission/${submission.id}/reject`, { method: 'POST', headers: authHeaders });
+      const res = await fetch(`/api/submission/${submission.id}/reject`, {
+        method: 'POST',
+        headers: authHeaders,
+      });
       if (!res.ok) throw new Error('Failed to reject');
-      setSubmissions(prev => prev.filter(s => s.id !== submission.id));
+      setSubmissions((prev) => prev.filter((s) => s.id !== submission.id));
     } catch (err) {
       setSubmissionsError(err.message);
     }
@@ -170,7 +199,7 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
         if (parsed) {
           const added = addMapsInBatch([parsed], getTargetDiv(submission));
           if (added.length > 0) {
-            setSubmissions(prev => prev.filter(s => s.id !== submission.id));
+            setSubmissions((prev) => prev.filter((s) => s.id !== submission.id));
           } else {
             setSubmissionsError('Already imported (duplicate detected)');
           }
@@ -183,7 +212,7 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
 
   const handleBulkReprocess = () => {
     try {
-      const approved = filteredSubmissions.filter(s => s.status === 'approved');
+      const approved = filteredSubmissions.filter((s) => s.status === 'approved');
       // Group parsed maps by target division for correct routing and series detection
       const byDiv = new Map(); // divId → { targetDiv, parsed[] }
       for (const sub of approved) {
@@ -204,11 +233,11 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
         totalAdded = totalAdded.concat(added);
       }
       if (totalAdded.length > 0) {
-        const addedIds = new Set(totalAdded.map(m => m.id));
+        const addedIds = new Set(totalAdded.map((m) => m.id));
         const reprocessedSubIds = new Set(
-          approved.filter(s => addedIds.has(s.game_id)).map(s => s.id)
+          approved.filter((s) => addedIds.has(s.game_id)).map((s) => s.id)
         );
-        setSubmissions(prev => prev.filter(s => !reprocessedSubIds.has(s.id)));
+        setSubmissions((prev) => prev.filter((s) => !reprocessedSubIds.has(s.id)));
       } else {
         setSubmissionsError('All already imported (duplicates detected)');
       }
@@ -218,7 +247,7 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
   };
 
   const handleBulkApprove = async () => {
-    const pending = filteredSubmissions.filter(s => s.status === 'pending');
+    const pending = filteredSubmissions.filter((s) => s.status === 'pending');
     // Group parsed maps by target division for correct routing and series detection
     const byDiv = new Map(); // divId → { targetDiv, parsed[] }
     const approvedSubIds = [];
@@ -238,7 +267,10 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
           }
         }
 
-        const res = await fetch(`/api/submission/${sub.id}/approve`, { method: 'POST', headers: authHeaders });
+        const res = await fetch(`/api/submission/${sub.id}/approve`, {
+          method: 'POST',
+          headers: authHeaders,
+        });
         if (!res.ok) throw new Error(`Failed to approve ${sub.id}`);
         approvedSubIds.push(sub.id);
       } catch (err) {
@@ -253,7 +285,7 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
 
     if (approvedSubIds.length > 0) {
       const approvedSet = new Set(approvedSubIds);
-      setSubmissions(prev => prev.filter(s => !approvedSet.has(s.id)));
+      setSubmissions((prev) => prev.filter((s) => !approvedSet.has(s.id)));
     }
   };
 
@@ -265,17 +297,19 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
   const filteredSubmissions = useMemo(() => {
     if (!filterByDivision) return submissions;
 
-    return submissions.filter(sub => {
+    return submissions.filter((sub) => {
       const divisions = detectSubmissionDivision(sub);
       if (!divisions) return true; // Show if can't detect
-      return divisions.some(d => d.id === division.id);
+      return divisions.some((d) => d.id === division.id);
     });
   }, [submissions, filterByDivision, division.id, detectSubmissionDivision]);
 
   // --- TEAM LOOKUP & SERIES LOGIC ---
 
   // Memoized team context for the current division (replaces inline lookups)
-  const teamsJson = JSON.stringify(teams.map(t => ({ name: t.name, tag: t.tag, aliases: t.aliases })));
+  const teamsJson = JSON.stringify(
+    teams.map((t) => ({ name: t.name, tag: t.tag, aliases: t.aliases }))
+  );
   const teamCtx = useMemo(() => createTeamContext(teams), [teamsJson]);
 
   // Standalone helper: resolve a team name against any division's teams
@@ -291,11 +325,11 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
   );
 
   const SERIES_GAP_MS = 2 * 60 * 60 * 1000;
-  
+
   const detectedSeries = useMemo(() => {
     if (rawMaps.length === 0) return [];
     const matchupGroups = {};
-    rawMaps.forEach(map => {
+    rawMaps.forEach((map) => {
       const resolved1 = resolveTeamName(map.teams[0]);
       const resolved2 = resolveTeamName(map.teams[1]);
       const sortedTeams = [resolved1, resolved2].sort();
@@ -331,16 +365,18 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
       }
     });
 
-    return allSeries.map(series => {
+    return allSeries.map((series) => {
       const [t1, t2] = series.resolvedTeams;
       const t1Lower = t1.toLowerCase();
       const t2Lower = t2.toLowerCase();
       // Find all matching schedule entries for this team pair
-      const candidates = schedule.filter(m => {
+      const candidates = schedule.filter((m) => {
         const schedT1 = resolveTeamName(m.team1).toLowerCase();
         const schedT2 = resolveTeamName(m.team2).toLowerCase();
-        return (schedT1 === t1Lower && schedT2 === t2Lower) ||
-               (schedT1 === t2Lower && schedT2 === t1Lower);
+        return (
+          (schedT1 === t1Lower && schedT2 === t2Lower) ||
+          (schedT1 === t2Lower && schedT2 === t1Lower)
+        );
       });
 
       let scheduledMatch = null;
@@ -352,10 +388,13 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
         const seriesTime = seriesDate ? new Date(seriesDate + 'T00:00:00').getTime() : null;
         if (seriesTime) {
           let bestDist = Infinity;
-          candidates.forEach(m => {
+          candidates.forEach((m) => {
             if (m.date) {
               const dist = Math.abs(new Date(m.date + 'T00:00:00').getTime() - seriesTime);
-              if (dist < bestDist) { bestDist = dist; scheduledMatch = m; }
+              if (dist < bestDist) {
+                bestDist = dist;
+                scheduledMatch = m;
+              }
             }
           });
         }
@@ -364,7 +403,7 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
       return {
         ...series,
         scheduledMatch,
-        isLinked: scheduledMatch?.maps?.some(m => series.maps.some(sm => sm.id === m.id))
+        isLinked: scheduledMatch?.maps?.some((m) => series.maps.some((sm) => sm.id === m.id)),
       };
     });
   }, [rawMaps, schedule, resolveTeamName]);
@@ -375,7 +414,7 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
     const [t1, t2] = resolvedTeams;
     const mapWins = { [t1]: 0, [t2]: 0 };
     const totalFrags = { [t1]: 0, [t2]: 0 };
-    maps.forEach(map => {
+    maps.forEach((map) => {
       const [orig1, orig2] = map.teams;
       const res1 = resolveTeamName(orig1);
       const res2 = resolveTeamName(orig2);
@@ -405,7 +444,7 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
       score: { [t1]: w1, [t2]: w2 },
       frags: { [t1]: f1, [t2]: f2 },
       winner: w1 > w2 ? t1 : w2 > w1 ? t2 : null,
-      dateDisplay: firstDate === lastDate ? firstDate : `${firstDate} - ${lastDate}`
+      dateDisplay: firstDate === lastDate ? firstDate : `${firstDate} - ${lastDate}`,
     };
   }
 
@@ -441,12 +480,20 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
     const tResolve = (name) => resolveTeamIdentity(name, tCtx);
 
     // Duplicate detection: check by ID (also strip "browse-" prefix for cross-path matching)
-    const existingIds = new Set(tRawMaps.map(m => m.id));
-    const existingBaseIds = new Set(tRawMaps.map(m => String(m.id).replace(/^browse-/, '').replace(/-[^-]+$/, '')));
-    const uniqueNewMaps = newMaps.filter(m => {
+    const existingIds = new Set(tRawMaps.map((m) => m.id));
+    const existingBaseIds = new Set(
+      tRawMaps.map((m) =>
+        String(m.id)
+          .replace(/^browse-/, '')
+          .replace(/-[^-]+$/, '')
+      )
+    );
+    const uniqueNewMaps = newMaps.filter((m) => {
       if (existingIds.has(m.id)) return false;
       // Cross-path check: "browse-12345-dm3" should match existing "12345"
-      const baseId = String(m.id).replace(/^browse-/, '').replace(/-[^-]+$/, '');
+      const baseId = String(m.id)
+        .replace(/^browse-/, '')
+        .replace(/-[^-]+$/, '');
       if (existingBaseIds.has(baseId)) return false;
       return true;
     });
@@ -454,23 +501,27 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
     // Additional duplicate detection: normalized fingerprint (handles team name variants)
     // Resolves team names so "sr", "SR", "-s-", "òó" all produce the same fingerprint
     const makeFingerprint = (m) => {
-      const resolvedTeams = (m.teams || []).map(t => tResolve(t).toLowerCase());
+      const resolvedTeams = (m.teams || []).map((t) => tResolve(t).toLowerCase());
       return `${(m.map || '').toLowerCase()}|${resolvedTeams.sort().join('vs')}|${m.timestamp || m.date}`;
     };
     const existingFingerprints = new Set(tRawMaps.map(makeFingerprint));
-    const trulyUniqueMaps = uniqueNewMaps.filter(m => !existingFingerprints.has(makeFingerprint(m)));
+    const trulyUniqueMaps = uniqueNewMaps.filter(
+      (m) => !existingFingerprints.has(makeFingerprint(m))
+    );
 
     if (trulyUniqueMaps.length === 0) {
       console.log('No new unique maps to add (all duplicates)');
       return [];
     }
 
-    console.log(`Adding ${trulyUniqueMaps.length} unique maps (filtered ${newMaps.length - trulyUniqueMaps.length} duplicates)`);
+    console.log(
+      `Adding ${trulyUniqueMaps.length} unique maps (filtered ${newMaps.length - trulyUniqueMaps.length} duplicates)`
+    );
 
     const allMaps = [...tRawMaps, ...trulyUniqueMaps];
     let newSchedule = [...tSchedule];
 
-    trulyUniqueMaps.forEach(mapResult => {
+    trulyUniqueMaps.forEach((mapResult) => {
       const [team1, team2] = mapResult.teams;
       const resolved1 = tResolve(team1);
       const resolved2 = tResolve(team2);
@@ -485,8 +536,10 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
         const schedTeam1Resolved = tResolve(m.team1).toLowerCase();
         const schedTeam2Resolved = tResolve(m.team2).toLowerCase();
 
-        if ((schedTeam1Resolved === res1Lower && schedTeam2Resolved === res2Lower) ||
-            (schedTeam1Resolved === res2Lower && schedTeam2Resolved === res1Lower)) {
+        if (
+          (schedTeam1Resolved === res1Lower && schedTeam2Resolved === res2Lower) ||
+          (schedTeam1Resolved === res2Lower && schedTeam2Resolved === res1Lower)
+        ) {
           candidateIndices.push(idx);
         }
       });
@@ -503,13 +556,13 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
         // are within SERIES_GAP_MS of this map, it belongs to the same series
         if (mapTs) {
           let bestAffinityDist = Infinity;
-          candidateIndices.forEach(idx => {
+          candidateIndices.forEach((idx) => {
             const existingMaps = newSchedule[idx].maps || [];
             if (existingMaps.length === 0) return;
             // Check timestamp proximity to any existing map on this candidate
             for (const em of existingMaps) {
               // Look up the raw map's timestamp from allMaps (schedule maps don't store timestamp)
-              const rawMap = allMaps.find(rm => rm.id === em.id);
+              const rawMap = allMaps.find((rm) => rm.id === em.id);
               const emTs = rawMap?.timestamp;
               if (emTs) {
                 const dist = Math.abs(mapTs - emTs);
@@ -526,16 +579,19 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
         if (matchIdx === -1) {
           const gameDate = mapResult.date?.split(' ')[0];
           const gameTime = gameDate ? new Date(gameDate + 'T00:00:00').getTime() : null;
-          const emptyOnes = candidateIndices.filter(i => !newSchedule[i].maps?.length);
+          const emptyOnes = candidateIndices.filter((i) => !newSchedule[i].maps?.length);
           const pool = emptyOnes.length > 0 ? emptyOnes : candidateIndices;
 
           if (gameTime) {
             let bestDist = Infinity;
-            pool.forEach(idx => {
+            pool.forEach((idx) => {
               const m = newSchedule[idx];
               if (m.date) {
                 const dist = Math.abs(new Date(m.date + 'T00:00:00').getTime() - gameTime);
-                if (dist < bestDist) { bestDist = dist; matchIdx = idx; }
+                if (dist < bestDist) {
+                  bestDist = dist;
+                  matchIdx = idx;
+                }
               }
             });
           }
@@ -551,7 +607,7 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
           const gameDate = mapResult.date.split(' ')[0];
           if (gameDate) {
             const roundDates = {};
-            newSchedule.forEach(m => {
+            newSchedule.forEach((m) => {
               if (m.group === match.group && m.roundNum && m.date && !roundDates[m.roundNum]) {
                 roundDates[m.roundNum] = m.date;
               }
@@ -564,7 +620,10 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
                 : Infinity;
               for (const [rn, dateStr] of Object.entries(roundDates)) {
                 const dist = Math.abs(new Date(dateStr + 'T00:00:00').getTime() - gameTime);
-                if (dist < bestDist) { bestDist = dist; bestRound = Number(rn); }
+                if (dist < bestDist) {
+                  bestDist = dist;
+                  bestRound = Number(rn);
+                }
               }
               if (bestRound !== match.roundNum) {
                 match.roundNum = bestRound;
@@ -575,7 +634,7 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
         }
 
         // Check if this specific map is already in the match
-        if (!match.maps?.some(mp => mp.id === mapResult.id)) {
+        if (!match.maps?.some((mp) => mp.id === mapResult.id)) {
           const isNormalOrder = match.team1.toLowerCase() === res1Lower;
 
           // Lookup scores using original team names from mapResult (they match the score keys)
@@ -586,13 +645,16 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
           const score1 = rawScore1 ?? 0;
           const score2 = rawScore2 ?? 0;
 
-          match.maps = [...(match.maps || []), {
-            id: mapResult.id,
-            map: mapResult.map,
-            date: mapResult.date,
-            score1,
-            score2
-          }];
+          match.maps = [
+            ...(match.maps || []),
+            {
+              id: mapResult.id,
+              map: mapResult.map,
+              date: mapResult.date,
+              score1,
+              score2,
+            },
+          ];
 
           // For Play All (Go) group matches, completed = all maps played. For Best Of, completed = first to majority wins.
           const isGroupPlayAll = match.round === 'group' && tDiv.groupStageType === 'playall';
@@ -600,12 +662,13 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
             match.status = match.maps.length >= match.bestOf ? 'completed' : 'live';
           } else {
             const neededWins = Math.ceil(match.bestOf / 2);
-            let t1Wins = 0, t2Wins = 0;
-            match.maps.forEach(mp => {
+            let t1Wins = 0,
+              t2Wins = 0;
+            match.maps.forEach((mp) => {
               if (mp.score1 > mp.score2) t1Wins++;
               else if (mp.score2 > mp.score1) t2Wins++;
             });
-            match.status = (t1Wins >= neededWins || t2Wins >= neededWins) ? 'completed' : 'live';
+            match.status = t1Wins >= neededWins || t2Wins >= neededWins ? 'completed' : 'live';
           }
         }
         newSchedule[matchIdx] = match;
@@ -622,18 +685,30 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
     // Trigger wiki auto-publish (debounced 10s) if configured
     if (trulyUniqueMaps.length > 0) {
       const publishDiv = { ...tDiv, rawMaps: allMaps, schedule: newSchedule };
-      scheduleWikiPublish(publishDiv, tournament, (results) => {
-        const ok = results.filter(r => r.ok);
-        const fail = results.filter(r => !r.ok);
-        if (ok.length > 0 && fail.length === 0) {
-          setWikiToast({ type: 'success', message: `Wiki updated: ${ok.length} target(s)` });
-        } else if (ok.length > 0) {
-          setWikiToast({ type: 'warn', message: `Wiki: ${ok.length} updated, ${fail.length} failed` });
-        } else if (fail.length > 0) {
-          setWikiToast({ type: 'error', message: `Wiki publish failed: ${fail[0]?.error || 'unknown error'}` });
-        }
-        setTimeout(() => setWikiToast(null), 6000);
-      }, 10000, sessionTokenRef.current);
+      scheduleWikiPublish(
+        publishDiv,
+        tournament,
+        (results) => {
+          const ok = results.filter((r) => r.ok);
+          const fail = results.filter((r) => !r.ok);
+          if (ok.length > 0 && fail.length === 0) {
+            setWikiToast({ type: 'success', message: `Wiki updated: ${ok.length} target(s)` });
+          } else if (ok.length > 0) {
+            setWikiToast({
+              type: 'warn',
+              message: `Wiki: ${ok.length} updated, ${fail.length} failed`,
+            });
+          } else if (fail.length > 0) {
+            setWikiToast({
+              type: 'error',
+              message: `Wiki publish failed: ${fail[0]?.error || 'unknown error'}`,
+            });
+          }
+          setTimeout(() => setWikiToast(null), 6000);
+        },
+        10000,
+        sessionTokenRef.current
+      );
     }
 
     return trulyUniqueMaps;
@@ -646,14 +721,14 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
     setApiStatus('Parsing inputs...');
     setLastImported([]);
     setError(null);
-    
+
     // 1. Extract IDs from input
-    const rawTokens = apiInput.split(/[\s,;\n]+/).filter(t => t.trim().length > 0);
+    const rawTokens = apiInput.split(/[\s,;\n]+/).filter((t) => t.trim().length > 0);
     const idSet = new Set();
-    
-    rawTokens.forEach(token => {
+
+    rawTokens.forEach((token) => {
       const clean = token.trim();
-      
+
       // Case A: Exakt bara siffror (om du klistrar in id direkt)
       if (/^\d+$/.test(clean)) {
         idSet.add(clean);
@@ -663,7 +738,7 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
       // Case B: Hantera din specifika URL: ...?gameId=191818
       // Vi letar efter "gameId=" följt av siffror
       const queryMatch = clean.match(/gameId=(\d+)/i);
-      
+
       if (queryMatch && queryMatch[1]) {
         idSet.add(queryMatch[1]);
       } else {
@@ -684,7 +759,7 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
       setLoading(false);
       return;
     }
-    
+
     if (ids.length > 50) {
       setError(`Too many links! You pasted ${ids.length}. Max allowed is 50.`);
       setLoading(false);
@@ -695,7 +770,7 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
 
     const fetchedMatches = [];
     const errors = [];
-    
+
     // 3. Fetch Loop
     for (const id of ids) {
       try {
@@ -720,13 +795,13 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
       const added = addMapsInBatch(fetchedMatches);
       setLastImported(added);
       setApiStatus(`? Success! Fetched ${fetchedMatches.length} matches.`);
-      setApiInput(''); 
+      setApiInput('');
       setTimeout(() => setApiStatus(null), 5000);
-    } 
-    
+    }
+
     if (errors.length > 0) {
       if (fetchedMatches.length > 0) {
-        setApiStatus(prev => `${prev} (with ${errors.length} errors)`);
+        setApiStatus((prev) => `${prev} (with ${errors.length} errors)`);
         console.warn('Some fetches failed:', errors);
       } else {
         setError(errors.join('\n'));
@@ -739,18 +814,18 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
   };
   // --- EVENT HANDLERS (UNCHANGED) ---
   const linkSeriesToMatch = (series, matchId) => {
-    const match = schedule.find(m => m.id === matchId);
+    const match = schedule.find((m) => m.id === matchId);
     if (!match) return;
     const [res1, res2] = series.resolvedTeams;
     const matchT1Resolved = resolveTeamName(match.team1).toLowerCase();
     const isNormalOrder = matchT1Resolved === res1.toLowerCase();
 
-    const newSchedule = schedule.map(m => {
+    const newSchedule = schedule.map((m) => {
       if (m.id !== matchId) return m;
-      const maps = series.maps.map(map => {
+      const maps = series.maps.map((map) => {
         // CRITICAL: Scores are keyed by ORIGINAL team names, not resolved names
         // Must look up using map.teams, then reorder to match schedule
-        const [mapT1, mapT2] = map.teams;  // Original team names from ktxstats
+        const [mapT1, mapT2] = map.teams; // Original team names from ktxstats
         const mapT1Resolved = resolveTeamName(mapT1);
         const mapT2Resolved = resolveTeamName(mapT2);
 
@@ -777,12 +852,13 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
         status = maps.length >= m.bestOf ? 'completed' : 'live';
       } else {
         const neededWins = Math.ceil(m.bestOf / 2);
-        let t1Wins = 0, t2Wins = 0;
-        maps.forEach(mp => {
+        let t1Wins = 0,
+          t2Wins = 0;
+        maps.forEach((mp) => {
           if (mp.score1 > mp.score2) t1Wins++;
           else if (mp.score2 > mp.score1) t2Wins++;
         });
-        status = (t1Wins >= neededWins || t2Wins >= neededWins) ? 'completed' : 'live';
+        status = t1Wins >= neededWins || t2Wins >= neededWins ? 'completed' : 'live';
       }
       return { ...m, maps, status };
     });
@@ -793,9 +869,14 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
     const [res1, res2] = series.resolvedTeams;
 
     // Detect group from teams if possible
-    const team1Obj = teams.find(t => resolveTeamName(t.name).toLowerCase() === res1.toLowerCase());
-    const team2Obj = teams.find(t => resolveTeamName(t.name).toLowerCase() === res2.toLowerCase());
-    const detectedGroup = (team1Obj?.group === team2Obj?.group && team1Obj?.group) ? team1Obj.group : '';
+    const team1Obj = teams.find(
+      (t) => resolveTeamName(t.name).toLowerCase() === res1.toLowerCase()
+    );
+    const team2Obj = teams.find(
+      (t) => resolveTeamName(t.name).toLowerCase() === res2.toLowerCase()
+    );
+    const detectedGroup =
+      team1Obj?.group === team2Obj?.group && team1Obj?.group ? team1Obj.group : '';
 
     const newMatch = {
       id: `match-${Date.now()}`,
@@ -803,13 +884,13 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
       team2: res2,
       group: detectedGroup,
       round: 'group',
-      roundNum: 1,  // Default to round 1
-      meeting: 1,   // Default to first meeting
+      roundNum: 1, // Default to round 1
+      meeting: 1, // Default to first meeting
       bestOf: series.maps.length,
       date: series.maps[0]?.date?.split(' ')[0] || '',
       time: '',
       status: 'completed',
-      maps: series.maps.map(map => {
+      maps: series.maps.map((map) => {
         // CRITICAL: Scores are keyed by ORIGINAL team names, not resolved names
         const [mapT1, mapT2] = map.teams;
         const mapT1Resolved = resolveTeamName(mapT1);
@@ -830,9 +911,9 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
           map: map.map,
           date: map.date,
           score1,
-          score2
+          score2,
         };
-      })
+      }),
     };
     updateDivision({ schedule: [...schedule, newMatch] });
   };
@@ -884,7 +965,7 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
     if (window.confirm('Clear all imported results?')) {
       updateDivision({
         rawMaps: [],
-        schedule: schedule.map(m => ({ ...m, maps: [], status: '' }))
+        schedule: schedule.map((m) => ({ ...m, maps: [], status: '' })),
       });
       setLastImported([]);
     }
@@ -892,20 +973,20 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
 
   const removeSeries = (series) => {
     if (!window.confirm(`Remove this series (${series.maps.length} maps)?`)) return;
-    
+
     // Get IDs of maps in this series
-    const seriesToRemove = new Set(series.maps.map(m => m.id));
-    
+    const seriesToRemove = new Set(series.maps.map((m) => m.id));
+
     // Filter out maps from this series
-    const newRawMaps = rawMaps.filter(m => !seriesToRemove.has(m.id));
-    
+    const newRawMaps = rawMaps.filter((m) => !seriesToRemove.has(m.id));
+
     // Also remove from schedule if linked
     let newSchedule = [...schedule];
     if (series.isLinked && series.scheduledMatch) {
-      newSchedule = schedule.map(m => {
+      newSchedule = schedule.map((m) => {
         if (m.id === series.scheduledMatch.id) {
           // Remove maps from this series
-          const filteredMaps = (m.maps || []).filter(map => !seriesToRemove.has(map.id));
+          const filteredMaps = (m.maps || []).filter((map) => !seriesToRemove.has(map.id));
           const isGroupPlayAll = m.round === 'group' && division.groupStageType === 'playall';
           let status;
           if (filteredMaps.length === 0) {
@@ -914,58 +995,88 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
             status = filteredMaps.length >= m.bestOf ? 'completed' : 'live';
           } else {
             const neededWins = Math.ceil(m.bestOf / 2);
-            let t1Wins = 0, t2Wins = 0;
-            filteredMaps.forEach(mp => {
+            let t1Wins = 0,
+              t2Wins = 0;
+            filteredMaps.forEach((mp) => {
               if (mp.score1 > mp.score2) t1Wins++;
               else if (mp.score2 > mp.score1) t2Wins++;
             });
-            status = (t1Wins >= neededWins || t2Wins >= neededWins) ? 'completed' : 'live';
+            status = t1Wins >= neededWins || t2Wins >= neededWins ? 'completed' : 'live';
           }
           return { ...m, maps: filteredMaps, status };
         }
         return m;
       });
     }
-    
+
     updateDivision({ rawMaps: newRawMaps, schedule: newSchedule });
   };
 
-  const unlinkableMatches = schedule.filter(m => !m.maps || m.maps.length === 0);
+  const unlinkableMatches = schedule.filter((m) => !m.maps || m.maps.length === 0);
 
   return (
     <div className="space-y-6">
       {/* Wiki publish toast */}
       {wikiToast && (
-        <div className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg text-sm font-semibold transition-all ${
-          wikiToast.type === 'success' ? 'bg-qw-win/20 border border-qw-win/40 text-qw-win' :
-          wikiToast.type === 'warn' ? 'bg-amber-500/20 border border-amber-500/40 text-amber-300' :
-          'bg-qw-loss/20 border border-qw-loss/40 text-qw-loss'
-        }`}>
+        <div
+          className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg text-sm font-semibold transition-all ${
+            wikiToast.type === 'success'
+              ? 'bg-qw-win/20 border border-qw-win/40 text-qw-win'
+              : wikiToast.type === 'warn'
+                ? 'bg-amber-500/20 border border-amber-500/40 text-amber-300'
+                : 'bg-qw-loss/20 border border-qw-loss/40 text-qw-loss'
+          }`}
+        >
           {wikiToast.message}
-          <button onClick={() => setWikiToast(null)} className="ml-3 text-xs opacity-60 hover:opacity-100">&times;</button>
+          <button
+            onClick={() => setWikiToast(null)}
+            className="ml-3 text-xs opacity-60 hover:opacity-100"
+          >
+            &times;
+          </button>
         </div>
       )}
 
       <div className="flex items-center justify-between">
         <div className="flex gap-2">
-          <button onClick={() => { setMode('discord'); fetchSubmissions(showApproved); }} className={`px-4 py-2 rounded font-body font-semibold ${mode === 'discord' ? 'bg-qw-accent text-qw-dark' : 'bg-qw-panel border border-qw-border text-qw-muted hover:text-white'}`}>
+          <button
+            onClick={() => {
+              setMode('discord');
+              fetchSubmissions(showApproved);
+            }}
+            className={`px-4 py-2 rounded font-body font-semibold ${mode === 'discord' ? 'bg-qw-accent text-qw-dark' : 'bg-qw-panel border border-qw-border text-qw-muted hover:text-white'}`}
+          >
             🤖 Discord
           </button>
-          <button onClick={() => setMode('api')} className={`px-4 py-2 rounded font-body font-semibold ${mode === 'api' ? 'bg-qw-accent text-qw-dark' : 'bg-qw-panel border border-qw-border text-qw-muted hover:text-white'}`}>
+          <button
+            onClick={() => setMode('api')}
+            className={`px-4 py-2 rounded font-body font-semibold ${mode === 'api' ? 'bg-qw-accent text-qw-dark' : 'bg-qw-panel border border-qw-border text-qw-muted hover:text-white'}`}
+          >
             🌐 API Fetch
           </button>
-          <button onClick={() => setMode('json')} className={`px-4 py-2 rounded font-body font-semibold ${mode === 'json' ? 'bg-qw-accent text-qw-dark' : 'bg-qw-panel border border-qw-border text-qw-muted hover:text-white'}`}>
+          <button
+            onClick={() => setMode('json')}
+            className={`px-4 py-2 rounded font-body font-semibold ${mode === 'json' ? 'bg-qw-accent text-qw-dark' : 'bg-qw-panel border border-qw-border text-qw-muted hover:text-white'}`}
+          >
             📄 JSON Import
           </button>
-          <button onClick={() => setMode('browse')} className={`px-4 py-2 rounded font-body font-semibold ${mode === 'browse' ? 'bg-qw-accent text-qw-dark' : 'bg-qw-panel border border-qw-border text-qw-muted hover:text-white'}`}>
+          <button
+            onClick={() => setMode('browse')}
+            className={`px-4 py-2 rounded font-body font-semibold ${mode === 'browse' ? 'bg-qw-accent text-qw-dark' : 'bg-qw-panel border border-qw-border text-qw-muted hover:text-white'}`}
+          >
             🔍 Browse
           </button>
-          <button onClick={() => setMode('discover')} className={`px-4 py-2 rounded font-body font-semibold ${mode === 'discover' ? 'bg-qw-accent text-qw-dark' : 'bg-qw-panel border border-qw-border text-qw-muted hover:text-white'}`}>
+          <button
+            onClick={() => setMode('discover')}
+            className={`px-4 py-2 rounded font-body font-semibold ${mode === 'discover' ? 'bg-qw-accent text-qw-dark' : 'bg-qw-panel border border-qw-border text-qw-muted hover:text-white'}`}
+          >
             🎯 Discover
           </button>
         </div>
         {rawMaps.length > 0 && (
-          <button onClick={handleClearResults} className="text-sm text-red-400 hover:text-red-300">Clear All</button>
+          <button onClick={handleClearResults} className="text-sm text-red-400 hover:text-red-300">
+            Clear All
+          </button>
         )}
       </div>
 
@@ -974,25 +1085,49 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
           <div className="flex items-center justify-between">
             <h3 className="font-display text-lg text-qw-accent">DISCORD SUBMISSIONS</h3>
             <div className="flex gap-2 items-center">
-              {filteredSubmissions.filter(s => s.status === 'pending').length > 1 && (
-                <button onClick={handleBulkApprove} className="px-3 py-1 rounded bg-qw-win text-qw-dark text-sm font-semibold">
-                  Approve All ({filteredSubmissions.filter(s => s.status === 'pending').length})
+              {filteredSubmissions.filter((s) => s.status === 'pending').length > 1 && (
+                <button
+                  onClick={handleBulkApprove}
+                  className="px-3 py-1 rounded bg-qw-win text-qw-dark text-sm font-semibold"
+                >
+                  Approve All ({filteredSubmissions.filter((s) => s.status === 'pending').length})
                 </button>
               )}
-              {filteredSubmissions.filter(s => s.status === 'approved').length > 1 && (
-                <button onClick={handleBulkReprocess} className="px-3 py-1 rounded bg-qw-accent text-qw-dark text-sm font-semibold">
-                  Reprocess All ({filteredSubmissions.filter(s => s.status === 'approved').length})
+              {filteredSubmissions.filter((s) => s.status === 'approved').length > 1 && (
+                <button
+                  onClick={handleBulkReprocess}
+                  className="px-3 py-1 rounded bg-qw-accent text-qw-dark text-sm font-semibold"
+                >
+                  Reprocess All ({filteredSubmissions.filter((s) => s.status === 'approved').length}
+                  )
                 </button>
               )}
               <label className="flex items-center gap-1.5 text-xs text-qw-muted cursor-pointer">
-                <input type="checkbox" checked={filterByDivision} onChange={(e) => setFilterByDivision(e.target.checked)} className="accent-qw-accent" />
+                <input
+                  type="checkbox"
+                  checked={filterByDivision}
+                  onChange={(e) => setFilterByDivision(e.target.checked)}
+                  className="accent-qw-accent"
+                />
                 This Division Only
               </label>
               <label className="flex items-center gap-1.5 text-xs text-qw-muted cursor-pointer">
-                <input type="checkbox" checked={showApproved} onChange={(e) => { setShowApproved(e.target.checked); fetchSubmissions(e.target.checked); }} className="accent-qw-accent" />
+                <input
+                  type="checkbox"
+                  checked={showApproved}
+                  onChange={(e) => {
+                    setShowApproved(e.target.checked);
+                    fetchSubmissions(e.target.checked);
+                  }}
+                  className="accent-qw-accent"
+                />
                 Show Approved
               </label>
-              <button onClick={() => fetchSubmissions(showApproved)} disabled={submissionsLoading} className="px-3 py-1 rounded border border-qw-border text-qw-muted text-sm hover:text-white disabled:opacity-50">
+              <button
+                onClick={() => fetchSubmissions(showApproved)}
+                disabled={submissionsLoading}
+                className="px-3 py-1 rounded border border-qw-border text-qw-muted text-sm hover:text-white disabled:opacity-50"
+              >
                 {submissionsLoading ? 'Loading...' : 'Refresh'}
               </button>
             </div>
@@ -1005,13 +1140,17 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
           )}
 
           {submissionsError && (
-            <div className="p-3 bg-red-900/30 border border-red-500/50 rounded text-red-300 text-sm">{submissionsError}</div>
+            <div className="p-3 bg-red-900/30 border border-red-500/50 rounded text-red-300 text-sm">
+              {submissionsError}
+            </div>
           )}
 
           {filteredSubmissions.length === 0 && !submissionsLoading && tournamentId && (
             <div className="text-center py-8 text-qw-muted">
               <div className="text-4xl mb-2">🤖</div>
-              <p>No {filterByDivision ? `submissions for ${division.name}` : 'pending submissions'}</p>
+              <p>
+                No {filterByDivision ? `submissions for ${division.name}` : 'pending submissions'}
+              </p>
               <p className="text-xs mt-1">
                 {filterByDivision
                   ? `Uncheck "This Division Only" to see all submissions`
@@ -1022,7 +1161,7 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
 
           {filteredSubmissions.length > 0 && (
             <div className="space-y-2">
-              {filteredSubmissions.map(sub => {
+              {filteredSubmissions.map((sub) => {
                 const gameData = sub.game_data || {};
                 const teams = gameData.teams || [];
                 // Handle both formats: hub objects [{name, frags}] or ktxstats strings ["team"]
@@ -1043,16 +1182,17 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
                   t1Frags = gameData.team_stats[rawT1Name]?.frags;
                   t2Frags = gameData.team_stats[rawT2Name]?.frags;
                 } else if (gameData.players) {
-                  t1Frags = 0; t2Frags = 0;
-                  gameData.players.forEach(p => {
-                    if (p.team === teams[0]) t1Frags += (p.stats?.frags || 0);
-                    else if (p.team === teams[1]) t2Frags += (p.stats?.frags || 0);
+                  t1Frags = 0;
+                  t2Frags = 0;
+                  gameData.players.forEach((p) => {
+                    if (p.team === teams[0]) t1Frags += p.stats?.frags || 0;
+                    else if (p.team === teams[1]) t2Frags += p.stats?.frags || 0;
                   });
                 }
 
                 // Detect which division(s) this submission belongs to
                 const detectedDivisions = detectSubmissionDivision(sub);
-                const isCurrentDivision = detectedDivisions?.some(d => d.id === division.id);
+                const isCurrentDivision = detectedDivisions?.some((d) => d.id === division.id);
 
                 return (
                   <div key={sub.id} className="p-4 bg-qw-dark rounded border border-qw-border">
@@ -1061,17 +1201,41 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
                         <div className="flex items-center gap-3 flex-wrap">
                           <span className="font-body font-semibold text-white">{t1Name}</span>
                           <span className="px-2 py-1 bg-qw-darker rounded font-mono text-sm">
-                            <span className={(t1Frags || 0) > (t2Frags || 0) ? 'text-qw-win font-bold' : 'text-white'}>{t1Frags ?? '?'}</span>
+                            <span
+                              className={
+                                (t1Frags || 0) > (t2Frags || 0)
+                                  ? 'text-qw-win font-bold'
+                                  : 'text-white'
+                              }
+                            >
+                              {t1Frags ?? '?'}
+                            </span>
                             <span className="text-qw-muted mx-1">-</span>
-                            <span className={(t2Frags || 0) > (t1Frags || 0) ? 'text-qw-win font-bold' : 'text-white'}>{t2Frags ?? '?'}</span>
+                            <span
+                              className={
+                                (t2Frags || 0) > (t1Frags || 0)
+                                  ? 'text-qw-win font-bold'
+                                  : 'text-white'
+                              }
+                            >
+                              {t2Frags ?? '?'}
+                            </span>
                           </span>
                           <span className="font-body font-semibold text-white">{t2Name}</span>
-                          <span className="text-qw-muted text-xs bg-qw-darker px-2 py-0.5 rounded">{mapName}</span>
-                          <span className="text-qw-muted text-xs bg-qw-darker px-2 py-0.5 rounded">{gameData.mode || '?'}</span>
+                          <span className="text-qw-muted text-xs bg-qw-darker px-2 py-0.5 rounded">
+                            {mapName}
+                          </span>
+                          <span className="text-qw-muted text-xs bg-qw-darker px-2 py-0.5 rounded">
+                            {gameData.mode || '?'}
+                          </span>
                           {sub.flags?.confidence != null && (
                             <span
                               className={`text-xs font-semibold px-2 py-0.5 rounded bg-qw-darker ${confidenceColor(sub.flags.confidence)}`}
-                              title={sub.flags.breakdown ? `Team: ${sub.flags.breakdown.teamMatch}/40, Schedule: ${sub.flags.breakdown.scheduleProximity}/30, BestOf: ${sub.flags.breakdown.bestOfFit}/15, Series: ${sub.flags.breakdown.seriesAffinity}/15` : `Confidence: ${sub.flags.confidence}%`}
+                              title={
+                                sub.flags.breakdown
+                                  ? `Team: ${sub.flags.breakdown.teamMatch}/40, Schedule: ${sub.flags.breakdown.scheduleProximity}/30, BestOf: ${sub.flags.breakdown.bestOfFit}/15, Series: ${sub.flags.breakdown.seriesAffinity}/15`
+                                  : `Confidence: ${sub.flags.confidence}%`
+                              }
                             >
                               {confidenceLabel(sub.flags.confidence)} {sub.flags.confidence}%
                             </span>
@@ -1079,11 +1243,9 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
                         </div>
                         <div className="text-xs text-qw-muted mt-1 flex items-center gap-2 flex-wrap">
                           <span>
-                            Submitted by <span className="text-qw-accent">{sub.submitted_by_name}</span>
-                            {' '}&middot;{' '}
-                            {new Date(sub.created_at).toLocaleString()}
-                            {' '}&middot;{' '}
-                            Game #{sub.game_id}
+                            Submitted by{' '}
+                            <span className="text-qw-accent">{sub.submitted_by_name}</span> &middot;{' '}
+                            {new Date(sub.created_at).toLocaleString()} &middot; Game #{sub.game_id}
                           </span>
                           {detectedDivisions ? (
                             detectedDivisions.length === 1 ? (
@@ -1100,7 +1262,7 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
                             ) : (
                               <span
                                 className="px-2 py-0.5 bg-purple-900/30 border border-purple-500/50 text-purple-300 rounded text-xs font-semibold"
-                                title={`Teams found in: ${detectedDivisions.map(d => d.name).join(', ')}`}
+                                title={`Teams found in: ${detectedDivisions.map((d) => d.name).join(', ')}`}
                               >
                                 📍 Multiple ({detectedDivisions.length})
                               </span>
@@ -1119,16 +1281,25 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
                         {sub.status === 'approved' ? (
                           <>
                             <span className="text-qw-win text-xs font-semibold">Approved</span>
-                            <button onClick={() => handleReprocess(sub)} className="px-3 py-1.5 rounded bg-qw-accent text-qw-dark text-sm font-semibold hover:bg-qw-accent/80">
+                            <button
+                              onClick={() => handleReprocess(sub)}
+                              className="px-3 py-1.5 rounded bg-qw-accent text-qw-dark text-sm font-semibold hover:bg-qw-accent/80"
+                            >
                               Reprocess
                             </button>
                           </>
                         ) : (
                           <>
-                            <button onClick={() => handleApprove(sub)} className="px-3 py-1.5 rounded bg-qw-win text-qw-dark text-sm font-semibold hover:bg-qw-win/80">
+                            <button
+                              onClick={() => handleApprove(sub)}
+                              className="px-3 py-1.5 rounded bg-qw-win text-qw-dark text-sm font-semibold hover:bg-qw-win/80"
+                            >
                               Approve
                             </button>
-                            <button onClick={() => handleReject(sub)} className="px-3 py-1.5 rounded border border-red-500/50 text-red-400 text-sm hover:bg-red-900/30">
+                            <button
+                              onClick={() => handleReject(sub)}
+                              className="px-3 py-1.5 rounded border border-red-500/50 text-red-400 text-sm hover:bg-red-900/30"
+                            >
                               Reject
                             </button>
                           </>
@@ -1144,16 +1315,39 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
       ) : mode === 'json' ? (
         <div className="qw-panel p-6 space-y-4">
           <h3 className="font-display text-lg text-qw-accent">IMPORT JSON FILES</h3>
-          <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept=".json" multiple className="hidden" />
-          <button onClick={() => fileInputRef.current?.click()} disabled={loading} className="px-4 py-3 rounded border-2 border-dashed border-qw-border hover:border-qw-accent text-qw-muted hover:text-white transition-all w-full flex items-center justify-center gap-2 disabled:opacity-50">
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileUpload}
+            accept=".json"
+            multiple
+            className="hidden"
+          />
+          <button
+            onClick={() => fileInputRef.current?.click()}
+            disabled={loading}
+            className="px-4 py-3 rounded border-2 border-dashed border-qw-border hover:border-qw-accent text-qw-muted hover:text-white transition-all w-full flex items-center justify-center gap-2 disabled:opacity-50"
+          >
             <span className="text-2xl">?</span>
             <span>{loading ? 'Processing...' : 'Select JSON files (Ctrl+click for multiple)'}</span>
           </button>
-          
+
           <div>
             <label className="block text-qw-muted text-sm mb-1">Or paste JSON:</label>
-            <textarea value={jsonInput} onChange={(e) => setJsonInput(e.target.value)} placeholder='{"teams": [...], "players": [...]}' rows={4} className="w-full bg-qw-dark border border-qw-border rounded px-4 py-2 font-mono text-white text-sm resize-none" />
-            <button onClick={handleJsonPaste} disabled={!jsonInput.trim()} className="qw-btn mt-2 disabled:opacity-50">Import</button>
+            <textarea
+              value={jsonInput}
+              onChange={(e) => setJsonInput(e.target.value)}
+              placeholder='{"teams": [...], "players": [...]}'
+              rows={4}
+              className="w-full bg-qw-dark border border-qw-border rounded px-4 py-2 font-mono text-white text-sm resize-none"
+            />
+            <button
+              onClick={handleJsonPaste}
+              disabled={!jsonInput.trim()}
+              className="qw-btn mt-2 disabled:opacity-50"
+            >
+              Import
+            </button>
           </div>
         </div>
       ) : mode === 'discover' ? (
@@ -1162,7 +1356,8 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
           <h3 className="font-display text-lg text-qw-accent">DISCOVER GAMES</h3>
           <p className="text-sm text-qw-muted">
             Automatically find games for this division's scheduled matchups using the QW Stats API.
-            Uses the confidence model to score each candidate (roster, schedule, matchtag, series format).
+            Uses the confidence model to score each candidate (roster, schedule, matchtag, series
+            format).
           </p>
 
           <button
@@ -1174,7 +1369,7 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
               try {
                 // Build maps from all divisions
                 const mapPool = new Set();
-                for (const div of (tournament.divisions || [])) {
+                for (const div of tournament.divisions || []) {
                   for (const match of div.schedule || []) {
                     for (const map of match.maps || []) {
                       if (map.map) mapPool.add(map.map);
@@ -1183,7 +1378,9 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
                 }
                 // Also add common QW maps as fallback
                 if (mapPool.size === 0) {
-                  ['dm2', 'dm3', 'dm4', 'dm6', 'e1m2', 'aerowalk', 'ztndm3', 'skull'].forEach(m => mapPool.add(m));
+                  ['dm2', 'dm3', 'dm4', 'dm6', 'e1m2', 'aerowalk', 'ztndm3', 'skull'].forEach((m) =>
+                    mapPool.add(m)
+                  );
                 }
 
                 const config = {
@@ -1194,25 +1391,27 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
                   mapPool: [...mapPool],
                   tagPatterns: [],
                   threshold: 0,
-                  divisions: [{
-                    id: division.id,
-                    name: division.name,
-                    teams: (division.teams || []).map(t => ({
-                      name: t.name,
-                      tag: t.tag,
-                      aliases: t.aliases || [],
-                      players: t.players || '',
-                    })),
-                    schedule: (division.schedule || []).map(m => ({
-                      team1: m.team1,
-                      team2: m.team2,
-                      date: m.date,
-                      bestOf: m.bestOf,
-                      status: m.status,
-                    })),
-                    isPlayoffs: division.format !== 'groups',
-                    bestOf: division.groupStageBestOf || 3,
-                  }],
+                  divisions: [
+                    {
+                      id: division.id,
+                      name: division.name,
+                      teams: (division.teams || []).map((t) => ({
+                        name: t.name,
+                        tag: t.tag,
+                        aliases: t.aliases || [],
+                        players: t.players || '',
+                      })),
+                      schedule: (division.schedule || []).map((m) => ({
+                        team1: m.team1,
+                        team2: m.team2,
+                        date: m.date,
+                        bestOf: m.bestOf,
+                        status: m.status,
+                      })),
+                      isPlayoffs: division.format !== 'groups',
+                      bestOf: division.groupStageBestOf || 3,
+                    },
+                  ],
                   aliasMap: {},
                 };
 
@@ -1236,17 +1435,39 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
           </button>
 
           {discoverError && (
-            <div className="p-3 bg-red-900/30 border border-red-500/50 rounded text-red-300 text-sm">{discoverError}</div>
+            <div className="p-3 bg-red-900/30 border border-red-500/50 rounded text-red-300 text-sm">
+              {discoverError}
+            </div>
           )}
 
           {discoverResults && (
             <div className="space-y-4">
               {/* Summary */}
               <div className="flex flex-wrap gap-4 text-sm">
-                <span className="text-qw-muted">Scanned: <span className="text-white font-mono">{discoverResults.summary?.scanned || 0}</span></span>
-                <span className="text-qw-muted">Passed gates: <span className="text-qw-win font-mono">{discoverResults.summary?.passed || 0}</span></span>
-                <span className="text-qw-muted">Rejected: <span className="text-qw-loss font-mono">{discoverResults.summary?.rejected || 0}</span></span>
-                <span className="text-qw-muted">Series: <span className="text-qw-accent font-mono">{discoverResults.candidates?.length || 0}</span></span>
+                <span className="text-qw-muted">
+                  Scanned:{' '}
+                  <span className="text-white font-mono">
+                    {discoverResults.summary?.scanned || 0}
+                  </span>
+                </span>
+                <span className="text-qw-muted">
+                  Passed gates:{' '}
+                  <span className="text-qw-win font-mono">
+                    {discoverResults.summary?.passed || 0}
+                  </span>
+                </span>
+                <span className="text-qw-muted">
+                  Rejected:{' '}
+                  <span className="text-qw-loss font-mono">
+                    {discoverResults.summary?.rejected || 0}
+                  </span>
+                </span>
+                <span className="text-qw-muted">
+                  Series:{' '}
+                  <span className="text-qw-accent font-mono">
+                    {discoverResults.candidates?.length || 0}
+                  </span>
+                </span>
               </div>
 
               {(discoverResults.candidates || []).length > 0 && (
@@ -1264,7 +1485,9 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
                       }}
                       className="text-sm text-qw-accent hover:text-white"
                     >
-                      {discoverSelected.size === (discoverResults.candidates || []).length ? 'Deselect All' : 'Select All'}
+                      {discoverSelected.size === (discoverResults.candidates || []).length
+                        ? 'Deselect All'
+                        : 'Select All'}
                     </button>
                     {discoverSelected.size > 0 && (
                       <button
@@ -1283,7 +1506,9 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
                               let timestamp = null;
                               if (game.timestamp) {
                                 // eslint-disable-next-line no-empty
-                                try { timestamp = new Date(game.timestamp).getTime(); } catch {}
+                                try {
+                                  timestamp = new Date(game.timestamp).getTime();
+                                } catch {}
                               }
                               newMaps.push({
                                 id: `discover-${game.id}-${game.map}`,
@@ -1307,29 +1532,44 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
                         }}
                         className="qw-btn px-4 py-1.5 text-sm"
                       >
-                        Import Selected ({discoverSelected.size} series, {
-                          [...discoverSelected].reduce((sum, idx) => sum + ((discoverResults.candidates || [])[idx]?.games?.length || 0), 0)
-                        } maps)
+                        Import Selected ({discoverSelected.size} series,{' '}
+                        {[...discoverSelected].reduce(
+                          (sum, idx) =>
+                            sum + ((discoverResults.candidates || [])[idx]?.games?.length || 0),
+                          0
+                        )}{' '}
+                        maps)
                       </button>
                     )}
                     {discoverSelected.size > 0 && (
                       <button
                         onClick={async () => {
-                          const selected = [...discoverSelected].map(idx => discoverResults.candidates[idx]).filter(Boolean);
+                          const selected = [...discoverSelected]
+                            .map((idx) => discoverResults.candidates[idx])
+                            .filter(Boolean);
                           try {
                             const apiBase = import.meta.env.VITE_API_BASE_URL || '';
-                            const res = await fetch(`${apiBase}/api/discord?action=post-discovery`, {
-                              method: 'POST',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({
-                                tournamentId,
-                                candidates: selected,
-                                summary: discoverResults.summary || null,
-                              }),
-                            });
+                            const res = await fetch(
+                              `${apiBase}/api/discord?action=post-discovery`,
+                              {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                  tournamentId,
+                                  candidates: selected,
+                                  summary: discoverResults.summary || null,
+                                }),
+                              }
+                            );
                             const data = await res.json();
                             if (!res.ok) throw new Error(data.error || 'Failed');
-                            setWikiToast({ type: data.channels > 0 ? 'success' : 'warn', message: data.channels > 0 ? `Posted ${selected.length} candidate(s) to ${data.channels} channel(s)` : 'No registered channels' });
+                            setWikiToast({
+                              type: data.channels > 0 ? 'success' : 'warn',
+                              message:
+                                data.channels > 0
+                                  ? `Posted ${selected.length} candidate(s) to ${data.channels} channel(s)`
+                                  : 'No registered channels',
+                            });
                           } catch (err) {
                             setWikiToast({ type: 'error', message: err.message });
                           }
@@ -1338,7 +1578,9 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
                         className="qw-btn-secondary px-4 py-1.5 text-sm flex items-center gap-1.5"
                         title="Post selected candidates to Discord with Approve/Reject buttons"
                       >
-                        <svg width="14" height="11" viewBox="0 0 71 55" fill="currentColor"><path d="M60.1 4.9A58.5 58.5 0 0045.4.2a.2.2 0 00-.2.1 40.7 40.7 0 00-1.8 3.7 54 54 0 00-16.2 0A26.4 26.4 0 0025.4.3a.2.2 0 00-.2-.1A58.4 58.4 0 0010.5 5 59.6 59.6 0 00.4 45.2a.3.3 0 00.1.2 58.9 58.9 0 0017.7 9 .2.2 0 00.3-.1 42 42 0 003.6-5.9.2.2 0 00-.1-.3 38.8 38.8 0 01-5.5-2.7.2.2 0 01 0-.4c.4-.3.7-.6 1.1-.8a.2.2 0 01.2 0 42 42 0 0035.8 0 .2.2 0 01.2 0l1.1.9a.2.2 0 010 .3 36.4 36.4 0 01-5.5 2.7.2.2 0 00-.1.3 47.2 47.2 0 003.6 5.9.2.2 0 00.3.1A58.7 58.7 0 0070 45.4a.3.3 0 00.1-.2c1.6-16.7-2.7-31.2-11.5-44A.2.2 0 0058 .5zM23.7 37.1c-3.8 0-6.9-3.5-6.9-7.8s3-7.8 6.9-7.8c3.9 0 7 3.5 6.9 7.8 0 4.3-3 7.8-6.9 7.8zm25.5 0c-3.8 0-6.9-3.5-6.9-7.8s3-7.8 6.9-7.8c3.9 0 7 3.5 6.9 7.8 0 4.3-3.1 7.8-6.9 7.8z"/></svg>
+                        <svg width="14" height="11" viewBox="0 0 71 55" fill="currentColor">
+                          <path d="M60.1 4.9A58.5 58.5 0 0045.4.2a.2.2 0 00-.2.1 40.7 40.7 0 00-1.8 3.7 54 54 0 00-16.2 0A26.4 26.4 0 0025.4.3a.2.2 0 00-.2-.1A58.4 58.4 0 0010.5 5 59.6 59.6 0 00.4 45.2a.3.3 0 00.1.2 58.9 58.9 0 0017.7 9 .2.2 0 00.3-.1 42 42 0 003.6-5.9.2.2 0 00-.1-.3 38.8 38.8 0 01-5.5-2.7.2.2 0 01 0-.4c.4-.3.7-.6 1.1-.8a.2.2 0 01.2 0 42 42 0 0035.8 0 .2.2 0 01.2 0l1.1.9a.2.2 0 010 .3 36.4 36.4 0 01-5.5 2.7.2.2 0 00-.1.3 47.2 47.2 0 003.6 5.9.2.2 0 00.3.1A58.7 58.7 0 0070 45.4a.3.3 0 00.1-.2c1.6-16.7-2.7-31.2-11.5-44A.2.2 0 0058 .5zM23.7 37.1c-3.8 0-6.9-3.5-6.9-7.8s3-7.8 6.9-7.8c3.9 0 7 3.5 6.9 7.8 0 4.3-3 7.8-6.9 7.8zm25.5 0c-3.8 0-6.9-3.5-6.9-7.8s3-7.8 6.9-7.8c3.9 0 7 3.5 6.9 7.8 0 4.3-3.1 7.8-6.9 7.8z" />
+                        </svg>
                         Post to Discord
                       </button>
                     )}
@@ -1349,8 +1591,14 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
                     {(discoverResults.candidates || []).map((series, idx) => {
                       const isSelected = discoverSelected.has(idx);
                       const conf = series.avgConfidence || 0;
-                      const confColor = conf >= 80 ? 'text-qw-win' : conf >= 50 ? 'text-amber-300' : 'text-qw-loss';
-                      const confBg = conf >= 80 ? 'bg-qw-win/15 border-qw-win/30' : conf >= 50 ? 'bg-amber-500/15 border-amber-500/30' : 'bg-qw-loss/15 border-qw-loss/30';
+                      const confColor =
+                        conf >= 80 ? 'text-qw-win' : conf >= 50 ? 'text-amber-300' : 'text-qw-loss';
+                      const confBg =
+                        conf >= 80
+                          ? 'bg-qw-win/15 border-qw-win/30'
+                          : conf >= 50
+                            ? 'bg-amber-500/15 border-amber-500/30'
+                            : 'bg-qw-loss/15 border-qw-loss/30';
                       return (
                         <div
                           key={`${series.team1}-${series.team2}-${idx}`}
@@ -1368,15 +1616,28 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
                         >
                           <div className="flex items-center justify-between gap-3">
                             <div className="flex items-center gap-3 flex-1 min-w-0">
-                              <input type="checkbox" checked={isSelected} readOnly className="accent-qw-accent flex-shrink-0" />
-                              <span className="font-body font-semibold text-white truncate">{series.team1}</span>
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                readOnly
+                                className="accent-qw-accent flex-shrink-0"
+                              />
+                              <span className="font-body font-semibold text-white truncate">
+                                {series.team1}
+                              </span>
                               <span className="text-qw-muted text-xs">vs</span>
-                              <span className="font-body font-semibold text-white truncate">{series.team2}</span>
+                              <span className="font-body font-semibold text-white truncate">
+                                {series.team2}
+                              </span>
                             </div>
                             <div className="flex items-center gap-3 flex-shrink-0">
-                              <span className="text-xs text-qw-muted">{series.mapCount} map{series.mapCount !== 1 ? 's' : ''}</span>
+                              <span className="text-xs text-qw-muted">
+                                {series.mapCount} map{series.mapCount !== 1 ? 's' : ''}
+                              </span>
                               <span className="text-xs text-qw-muted">{series.source}</span>
-                              <span className={`px-2 py-0.5 rounded text-xs font-bold ${confBg} ${confColor}`}>
+                              <span
+                                className={`px-2 py-0.5 rounded text-xs font-bold ${confBg} ${confColor}`}
+                              >
                                 {conf}%
                               </span>
                             </div>
@@ -1386,17 +1647,40 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
                             {(series.games || []).map((game, gi) => {
                               const t1 = game.teams?.[0] || {};
                               const t2 = game.teams?.[1] || {};
-                              const dateStr = game.timestamp ? new Date(game.timestamp).toLocaleDateString('sv-SE') : '';
+                              const dateStr = game.timestamp
+                                ? new Date(game.timestamp).toLocaleDateString('sv-SE')
+                                : '';
                               return (
-                                <div key={gi} className="flex items-center gap-2 text-xs bg-qw-darker px-2 py-1 rounded">
+                                <div
+                                  key={gi}
+                                  className="flex items-center gap-2 text-xs bg-qw-darker px-2 py-1 rounded"
+                                >
                                   <span className="text-qw-accent font-mono">{game.map}</span>
                                   <span className="font-mono">
-                                    <span className={(t1.frags ?? 0) > (t2.frags ?? 0) ? 'text-qw-win' : 'text-white'}>{t1.frags ?? '?'}</span>
+                                    <span
+                                      className={
+                                        (t1.frags ?? 0) > (t2.frags ?? 0)
+                                          ? 'text-qw-win'
+                                          : 'text-white'
+                                      }
+                                    >
+                                      {t1.frags ?? '?'}
+                                    </span>
                                     <span className="text-qw-muted">-</span>
-                                    <span className={(t2.frags ?? 0) > (t1.frags ?? 0) ? 'text-qw-win' : 'text-white'}>{t2.frags ?? '?'}</span>
+                                    <span
+                                      className={
+                                        (t2.frags ?? 0) > (t1.frags ?? 0)
+                                          ? 'text-qw-win'
+                                          : 'text-white'
+                                      }
+                                    >
+                                      {t2.frags ?? '?'}
+                                    </span>
                                   </span>
                                   {dateStr && <span className="text-qw-muted">{dateStr}</span>}
-                                  <span className={`${game.confidence?.total >= 80 ? 'text-qw-win' : game.confidence?.total >= 50 ? 'text-amber-300' : 'text-qw-loss'}`}>
+                                  <span
+                                    className={`${game.confidence?.total >= 80 ? 'text-qw-win' : game.confidence?.total >= 50 ? 'text-amber-300' : 'text-qw-loss'}`}
+                                  >
                                     {game.confidence?.total ?? '?'}
                                   </span>
                                 </div>
@@ -1411,7 +1695,10 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
               )}
 
               {(discoverResults.candidates || []).length === 0 && (
-                <p className="text-qw-muted text-sm">No matching games found. Make sure teams are set up and the tournament date range covers the period games were played.</p>
+                <p className="text-qw-muted text-sm">
+                  No matching games found. Make sure teams are set up and the tournament date range
+                  covers the period games were played.
+                </p>
               )}
             </div>
           )}
@@ -1420,7 +1707,10 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
         // --- BROWSE / SEARCH UI ---
         <div className="qw-panel p-6 space-y-4">
           <h3 className="font-display text-lg text-qw-accent">BROWSE GAMES</h3>
-          <p className="text-sm text-qw-muted">Search recent 4on4 games by team tag from the QW Stats API. Import basic match data (teams, score, map, date) directly.</p>
+          <p className="text-sm text-qw-muted">
+            Search recent 4on4 games by team tag from the QW Stats API. Import basic match data
+            (teams, score, map, date) directly.
+          </p>
 
           <div className="flex flex-wrap gap-3 items-end">
             <div className="flex-1 min-w-[140px]">
@@ -1459,8 +1749,10 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
                 className="bg-qw-darker border border-qw-border rounded px-3 py-2 text-white text-sm focus:border-qw-accent outline-none"
               >
                 <option value="">All Maps</option>
-                {['dm2', 'dm3', 'dm4', 'dm6', 'e1m2', 'aerowalk', 'ztndm3', 'skull'].map(m => (
-                  <option key={m} value={m}>{m}</option>
+                {['dm2', 'dm3', 'dm4', 'dm6', 'e1m2', 'aerowalk', 'ztndm3', 'skull'].map((m) => (
+                  <option key={m} value={m}>
+                    {m}
+                  </option>
                 ))}
               </select>
             </div>
@@ -1475,18 +1767,20 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
                   const opts = { limit: 30 };
                   if (browseMapFilter) opts.map = browseMapFilter;
                   if (browseDateFrom) {
-                    const monthsAgo = Math.ceil((Date.now() - new Date(browseDateFrom).getTime()) / (30 * 24 * 60 * 60 * 1000));
+                    const monthsAgo = Math.ceil(
+                      (Date.now() - new Date(browseDateFrom).getTime()) / (30 * 24 * 60 * 60 * 1000)
+                    );
                     if (monthsAgo > 0) opts.months = Math.min(monthsAgo + 1, 24);
                   }
                   const result = await QWStatsService.getForm(browseTeamTag.trim(), opts);
                   let games = result.games || [];
                   if (browseDateFrom) {
                     const from = new Date(browseDateFrom).getTime();
-                    games = games.filter(g => new Date(g.playedAt).getTime() >= from);
+                    games = games.filter((g) => new Date(g.playedAt).getTime() >= from);
                   }
                   if (browseDateTo) {
                     const to = new Date(browseDateTo + 'T23:59:59').getTime();
-                    games = games.filter(g => new Date(g.playedAt).getTime() <= to);
+                    games = games.filter((g) => new Date(g.playedAt).getTime() <= to);
                   }
                   setBrowseResults(games);
                 } catch (err) {
@@ -1502,7 +1796,9 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
           </div>
 
           {browseError && (
-            <div className="p-3 bg-red-900/30 border border-red-500/50 rounded text-red-300 text-sm">{browseError}</div>
+            <div className="p-3 bg-red-900/30 border border-red-500/50 rounded text-red-300 text-sm">
+              {browseError}
+            </div>
           )}
 
           {browseResults.length > 0 && (
@@ -1527,7 +1823,7 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
                       onClick={() => {
                         const selectedGames = browseResults.filter((_, i) => browseSelected.has(i));
                         const teamTag = browseTeamTag.trim().toLowerCase();
-                        const newMaps = selectedGames.map(game => {
+                        const newMaps = selectedGames.map((game) => {
                           const team1 = teamTag;
                           const team2 = (game.opponent || 'unknown').toLowerCase();
                           const scores = {};
@@ -1535,7 +1831,11 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
                           scores[team2] = game.oppFrags ?? 0;
                           let timestamp = null;
                           if (game.playedAt) {
-                            try { timestamp = new Date(game.playedAt).getTime(); } catch (e) { /* ignore */ }
+                            try {
+                              timestamp = new Date(game.playedAt).getTime();
+                            } catch (e) {
+                              /* ignore */
+                            }
                           }
                           return {
                             id: `browse-${game.id || game.demoSha256 || Date.now()}-${game.map}`,
@@ -1547,7 +1847,7 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
                             teams: [team1, team2],
                             matchupId: [team1, team2].sort().join('vs'),
                             scores,
-                            originalData: game
+                            originalData: game,
                           };
                         });
                         const added = addMapsInBatch(newMaps);
@@ -1569,7 +1869,9 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
                   const isSelected = browseSelected.has(idx);
                   const isWin = game.result === 'win';
                   const isLoss = game.result === 'loss';
-                  const dateStr = game.playedAt ? new Date(game.playedAt).toLocaleDateString('sv-SE') : '\u2014';
+                  const dateStr = game.playedAt
+                    ? new Date(game.playedAt).toLocaleDateString('sv-SE')
+                    : '\u2014';
                   return (
                     <div
                       key={game.id || idx}
@@ -1593,21 +1895,37 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
                             readOnly
                             className="accent-qw-accent flex-shrink-0"
                           />
-                          <span className="text-qw-muted text-xs font-mono w-20 flex-shrink-0">{dateStr}</span>
-                          <span className="px-2 py-0.5 bg-qw-darker rounded text-xs font-mono text-qw-accent flex-shrink-0">{game.map || '?'}</span>
-                          <span className="font-body font-semibold text-white truncate">{browseTeamTag.trim().toLowerCase()}</span>
-                          <span className="px-2 py-0.5 bg-qw-darker rounded font-mono text-sm flex-shrink-0">
-                            <span className={isWin ? 'text-qw-win font-bold' : ''}>{game.teamFrags ?? '?'}</span>
-                            <span className="text-qw-muted mx-1">-</span>
-                            <span className={isLoss ? 'text-qw-win font-bold' : ''}>{game.oppFrags ?? '?'}</span>
+                          <span className="text-qw-muted text-xs font-mono w-20 flex-shrink-0">
+                            {dateStr}
                           </span>
-                          <span className="font-body font-semibold text-white truncate">{game.opponent || '?'}</span>
+                          <span className="px-2 py-0.5 bg-qw-darker rounded text-xs font-mono text-qw-accent flex-shrink-0">
+                            {game.map || '?'}
+                          </span>
+                          <span className="font-body font-semibold text-white truncate">
+                            {browseTeamTag.trim().toLowerCase()}
+                          </span>
+                          <span className="px-2 py-0.5 bg-qw-darker rounded font-mono text-sm flex-shrink-0">
+                            <span className={isWin ? 'text-qw-win font-bold' : ''}>
+                              {game.teamFrags ?? '?'}
+                            </span>
+                            <span className="text-qw-muted mx-1">-</span>
+                            <span className={isLoss ? 'text-qw-win font-bold' : ''}>
+                              {game.oppFrags ?? '?'}
+                            </span>
+                          </span>
+                          <span className="font-body font-semibold text-white truncate">
+                            {game.opponent || '?'}
+                          </span>
                         </div>
-                        <span className={`text-xs font-semibold px-2 py-0.5 rounded flex-shrink-0 ${
-                          isWin ? 'bg-qw-win/20 text-qw-win' :
-                          isLoss ? 'bg-qw-loss/20 text-qw-loss' :
-                          'bg-qw-darker text-qw-muted'
-                        }`}>
+                        <span
+                          className={`text-xs font-semibold px-2 py-0.5 rounded flex-shrink-0 ${
+                            isWin
+                              ? 'bg-qw-win/20 text-qw-win'
+                              : isLoss
+                                ? 'bg-qw-loss/20 text-qw-loss'
+                                : 'bg-qw-darker text-qw-muted'
+                          }`}
+                        >
                           {isWin ? 'W' : isLoss ? 'L' : 'D'}
                         </span>
                       </div>
@@ -1619,24 +1937,28 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
           )}
 
           {browseResults.length === 0 && !browseLoading && !browseError && browseTeamTag && (
-            <p className="text-qw-muted text-sm">Enter a team tag and click Search to find recent 4on4 games.</p>
+            <p className="text-qw-muted text-sm">
+              Enter a team tag and click Search to find recent 4on4 games.
+            </p>
           )}
         </div>
       ) : (
         // --- API FETCH UI (UPDATED) ---
         <div className="qw-panel p-6 space-y-4">
           <h3 className="font-display text-lg text-qw-accent">API FETCH</h3>
-          <p className="text-sm text-qw-muted">Paste Game IDs or full URLs (up to 50) separated by spaces or newlines.</p>
-          
+          <p className="text-sm text-qw-muted">
+            Paste Game IDs or full URLs (up to 50) separated by spaces or newlines.
+          </p>
+
           <div className="flex flex-col gap-2">
-            <textarea 
+            <textarea
               value={apiInput}
               onChange={(e) => setApiInput(e.target.value)}
               placeholder="e.g. 168085&#10;https://www.quakeworld.nu/matches/168086"
               rows={5}
               className="w-full bg-qw-darker text-white p-2 rounded border border-qw-border focus:border-qw-win outline-none font-mono text-sm resize-y"
             />
-            <button 
+            <button
               onClick={handleApiFetch}
               disabled={loading || !apiInput.trim()}
               className="qw-btn px-6 py-2 disabled:opacity-50 disabled:cursor-not-allowed self-end"
@@ -1644,24 +1966,33 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
               {loading ? 'Fetching...' : 'FETCH MATCHES'}
             </button>
           </div>
-          
+
           {apiStatus && (
-            <div className={`text-sm font-mono ${apiStatus.includes('?') ? 'text-qw-win' : 'text-qw-accent'}`}>
+            <div
+              className={`text-sm font-mono ${apiStatus.includes('?') ? 'text-qw-win' : 'text-qw-accent'}`}
+            >
               {apiStatus}
             </div>
           )}
         </div>
       )}
 
-      {error && <div className="p-4 bg-red-900/30 border border-red-500/50 rounded text-red-300 font-mono text-sm whitespace-pre-wrap">{error}</div>}
+      {error && (
+        <div className="p-4 bg-red-900/30 border border-red-500/50 rounded text-red-300 font-mono text-sm whitespace-pre-wrap">
+          {error}
+        </div>
+      )}
 
       {lastImported.length > 0 && (
         <div className="qw-panel p-4 border-l-4 border-qw-win">
-          <h4 className="font-display text-sm text-qw-win mb-2">? IMPORTED {lastImported.length} MAP(S)</h4>
+          <h4 className="font-display text-sm text-qw-win mb-2">
+            ? IMPORTED {lastImported.length} MAP(S)
+          </h4>
           <div className="text-sm text-qw-muted space-y-1 max-h-24 overflow-y-auto">
-            {lastImported.map(m => (
+            {lastImported.map((m) => (
               <div key={m.id}>
-                {resolveTeamName(m.teams[0])} {m.scores[m.teams[0]]}-{m.scores[m.teams[1]]} {resolveTeamName(m.teams[1])} ({m.map})
+                {resolveTeamName(m.teams[0])} {m.scores[m.teams[0]]}-{m.scores[m.teams[1]]}{' '}
+                {resolveTeamName(m.teams[1])} ({m.map})
               </div>
             ))}
           </div>
@@ -1671,60 +2002,98 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
       {/* DETECTED SERIES (UNCHANGED) */}
       {detectedSeries.length > 0 && (
         <div className="qw-panel p-6">
-          <h3 className="font-display text-lg text-qw-accent mb-4">DETECTED SERIES ({detectedSeries.length})</h3>
+          <h3 className="font-display text-lg text-qw-accent mb-4">
+            DETECTED SERIES ({detectedSeries.length})
+          </h3>
           <p className="text-sm text-qw-muted mb-4">Maps grouped by matchup and time.</p>
-          
+
           <div className="space-y-3">
-            {detectedSeries.map(series => {
+            {detectedSeries.map((series) => {
               const [t1, t2] = series.resolvedTeams;
               const w1 = series.score[t1] || 0;
               const w2 = series.score[t2] || 0;
               const f1 = series.frags?.[t1] || 0;
               const f2 = series.frags?.[t2] || 0;
-              
+
               return (
-                <div key={series.id} className={`p-4 rounded border ${series.isLinked ? 'bg-qw-win/10 border-qw-win/50' : 'bg-qw-dark border-qw-border'}`}>
+                <div
+                  key={series.id}
+                  className={`p-4 rounded border ${series.isLinked ? 'bg-qw-win/10 border-qw-win/50' : 'bg-qw-dark border-qw-border'}`}
+                >
                   <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
                     <div className="flex items-center gap-3 flex-wrap">
-                      <span className={`font-body font-semibold ${w1 > w2 ? 'text-qw-win' : 'text-white'}`}>{t1}</span>
+                      <span
+                        className={`font-body font-semibold ${w1 > w2 ? 'text-qw-win' : 'text-white'}`}
+                      >
+                        {t1}
+                      </span>
                       <span className="px-2 py-1 bg-qw-darker rounded font-mono">
                         <span className={w1 > w2 ? 'text-qw-win font-bold' : ''}>{w1}</span>
                         <span className="text-qw-muted mx-1">-</span>
                         <span className={w2 > w1 ? 'text-qw-win font-bold' : ''}>{w2}</span>
                       </span>
-                      <span className={`font-body font-semibold ${w2 > w1 ? 'text-qw-win' : 'text-white'}`}>{t2}</span>
+                      <span
+                        className={`font-body font-semibold ${w2 > w1 ? 'text-qw-win' : 'text-white'}`}
+                      >
+                        {t2}
+                      </span>
                       <span className="text-qw-muted text-sm">({series.maps.length} maps)</span>
-                      <span className="px-2 py-0.5 bg-qw-darker rounded text-xs font-mono" title="Total frags">
+                      <span
+                        className="px-2 py-0.5 bg-qw-darker rounded text-xs font-mono"
+                        title="Total frags"
+                      >
                         <span className={f1 > f2 ? 'text-qw-accent' : 'text-qw-muted'}>{f1}</span>
                         <span className="text-qw-muted mx-1">-</span>
                         <span className={f2 > f1 ? 'text-qw-accent' : 'text-qw-muted'}>{f2}</span>
                         <span className="text-qw-muted ml-1">frags</span>
                       </span>
-                      {series.dateDisplay && <span className="text-qw-muted text-xs bg-qw-darker px-2 py-0.5 rounded">{series.dateDisplay}</span>}
+                      {series.dateDisplay && (
+                        <span className="text-qw-muted text-xs bg-qw-darker px-2 py-0.5 rounded">
+                          {series.dateDisplay}
+                        </span>
+                      )}
                     </div>
-                    
+
                     <div className="flex items-center gap-2">
                       {series.isLinked ? (
                         <span className="text-qw-win text-sm">? Linked</span>
                       ) : series.scheduledMatch ? (
-                        <button onClick={() => linkSeriesToMatch(series, series.scheduledMatch.id)} className="px-3 py-1 rounded bg-qw-accent text-qw-dark text-sm font-semibold">
+                        <button
+                          onClick={() => linkSeriesToMatch(series, series.scheduledMatch.id)}
+                          className="px-3 py-1 rounded bg-qw-accent text-qw-dark text-sm font-semibold"
+                        >
                           Link to Match
                         </button>
                       ) : (
                         <div className="flex items-center gap-2">
                           {unlinkableMatches.length > 0 && (
-                            <select onChange={(e) => e.target.value && linkSeriesToMatch(series, e.target.value)} className="bg-qw-darker border border-qw-border rounded px-2 py-1 text-sm text-white" defaultValue="">
-                              <option value="" disabled>Link to...</option>
-                              {unlinkableMatches.map(m => <option key={m.id} value={m.id}>{m.team1} vs {m.team2}</option>)}
+                            <select
+                              onChange={(e) =>
+                                e.target.value && linkSeriesToMatch(series, e.target.value)
+                              }
+                              className="bg-qw-darker border border-qw-border rounded px-2 py-1 text-sm text-white"
+                              defaultValue=""
+                            >
+                              <option value="" disabled>
+                                Link to...
+                              </option>
+                              {unlinkableMatches.map((m) => (
+                                <option key={m.id} value={m.id}>
+                                  {m.team1} vs {m.team2}
+                                </option>
+                              ))}
                             </select>
                           )}
-                          <button onClick={() => createMatchFromSeries(series)} className="px-3 py-1 rounded border border-qw-accent text-qw-accent text-sm hover:bg-qw-accent hover:text-qw-dark">
+                          <button
+                            onClick={() => createMatchFromSeries(series)}
+                            className="px-3 py-1 rounded border border-qw-accent text-qw-accent text-sm hover:bg-qw-accent hover:text-qw-dark"
+                          >
                             + Create Match
                           </button>
                         </div>
                       )}
-                      <button 
-                        onClick={() => removeSeries(series)} 
+                      <button
+                        onClick={() => removeSeries(series)}
                         className="px-2 py-1 rounded text-red-400 hover:bg-red-900/30 hover:text-red-300 text-sm"
                         title="Remove this series"
                       >
@@ -1732,15 +2101,19 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
                       </button>
                     </div>
                   </div>
-                  
+
                   <div className="flex flex-wrap gap-2 mt-2">
-                    {series.maps.map(map => {
+                    {series.maps.map((map) => {
                       const [o1, o2] = map.teams;
                       const ms1 = map.scores[o1] || 0;
                       const ms2 = map.scores[o2] || 0;
                       return (
-                        <span key={map.id} className="px-2 py-1 bg-qw-darker rounded text-xs font-mono">
-                          {map.map}: <span className={ms1 > ms2 ? 'text-qw-win' : ''}>{ms1}</span>-<span className={ms2 > ms1 ? 'text-qw-win' : ''}>{ms2}</span>
+                        <span
+                          key={map.id}
+                          className="px-2 py-1 bg-qw-darker rounded text-xs font-mono"
+                        >
+                          {map.map}: <span className={ms1 > ms2 ? 'text-qw-win' : ''}>{ms1}</span>-
+                          <span className={ms2 > ms1 ? 'text-qw-win' : ''}>{ms2}</span>
                         </span>
                       );
                     })}
@@ -1762,11 +2135,11 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
             <div className="flex items-center gap-3">
               <span className="text-xl">📊</span>
               <h3 className="font-display text-lg text-qw-accent">PLAYER STATISTICS</h3>
-              <span className="text-xs text-qw-muted">
-                (detailed stats from imported matches)
-              </span>
+              <span className="text-xs text-qw-muted">(detailed stats from imported matches)</span>
             </div>
-            <span className={`text-qw-accent transition-transform duration-200 ${showStats ? 'rotate-180' : ''}`}>
+            <span
+              className={`text-qw-accent transition-transform duration-200 ${showStats ? 'rotate-180' : ''}`}
+            >
               ▼
             </span>
           </button>
@@ -1788,7 +2161,9 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
             <span className="text-xl">🗺️</span>
             <h3 className="font-display text-lg text-qw-accent">RAW MAPS ({rawMaps.length})</h3>
           </div>
-          <span className={`text-qw-accent transition-transform duration-200 ${showRawMaps ? 'rotate-180' : ''}`}>
+          <span
+            className={`text-qw-accent transition-transform duration-200 ${showRawMaps ? 'rotate-180' : ''}`}
+          >
             ▼
           </span>
         </button>
@@ -1801,15 +2176,27 @@ export default function DivisionResults({ division, updateDivision, updateAnyDiv
               </div>
             ) : (
               <div className="space-y-1 max-h-48 overflow-y-auto">
-                {rawMaps.slice().reverse().map(map => (
-                  <div key={map.id} className="flex items-center justify-between p-2 bg-qw-dark rounded text-sm">
-                    <div className="flex items-center gap-3">
-                      <span className="text-qw-muted font-mono text-xs">{map.map}</span>
-                      <span className="text-white">{resolveTeamName(map.teams[0])} <span className="text-qw-accent">{map.scores[map.teams[0]]}-{map.scores[map.teams[1]]}</span> {resolveTeamName(map.teams[1])}</span>
+                {rawMaps
+                  .slice()
+                  .reverse()
+                  .map((map) => (
+                    <div
+                      key={map.id}
+                      className="flex items-center justify-between p-2 bg-qw-dark rounded text-sm"
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="text-qw-muted font-mono text-xs">{map.map}</span>
+                        <span className="text-white">
+                          {resolveTeamName(map.teams[0])}{' '}
+                          <span className="text-qw-accent">
+                            {map.scores[map.teams[0]]}-{map.scores[map.teams[1]]}
+                          </span>{' '}
+                          {resolveTeamName(map.teams[1])}
+                        </span>
+                      </div>
+                      <span className="text-qw-muted text-xs">{map.date?.split(' ')[0]}</span>
                     </div>
-                    <span className="text-qw-muted text-xs">{map.date?.split(' ')[0]}</span>
-                  </div>
-                ))}
+                  ))}
               </div>
             )}
           </div>

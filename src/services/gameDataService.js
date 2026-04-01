@@ -14,7 +14,7 @@ import QWStatsService from './QWStatsService.js';
 const FOUR_ON_FOUR_MODES = ['4on4', '4v4'];
 
 function is4on4(mode) {
-  return FOUR_ON_FOUR_MODES.some(m => (mode || '').toLowerCase().includes(m));
+  return FOUR_ON_FOUR_MODES.some((m) => (mode || '').toLowerCase().includes(m));
 }
 
 /**
@@ -25,7 +25,7 @@ function is4on4(mode) {
  * @param {string} [mode] - Tournament mode (unused until qw-stats adds single-game endpoint)
  * @returns {Promise<{ status: string, data: object, source: string }>}
  */
-export async function fetchGameData(gameId, mode) {
+export async function fetchGameData(gameId, _mode) {
   const base = import.meta.env.VITE_API_BASE_URL || '';
   const res = await fetch(`${base}/api/game/${encodeURIComponent(gameId)}`);
   if (!res.ok) {

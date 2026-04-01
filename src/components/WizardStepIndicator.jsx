@@ -43,17 +43,22 @@ export default function WizardStepIndicator({ currentStep, onStepClick }) {
                 className={`
                   w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold
                   transition-all duration-300 border-2
-                  ${isCompleted
-                    ? 'bg-qw-accent border-qw-accent text-qw-dark group-hover:bg-qw-accent-bright'
-                    : isCurrent
-                      ? 'bg-qw-accent border-qw-accent text-qw-dark'
-                      : 'bg-transparent border-qw-border text-qw-muted'
+                  ${
+                    isCompleted
+                      ? 'bg-qw-accent border-qw-accent text-qw-dark group-hover:bg-qw-accent-bright'
+                      : isCurrent
+                        ? 'bg-qw-accent border-qw-accent text-qw-dark'
+                        : 'bg-transparent border-qw-border text-qw-muted'
                   }
                 `}
               >
                 {isCompleted ? (
                   <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    <path
+                      fillRule="evenodd"
+                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                      clipRule="evenodd"
+                    />
                   </svg>
                 ) : (
                   <span>{idx + 1}</span>
@@ -65,11 +70,12 @@ export default function WizardStepIndicator({ currentStep, onStepClick }) {
                 className={`
                   hidden sm:block text-[10px] font-semibold uppercase tracking-wider
                   transition-colors duration-300
-                  ${isCompleted
-                    ? 'text-qw-accent group-hover:text-qw-accent-bright'
-                    : isCurrent
-                      ? 'text-white'
-                      : 'text-qw-muted'
+                  ${
+                    isCompleted
+                      ? 'text-qw-accent group-hover:text-qw-accent-bright'
+                      : isCurrent
+                        ? 'text-white'
+                        : 'text-qw-muted'
                   }
                 `}
               >
