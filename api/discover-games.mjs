@@ -21,7 +21,7 @@ const supabase = createClient(
 
 const QW_STATS_API = 'https://qw-api.poker-affiliate.org';
 const HUB_SUPABASE = 'https://ncsphkjfominimxztjip.supabase.co/rest/v1';
-const HUB_KEY = process.env.HUB_SUPABASE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5jc3Boa2pmb21pbmlteHp0amlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE2OTY5Mzg1NjMsImV4cCI6MjAxMjUxNDU2M30.NN6hjlEW-qB4Og9hWAVlgvUdwrbBO13s8OkAJuBGVbo';
+const HUB_KEY = process.env.QWICKY_SUPABASE_ANON_KEY;
 
 // ── Fetch games from ParadokS API ───────────────────────────────────────────
 
@@ -82,6 +82,7 @@ export default async function handler(req, res) {
 
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
+  if (!HUB_KEY) return res.status(500).json({ error: 'QWICKY_SUPABASE_ANON_KEY environment variable is not set' });
 
   const { tournamentId, divisionId, config: directConfig } = req.body || {};
 
