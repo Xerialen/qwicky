@@ -54,10 +54,6 @@ function deleteGuestDraft(draftId) {
   localStorage.setItem(GUEST_DRAFTS_KEY, JSON.stringify(drafts));
 }
 
-function generateUUID() {
-  return crypto.randomUUID();
-}
-
 // ── Component ────────────────────────────────────────────────────────────────
 
 export default function SetupWizard({
@@ -93,6 +89,7 @@ export default function SetupWizard({
 
   const autosaveTimerRef = useRef(null);
   const stepInitialisedRef = useRef(false);
+  const persistDraftRef = useRef(null);
 
   // Refs for latest tournament/step — used by persistDraft to avoid stale closures
   const tournamentRef = useRef(tournament);
@@ -114,7 +111,7 @@ export default function SetupWizard({
       // If store already has a draftId (resume flow), nothing to create
       if (draftId) return;
 
-      const id = generateUUID();
+      const id = crypto.randomUUID();
       setDraftId(id);
       // Only persist draft after user advances past step 0 (handled in handleNext)
     };
@@ -185,11 +182,19 @@ export default function SetupWizard({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [draftId, setSaving, setSynced, setError, markClean]);
 
+  // Keep persistDraftRef current so scheduleAutosave always calls the latest version
+  useEffect(() => {
+    persistDraftRef.current = persistDraft;
+  });
+
   const scheduleAutosave = useCallback(() => {
     markDirty();
     clearTimeout(autosaveTimerRef.current);
-    autosaveTimerRef.current = setTimeout(persistDraft, AUTOSAVE_DEBOUNCE_MS);
-  }, [markDirty, persistDraft]);
+    autosaveTimerRef.current = setTimeout(
+      () => persistDraftRef.current?.(),
+      AUTOSAVE_DEBOUNCE_MS
+    );
+  }, [markDirty]);
 
   // Patch updateTournamentInfo to trigger autosave on blur
   const handleFieldBlur = useCallback(() => {
