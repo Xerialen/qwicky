@@ -8,6 +8,8 @@ import LandingScreen from './components/LandingScreen';
 import SetupWizard from './components/SetupWizard';
 import PublicTournament from './pages/PublicTournament';
 import { useTournamentState } from './hooks/useTournamentState.js';
+import { useWizardStore } from './stores/wizardStore.js';
+import { supabase } from './services/supabaseClient.js';
 
 // Default tournament structure
 const createDefaultTournament = () => ({
@@ -337,6 +339,8 @@ function App() {
     tournament.divisions?.length > 0 ? 'app' : 'landing'
   );
 
+  const { setDraftId: setWizardDraftId } = useWizardStore();
+
   // UI state
   const [activeTab, setActiveTab] = useState('info'); // info, divisions, division
   const [initialSubTab, setInitialSubTab] = useState(null);
@@ -531,6 +535,40 @@ function App() {
 
   // ─── Landing screen ──────────────────────────────────────────────
   if (appMode === 'landing') {
+    const handleResume = async (draftId) => {
+      // Load draft data from Supabase (signed-in) or localStorage (guest)
+      let draftData = null;
+      if (supabase) {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        if (session) {
+          const { data } = await supabase
+            .from('tournament_drafts')
+            .select('data')
+            .eq('id', draftId)
+            .single();
+          draftData = data?.data ?? null;
+        }
+      }
+      if (!draftData) {
+        // Guest fallback
+        try {
+          const guestDrafts = JSON.parse(localStorage.getItem('qwicky-wizard-drafts') || '[]');
+          const found = guestDrafts.find((d) => d.id === draftId);
+          draftData = found?.data ?? null;
+        } catch {
+          draftData = null;
+        }
+      }
+      if (draftData) {
+        setTournament((prev) => ({ ...prev, ...draftData }));
+      }
+      setWizardDraftId(draftId);
+      setActiveTab('info');
+      setAppMode('wizard');
+    };
+
     return (
       <LandingScreen
         hasExistingData={hasExistingData}
@@ -547,6 +585,7 @@ function App() {
           if (loaded) setAppMode('app');
         }}
         isLoading={isLoading}
+        onResume={handleResume}
       />
     );
   }
