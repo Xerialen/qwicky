@@ -128,7 +128,7 @@ export default function DivisionResults({
     try {
       const status = includeApproved ? 'all' : 'pending';
       const res = await fetch(
-        `/api/submissions/${encodeURIComponent(tournamentId)}?status=${status}`
+        `/api/admin?action=submissions&tournamentId=${encodeURIComponent(tournamentId)}&status=${status}`
       );
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to fetch');

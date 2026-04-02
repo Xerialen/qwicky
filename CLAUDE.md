@@ -66,13 +66,16 @@ qwicky/
 │   │   └── dataTransformer.js     # API response transformers
 │   └── hooks/
 │       └── useLocalStorage.js     # localStorage persistence hook
-├── api/                           # Vercel serverless functions
+├── api/                           # Vercel serverless functions (7 total, within Hobby plan limit)
+│   ├── _auth.mjs                  # Shared admin auth helper (not a function)
+│   ├── admin.mjs                  # Admin hub: ?action=aliases|submissions|auto-approve
+│   ├── discord.mjs                # Discord bot hub: ?action= routing
+│   ├── discover-games.mjs         # Discover QuakeWorld games
 │   ├── game/[gameId].mjs          # Fetch game stats from hub + ktxstats
-│   ├── health.mjs                 # Health check endpoint
-│   ├── submissions/[tournamentId].mjs  # GET pending/approved Discord submissions
-│   └── submission/[submissionId]/
-│       ├── approve.mjs            # POST approve a submission
-│       └── reject.mjs             # POST reject a submission
+│   ├── public.mjs                 # Public read hub: ?action=list|get
+│   ├── submission/[submissionId]/ # Submission approve/reject
+│   │   ├── [action].mjs           # POST approve or reject a submission
+│   └── wiki.mjs                   # Wiki hub: ?action= routing
 ├── vite.config.js                 # Vite configuration (has Swedish comments)
 ├── tailwind.config.js             # Tailwind theme customization
 └── vercel.json                    # Vercel deployment config
@@ -302,11 +305,15 @@ App.jsx (state provider — exports createDefaultDivision, createDefaultBracket)
 
 ### Vercel Serverless Functions
 
-**Health Check:**
+**Public (read-only, no auth):**
 ```
-GET /api/health
-Response: { status: 'ok', timestamp: '...' }
+GET /api/public?action=list
+Response: { tournaments: [...] }
+
+GET /api/public?action=get&slug=<tournamentId>
+Response: { tournament: {...}, divisions: [...], updatedAt: '...' }
 ```
+Cache-Control: public, max-age=60 on both actions.
 
 **Game Data:**
 ```
@@ -315,11 +322,20 @@ Response: { status: 'success', data: <ktxstats JSON> }
 ```
 Fetches game record from QuakeWorld Hub Supabase (`v1_games`), extracts `demo_sha256`, then fetches the actual ktxstats JSON from `d.quake.world`.
 
-**Discord Submissions:**
+**Admin hub (aliases — no auth; submissions — no auth; auto-approve — requires admin auth):**
 ```
-GET /api/submissions/[tournamentId]?status=pending|approved|all
+GET  /api/admin?action=aliases&tournamentId=<id>
+POST /api/admin?action=aliases                       Body: { tournamentId, teamId, alias, canonical, isGlobal, source }
+DELETE /api/admin?action=aliases&id=<uuid>
+
+GET /api/admin?action=submissions&tournamentId=<id>&status=pending|approved|all
 Response: { submissions: [...] }
 
+POST /api/admin?action=auto-approve                  Body: { submissionId, tournamentId, divisionId, gameData }
+```
+
+**Submission approve/reject:**
+```
 POST /api/submission/[submissionId]/approve
 Response: { submission: {...} }
 
@@ -475,7 +491,7 @@ Player posts hub URL in Discord channel
 ### Key Implementation Details
 
 **DivisionResults.jsx — Discord mode:**
-- `fetchSubmissions(includeApproved)` — fetches from `/api/submissions/[tournamentId]` with `?status=pending|all`
+- `fetchSubmissions(includeApproved)` — fetches from `/api/admin?action=submissions&tournamentId=<id>` with `&status=pending|all`
 - `handleApprove(submission)` — parses game data FIRST, then marks as approved in DB (prevents data loss if parsing fails)
 - `handleBulkApprove()` — collects all parsed maps into an array, approves each in DB, then calls `addMapsInBatch` ONCE with the full batch (required for series detection and to avoid stale closure issues)
 - `handleReprocess(submission)` — re-imports an already-approved submission without touching the DB
