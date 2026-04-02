@@ -115,6 +115,7 @@ export function useTournamentState() {
         if (mountedRef.current) setError(err.message ?? null);
       }
     }, SYNC_DEBOUNCE_MS);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tournament, activeDivisionId]);
 
   // ── Fetch cloud tournament list on mount ───────────────────────────────────
@@ -204,6 +205,7 @@ export function useTournamentState() {
     } finally {
       if (mountedRef.current) setIsLoading(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return {
