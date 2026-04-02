@@ -5,8 +5,8 @@ const STEPS = [
   { label: 'Welcome' },
   { label: 'Basics' },
   { label: 'Divisions' },
-  { label: 'Format' },
   { label: 'Teams' },
+  { label: 'Format' },
   { label: 'Ready' },
 ];
 

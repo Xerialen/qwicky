@@ -4,6 +4,7 @@ import WizardStepIndicator from './WizardStepIndicator';
 import DivisionSetup from './division/DivisionSetup';
 import DivisionTeams from './division/DivisionTeams';
 import SaveStatusIndicator from './SaveStatusIndicator';
+import FormatRecommendation from './FormatRecommendation';
 import { useWizardStore } from '../stores/wizardStore.js';
 import useSyncStatusStore from '../stores/syncStatusStore.js';
 import { supabase } from '../services/supabaseClient.js';
@@ -190,10 +191,7 @@ export default function SetupWizard({
   const scheduleAutosave = useCallback(() => {
     markDirty();
     clearTimeout(autosaveTimerRef.current);
-    autosaveTimerRef.current = setTimeout(
-      () => persistDraftRef.current?.(),
-      AUTOSAVE_DEBOUNCE_MS
-    );
+    autosaveTimerRef.current = setTimeout(() => persistDraftRef.current?.(), AUTOSAVE_DEBOUNCE_MS);
   }, [markDirty]);
 
   // Patch updateTournamentInfo to trigger autosave on blur
@@ -633,64 +631,6 @@ export default function SetupWizard({
     return (
       <div className="space-y-4">
         <div className="text-center mb-4">
-          <h2 className="font-display font-bold text-2xl text-white mb-2">Division Format</h2>
-          {totalDivisions > 1 && (
-            <div className="flex items-center justify-center gap-2 mt-3">
-              {divisions.map((div, idx) => (
-                <button
-                  key={div.id}
-                  type="button"
-                  onClick={() => setWizardDivisionIndex(idx)}
-                  className={`
-                    px-3 py-1 rounded-full text-xs font-semibold transition-all
-                    ${
-                      idx === wizardDivisionIndex
-                        ? 'bg-qw-accent text-qw-dark'
-                        : 'bg-qw-dark border border-qw-border text-qw-muted hover:text-white'
-                    }
-                  `}
-                >
-                  {div.name}
-                </button>
-              ))}
-            </div>
-          )}
-          <p className="text-qw-muted text-sm mt-2">
-            Configuring: {currentDivision.name} ({wizardDivisionIndex + 1} of {totalDivisions})
-          </p>
-        </div>
-
-        <DivisionSetup
-          division={currentDivision}
-          updateDivision={(updates) => {
-            updateDivision(currentDivision.id, updates);
-            scheduleAutosave();
-          }}
-        />
-
-        {totalDivisions > 1 && wizardDivisionIndex < totalDivisions - 1 && (
-          <div className="text-center pt-2">
-            <button
-              type="button"
-              onClick={handleSkipRemaining}
-              className="text-sm text-qw-muted hover:text-qw-accent transition-colors underline"
-            >
-              Skip remaining divisions
-            </button>
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  const renderStep4 = () => {
-    if (!currentDivision) {
-      return <div className="text-center py-12 text-qw-muted">No divisions to configure.</div>;
-    }
-
-    return (
-      <div className="space-y-4">
-        <div className="text-center mb-4">
           <h2 className="font-display font-bold text-2xl text-white mb-2">Add Teams</h2>
           {totalDivisions > 1 && (
             <div className="flex items-center justify-center gap-2 mt-3">
@@ -741,6 +681,71 @@ export default function SetupWizard({
             </button>
           )}
         </div>
+      </div>
+    );
+  };
+
+  const renderStep4 = () => {
+    if (!currentDivision) {
+      return <div className="text-center py-12 text-qw-muted">No divisions to configure.</div>;
+    }
+
+    const totalTeamCount = (tournament.divisions || []).reduce(
+      (sum, d) => sum + (d.teams?.length || 0),
+      0
+    );
+
+    return (
+      <div className="space-y-4">
+        <div className="text-center mb-4">
+          <h2 className="font-display font-bold text-2xl text-white mb-2">Division Format</h2>
+          {totalDivisions > 1 && (
+            <div className="flex items-center justify-center gap-2 mt-3">
+              {divisions.map((div, idx) => (
+                <button
+                  key={div.id}
+                  type="button"
+                  onClick={() => setWizardDivisionIndex(idx)}
+                  className={`
+                    px-3 py-1 rounded-full text-xs font-semibold transition-all
+                    ${
+                      idx === wizardDivisionIndex
+                        ? 'bg-qw-accent text-qw-dark'
+                        : 'bg-qw-dark border border-qw-border text-qw-muted hover:text-white'
+                    }
+                  `}
+                >
+                  {div.name}
+                </button>
+              ))}
+            </div>
+          )}
+          <p className="text-qw-muted text-sm mt-2">
+            Configuring: {currentDivision.name} ({wizardDivisionIndex + 1} of {totalDivisions})
+          </p>
+        </div>
+
+        <FormatRecommendation teamCount={totalTeamCount} />
+
+        <DivisionSetup
+          division={currentDivision}
+          updateDivision={(updates) => {
+            updateDivision(currentDivision.id, updates);
+            scheduleAutosave();
+          }}
+        />
+
+        {totalDivisions > 1 && wizardDivisionIndex < totalDivisions - 1 && (
+          <div className="text-center pt-2">
+            <button
+              type="button"
+              onClick={handleSkipRemaining}
+              className="text-sm text-qw-muted hover:text-qw-accent transition-colors underline"
+            >
+              Skip remaining divisions
+            </button>
+          </div>
+        )}
       </div>
     );
   };
