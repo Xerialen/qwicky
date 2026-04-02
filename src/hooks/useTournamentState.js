@@ -108,11 +108,11 @@ export function useTournamentState() {
           if (result.ok) {
             setSynced(Date.now());
           } else {
-            setError(null);
+            setError(result.error ?? null);
           }
         }
-      } catch {
-        if (mountedRef.current) setError(null);
+      } catch (err) {
+        if (mountedRef.current) setError(err.message ?? null);
       }
     }, SYNC_DEBOUNCE_MS);
   }, [tournament, activeDivisionId]);
