@@ -327,8 +327,6 @@ function App() {
     activeDivisionId,
     setActiveDivisionId,
     isLoading,
-    isSyncing,
-    lastSyncStatus,
     loadFromCloud,
     cloudTournaments,
   } = useTournamentState();

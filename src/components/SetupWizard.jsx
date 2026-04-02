@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import WizardStepIndicator from './WizardStepIndicator';
 import DivisionSetup from './division/DivisionSetup';
 import DivisionTeams from './division/DivisionTeams';
+import SaveStatusIndicator from './SaveStatusIndicator';
 
 const GAME_MODES = [
   { value: '4on4', label: '4on4', desc: 'Classic team deathmatch' },
@@ -656,15 +657,18 @@ export default function SetupWizard({
           <span className="font-display font-bold text-white text-sm">QWICKY</span>
           <span className="text-qw-muted text-xs ml-1">Setup</span>
         </div>
-        {step >= 1 && (
-          <button
-            type="button"
-            onClick={onSkipToApp}
-            className="text-xs text-qw-muted hover:text-qw-accent transition-colors"
-          >
-            Skip setup &rarr;
-          </button>
-        )}
+        <div className="flex items-center gap-3">
+          <SaveStatusIndicator />
+          {step >= 1 && (
+            <button
+              type="button"
+              onClick={onSkipToApp}
+              className="text-xs text-qw-muted hover:text-qw-accent transition-colors"
+            >
+              Skip setup &rarr;
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Step indicator */}
