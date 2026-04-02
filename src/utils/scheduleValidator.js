@@ -25,7 +25,7 @@ export function findConflicts(schedule, allDivisions = []) {
               matchId2: matchIds[j],
               team,
               date,
-              type: 'same-division'
+              type: 'same-division',
             });
           }
         }
@@ -66,7 +66,7 @@ export function findConflicts(schedule, allDivisions = []) {
                 matchId2: `${entries[j].divisionId}:${entries[j].matchId}`,
                 team: entries[i].team,
                 date,
-                type: 'cross-division'
+                type: 'cross-division',
               });
             }
           }
@@ -85,9 +85,7 @@ export function findConflicts(schedule, allDivisions = []) {
  * @returns {Array} conflicts involving this match
  */
 export function getMatchConflicts(matchId, conflicts) {
-  return conflicts.filter(c =>
-    c.matchId1 === matchId || c.matchId2 === matchId
-  );
+  return conflicts.filter((c) => c.matchId1 === matchId || c.matchId2 === matchId);
 }
 
 /**

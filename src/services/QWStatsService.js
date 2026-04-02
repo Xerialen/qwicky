@@ -55,8 +55,8 @@ const QWStatsService = {
   getH2H: (teamA, teamB, opts = {}) => {
     const p = new URLSearchParams({ teamA: normalizeTag(teamA), teamB: normalizeTag(teamB) });
     if (opts.months) p.set('months', opts.months);
-    if (opts.limit)  p.set('limit',  opts.limit);
-    if (opts.map)    p.set('map',    opts.map);
+    if (opts.limit) p.set('limit', opts.limit);
+    if (opts.map) p.set('map', opts.map);
     return qwFetch(`/api/h2h?${p}`);
   },
 
@@ -69,8 +69,8 @@ const QWStatsService = {
   getForm: (team, opts = {}) => {
     const p = new URLSearchParams({ team: normalizeTag(team) });
     if (opts.months) p.set('months', opts.months);
-    if (opts.limit)  p.set('limit',  opts.limit);
-    if (opts.map)    p.set('map',    opts.map);
+    if (opts.limit) p.set('limit', opts.limit);
+    if (opts.map) p.set('map', opts.map);
     return qwFetch(`/api/form?${p}`);
   },
 

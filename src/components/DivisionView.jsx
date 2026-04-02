@@ -8,7 +8,18 @@ import DivisionBracket from './division/DivisionBracket';
 import DivisionWiki from './division/DivisionWiki';
 import DivisionCasterView from './division/DivisionCasterView';
 
-export default function DivisionView({ division, updateDivision, updateAnyDivision, tournamentName, tournamentMode, tournamentStartDate, tournamentId, allDivisions, tournament, initialSubTab }) {
+export default function DivisionView({
+  division,
+  updateDivision,
+  updateAnyDivision,
+  tournamentName,
+  tournamentMode,
+  tournamentStartDate,
+  tournamentId,
+  allDivisions,
+  tournament,
+  initialSubTab,
+}) {
   const [activeSubTab, setActiveSubTab] = useState(initialSubTab || 'setup');
 
   // Respond to external navigation requests
@@ -28,7 +39,7 @@ export default function DivisionView({ division, updateDivision, updateAnyDivisi
       case 'schedule':
         return division.schedule?.length > 0 ? 'complete' : 'empty';
       case 'results': {
-        const hasResults = division.schedule?.some(m => m.maps?.length > 0);
+        const hasResults = division.schedule?.some((m) => m.maps?.length > 0);
         return hasResults ? 'complete' : 'empty';
       }
       case 'bracket':
@@ -51,9 +62,9 @@ export default function DivisionView({ division, updateDivision, updateAnyDivisi
   ];
 
   const statusColors = {
-    complete: 'bg-qw-win',    // #00FF88
+    complete: 'bg-qw-win', // #00FF88
     empty: 'bg-zinc-600',
-    optional: 'bg-zinc-700'
+    optional: 'bg-zinc-700',
   };
 
   const renderSubContent = () => {
@@ -61,24 +72,53 @@ export default function DivisionView({ division, updateDivision, updateAnyDivisi
       case 'setup':
         return <DivisionSetup division={division} updateDivision={updateDivision} />;
       case 'teams':
-        return <DivisionTeams division={division} updateDivision={updateDivision} tournamentMode={tournamentMode} allDivisions={allDivisions} />;
+        return (
+          <DivisionTeams
+            division={division}
+            updateDivision={updateDivision}
+            tournamentMode={tournamentMode}
+            allDivisions={allDivisions}
+          />
+        );
       case 'schedule':
-        return <DivisionSchedule division={division} updateDivision={updateDivision} tournamentStartDate={tournamentStartDate} allDivisions={allDivisions} tournamentId={tournamentId} />;
+        return (
+          <DivisionSchedule
+            division={division}
+            updateDivision={updateDivision}
+            tournamentStartDate={tournamentStartDate}
+            allDivisions={allDivisions}
+            tournamentId={tournamentId}
+          />
+        );
       case 'results':
-        return <DivisionResults division={division} updateDivision={updateDivision} updateAnyDivision={updateAnyDivision} tournamentId={tournamentId} tournament={tournament} />;
+        return (
+          <DivisionResults
+            division={division}
+            updateDivision={updateDivision}
+            updateAnyDivision={updateAnyDivision}
+            tournamentId={tournamentId}
+            tournament={tournament}
+          />
+        );
       case 'bracket':
         return <DivisionBracket division={division} updateDivision={updateDivision} />;
       case 'caster':
         return <DivisionCasterView division={division} />;
       case 'wiki':
-        return <DivisionWiki division={division} tournamentName={tournamentName} updateDivision={updateDivision} />;
+        return (
+          <DivisionWiki
+            division={division}
+            tournamentName={tournamentName}
+            updateDivision={updateDivision}
+          />
+        );
       default:
         return <DivisionSetup division={division} updateDivision={updateDivision} />;
     }
   };
 
   // Calculate stats
-  const completedMatches = division.schedule?.filter(m => m.status === 'completed').length || 0;
+  const completedMatches = division.schedule?.filter((m) => m.status === 'completed').length || 0;
   const totalMatches = division.schedule?.length || 0;
 
   return (
@@ -95,17 +135,16 @@ export default function DivisionView({ division, updateDivision, updateAnyDivisi
             <div>
               <h2 className="font-display font-bold text-2xl text-white">{division.name}</h2>
               <p className="text-sm text-qw-muted">
-                {division.teams?.length || 0} teams • 
-                {division.numGroups} groups • 
-                {completedMatches}/{totalMatches} matches completed
+                {division.teams?.length || 0} teams •{division.numGroups} groups •{completedMatches}
+                /{totalMatches} matches completed
               </p>
             </div>
           </div>
           <div className="text-right">
             <div className="text-sm text-qw-muted">Format</div>
             <div className="font-mono text-white">
-              Groups Bo{division.groupStageBestOf} → 
-              Playoffs Bo{division.playoffQFBestOf}/{division.playoffSFBestOf}/{division.playoffFinalBestOf}
+              Groups Bo{division.groupStageBestOf} → Playoffs Bo{division.playoffQFBestOf}/
+              {division.playoffSFBestOf}/{division.playoffFinalBestOf}
             </div>
           </div>
         </div>
@@ -122,9 +161,10 @@ export default function DivisionView({ division, updateDivision, updateAnyDivisi
               className={`
                 relative flex items-center gap-2 px-4 py-2 font-body font-semibold text-sm whitespace-nowrap
                 transition-all duration-200 rounded
-                ${activeSubTab === tab.id
-                  ? 'bg-qw-accent text-qw-dark'
-                  : 'bg-qw-panel border border-qw-border text-qw-muted hover:text-white hover:border-qw-accent'
+                ${
+                  activeSubTab === tab.id
+                    ? 'bg-qw-accent text-qw-dark'
+                    : 'bg-qw-panel border border-qw-border text-qw-muted hover:text-white hover:border-qw-accent'
                 }
               `}
             >
@@ -133,10 +173,12 @@ export default function DivisionView({ division, updateDivision, updateAnyDivisi
               <span className="text-base">{tab.icon}</span>
               {tab.label}
               {tab.count !== undefined && tab.count > 0 && (
-                <span className={`
+                <span
+                  className={`
                   px-1.5 py-0.5 rounded text-xs
                   ${activeSubTab === tab.id ? 'bg-qw-dark/30' : 'bg-qw-border'}
-                `}>
+                `}
+                >
                   {tab.count}
                 </span>
               )}

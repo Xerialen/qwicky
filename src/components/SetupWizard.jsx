@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import WizardStepIndicator from './WizardStepIndicator';
 import DivisionSetup from './division/DivisionSetup';
 import DivisionTeams from './division/DivisionTeams';
+import SaveStatusIndicator from './SaveStatusIndicator';
 
 const GAME_MODES = [
   { value: '4on4', label: '4on4', desc: 'Classic team deathmatch' },
@@ -47,20 +48,27 @@ export default function SetupWizard({
 
   const canNext = () => {
     switch (step) {
-      case 0: return true;
-      case 1: return (tournament.name || '').trim().length > 0;
-      case 2: return divisions.length >= 1;
-      case 3: return true;
-      case 4: return true;
-      case 5: return true;
-      default: return true;
+      case 0:
+        return true;
+      case 1:
+        return (tournament.name || '').trim().length > 0;
+      case 2:
+        return divisions.length >= 1;
+      case 3:
+        return true;
+      case 4:
+        return true;
+      case 5:
+        return true;
+      default:
+        return true;
     }
   };
 
   const handleNext = () => {
     // Steps 3 & 4: cycle through divisions before advancing
     if ((step === 3 || step === 4) && wizardDivisionIndex < totalDivisions - 1) {
-      setWizardDivisionIndex(prev => prev + 1);
+      setWizardDivisionIndex((prev) => prev + 1);
       return;
     }
 
@@ -77,7 +85,7 @@ export default function SetupWizard({
   const handleBack = () => {
     // Steps 3 & 4: cycle backwards through divisions first
     if ((step === 3 || step === 4) && wizardDivisionIndex > 0) {
-      setWizardDivisionIndex(prev => prev - 1);
+      setWizardDivisionIndex((prev) => prev - 1);
       return;
     }
 
@@ -111,14 +119,14 @@ export default function SetupWizard({
 
   const handleAddPreset = (name) => {
     // Avoid duplicates
-    if (divisions.some(d => d.name === name)) return;
+    if (divisions.some((d) => d.name === name)) return;
     addDivision(name);
   };
 
   const handleAddCustom = () => {
     const name = customDivName.trim();
     if (!name) return;
-    if (divisions.some(d => d.name === name)) return;
+    if (divisions.some((d) => d.name === name)) return;
     addDivision(name);
     setCustomDivName('');
   };
@@ -136,48 +144,77 @@ export default function SetupWizard({
   const renderStep0 = () => (
     <div className="space-y-6">
       <div className="text-center mb-8">
-        <h2 className="font-display font-bold text-2xl text-white mb-2">
-          Welcome to QWICKY
-        </h2>
-        <p className="text-qw-muted">
-          A few things to know before you start
-        </p>
+        <h2 className="font-display font-bold text-2xl text-white mb-2">Welcome to QWICKY</h2>
+        <p className="text-qw-muted">A few things to know before you start</p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="qw-panel p-5">
           <div className="text-2xl mb-3">
-            <svg className="w-8 h-8 text-qw-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            <svg
+              className="w-8 h-8 text-qw-accent"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+              />
             </svg>
           </div>
           <h3 className="font-display font-semibold text-white mb-1">Browser Storage Only</h3>
           <p className="text-sm text-qw-muted">
-            Your tournament data lives in this browser's local storage. It persists across sessions but isn't synced anywhere.
+            Your tournament data lives in this browser's local storage. It persists across sessions
+            but isn't synced anywhere.
           </p>
         </div>
 
         <div className="qw-panel p-5">
           <div className="text-2xl mb-3">
-            <svg className="w-8 h-8 text-qw-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            <svg
+              className="w-8 h-8 text-qw-accent"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+              />
             </svg>
           </div>
           <h3 className="font-display font-semibold text-white mb-1">Export & Import</h3>
           <p className="text-sm text-qw-muted">
-            Save your work by exporting to a JSON file. You can import it back anytime — even on a different computer.
+            Save your work by exporting to a JSON file. You can import it back anytime — even on a
+            different computer.
           </p>
         </div>
 
         <div className="qw-panel p-5">
           <div className="text-2xl mb-3">
-            <svg className="w-8 h-8 text-qw-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+            <svg
+              className="w-8 h-8 text-qw-accent"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+              />
             </svg>
           </div>
           <h3 className="font-display font-semibold text-white mb-1">Discord Bot (Optional)</h3>
           <p className="text-sm text-qw-muted">
-            Players can submit match results via Discord. You'll review and approve them in the app's Results tab.
+            Players can submit match results via Discord. You'll review and approve them in the
+            app's Results tab.
           </p>
         </div>
       </div>
@@ -197,12 +234,8 @@ export default function SetupWizard({
   const renderStep1 = () => (
     <div className="space-y-6 max-w-lg mx-auto">
       <div className="text-center mb-6">
-        <h2 className="font-display font-bold text-2xl text-white mb-2">
-          Tournament Basics
-        </h2>
-        <p className="text-qw-muted">
-          Name your tournament and pick a game mode
-        </p>
+        <h2 className="font-display font-bold text-2xl text-white mb-2">Tournament Basics</h2>
+        <p className="text-qw-muted">Name your tournament and pick a game mode</p>
       </div>
 
       {/* Tournament name */}
@@ -222,9 +255,7 @@ export default function SetupWizard({
 
       {/* Game mode */}
       <div>
-        <label className="block text-sm font-semibold text-qw-muted mb-2">
-          Game Mode
-        </label>
+        <label className="block text-sm font-semibold text-qw-muted mb-2">Game Mode</label>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           {GAME_MODES.map((mode) => (
             <button
@@ -233,9 +264,10 @@ export default function SetupWizard({
               onClick={() => updateTournamentInfo({ mode: mode.value })}
               className={`
                 p-3 rounded-lg border-2 text-center transition-all
-                ${tournament.mode === mode.value
-                  ? 'border-qw-accent bg-qw-accent/10 text-white'
-                  : 'border-qw-border bg-qw-dark text-qw-muted hover:border-qw-accent/50 hover:text-white'
+                ${
+                  tournament.mode === mode.value
+                    ? 'border-qw-accent bg-qw-accent/10 text-white'
+                    : 'border-qw-border bg-qw-dark text-qw-muted hover:border-qw-accent/50 hover:text-white'
                 }
               `}
             >
@@ -249,9 +281,7 @@ export default function SetupWizard({
       {/* Dates */}
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-semibold text-qw-muted mb-1.5">
-            Start Date
-          </label>
+          <label className="block text-sm font-semibold text-qw-muted mb-1.5">Start Date</label>
           <input
             type="date"
             value={tournament.startDate || ''}
@@ -260,9 +290,7 @@ export default function SetupWizard({
           />
         </div>
         <div>
-          <label className="block text-sm font-semibold text-qw-muted mb-1.5">
-            End Date
-          </label>
+          <label className="block text-sm font-semibold text-qw-muted mb-1.5">End Date</label>
           <input
             type="date"
             value={tournament.endDate || ''}
@@ -277,22 +305,16 @@ export default function SetupWizard({
   const renderStep2 = () => (
     <div className="space-y-6 max-w-lg mx-auto">
       <div className="text-center mb-6">
-        <h2 className="font-display font-bold text-2xl text-white mb-2">
-          Create Divisions
-        </h2>
-        <p className="text-qw-muted">
-          Most tournaments have 2-3 skill-based divisions
-        </p>
+        <h2 className="font-display font-bold text-2xl text-white mb-2">Create Divisions</h2>
+        <p className="text-qw-muted">Most tournaments have 2-3 skill-based divisions</p>
       </div>
 
       {/* Preset buttons */}
       <div>
-        <label className="block text-sm font-semibold text-qw-muted mb-2">
-          Quick Add
-        </label>
+        <label className="block text-sm font-semibold text-qw-muted mb-2">Quick Add</label>
         <div className="flex flex-wrap gap-2">
           {DIVISION_PRESETS.map((name) => {
-            const exists = divisions.some(d => d.name === name);
+            const exists = divisions.some((d) => d.name === name);
             return (
               <button
                 key={name}
@@ -301,13 +323,15 @@ export default function SetupWizard({
                 disabled={exists}
                 className={`
                   px-4 py-2 rounded-lg text-sm font-semibold transition-all
-                  ${exists
-                    ? 'bg-qw-accent/20 text-qw-accent border border-qw-accent/30 cursor-default'
-                    : 'bg-qw-dark border border-qw-border text-qw-muted hover:text-white hover:border-qw-accent'
+                  ${
+                    exists
+                      ? 'bg-qw-accent/20 text-qw-accent border border-qw-accent/30 cursor-default'
+                      : 'bg-qw-dark border border-qw-border text-qw-muted hover:text-white hover:border-qw-accent'
                   }
                 `}
               >
-                {exists ? '+ ' : '+ '}{name}
+                {exists ? '+ ' : '+ '}
+                {name}
               </button>
             );
           })}
@@ -364,7 +388,11 @@ export default function SetupWizard({
                   title="Remove division"
                 >
                   <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                    <path
+                      fillRule="evenodd"
+                      d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                      clipRule="evenodd"
+                    />
                   </svg>
                 </button>
               </div>
@@ -394,9 +422,7 @@ export default function SetupWizard({
       <div className="space-y-4">
         {/* Division selector header */}
         <div className="text-center mb-4">
-          <h2 className="font-display font-bold text-2xl text-white mb-2">
-            Division Format
-          </h2>
+          <h2 className="font-display font-bold text-2xl text-white mb-2">Division Format</h2>
           {totalDivisions > 1 && (
             <div className="flex items-center justify-center gap-2 mt-3">
               {divisions.map((div, idx) => (
@@ -406,9 +432,10 @@ export default function SetupWizard({
                   onClick={() => setWizardDivisionIndex(idx)}
                   className={`
                     px-3 py-1 rounded-full text-xs font-semibold transition-all
-                    ${idx === wizardDivisionIndex
-                      ? 'bg-qw-accent text-qw-dark'
-                      : 'bg-qw-dark border border-qw-border text-qw-muted hover:text-white'
+                    ${
+                      idx === wizardDivisionIndex
+                        ? 'bg-qw-accent text-qw-dark'
+                        : 'bg-qw-dark border border-qw-border text-qw-muted hover:text-white'
                     }
                   `}
                 >
@@ -446,20 +473,14 @@ export default function SetupWizard({
 
   const renderStep4 = () => {
     if (!currentDivision) {
-      return (
-        <div className="text-center py-12 text-qw-muted">
-          No divisions to configure.
-        </div>
-      );
+      return <div className="text-center py-12 text-qw-muted">No divisions to configure.</div>;
     }
 
     return (
       <div className="space-y-4">
         {/* Division selector header */}
         <div className="text-center mb-4">
-          <h2 className="font-display font-bold text-2xl text-white mb-2">
-            Add Teams
-          </h2>
+          <h2 className="font-display font-bold text-2xl text-white mb-2">Add Teams</h2>
           {totalDivisions > 1 && (
             <div className="flex items-center justify-center gap-2 mt-3">
               {divisions.map((div, idx) => (
@@ -469,9 +490,10 @@ export default function SetupWizard({
                   onClick={() => setWizardDivisionIndex(idx)}
                   className={`
                     px-3 py-1 rounded-full text-xs font-semibold transition-all
-                    ${idx === wizardDivisionIndex
-                      ? 'bg-qw-accent text-qw-dark'
-                      : 'bg-qw-dark border border-qw-border text-qw-muted hover:text-white'
+                    ${
+                      idx === wizardDivisionIndex
+                        ? 'bg-qw-accent text-qw-dark'
+                        : 'bg-qw-dark border border-qw-border text-qw-muted hover:text-white'
                     }
                   `}
                 >
@@ -514,31 +536,30 @@ export default function SetupWizard({
   const renderStep5 = () => {
     const formatLabel = (f) => {
       switch (f) {
-        case 'groups': return 'Groups + Playoffs';
-        case 'single-elim': return 'Single Elimination';
-        case 'double-elim': return 'Double Elimination';
-        case 'multi-tier': return 'Multi-Tier Playoffs';
-        default: return f;
+        case 'groups':
+          return 'Groups + Playoffs';
+        case 'single-elim':
+          return 'Single Elimination';
+        case 'double-elim':
+          return 'Double Elimination';
+        case 'multi-tier':
+          return 'Multi-Tier Playoffs';
+        default:
+          return f;
       }
     };
 
     return (
       <div className="space-y-6 max-w-lg mx-auto">
         <div className="text-center mb-6">
-          <h2 className="font-display font-bold text-2xl text-white mb-2">
-            You're All Set!
-          </h2>
-          <p className="text-qw-muted">
-            Here's a summary of your tournament
-          </p>
+          <h2 className="font-display font-bold text-2xl text-white mb-2">You're All Set!</h2>
+          <p className="text-qw-muted">Here's a summary of your tournament</p>
         </div>
 
         {/* Summary card */}
         <div className="qw-panel p-6 space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="font-display font-bold text-lg text-white">
-              {tournament.name}
-            </h3>
+            <h3 className="font-display font-bold text-lg text-white">{tournament.name}</h3>
             <span className="px-2 py-0.5 bg-qw-accent/20 text-qw-accent rounded text-xs font-mono font-semibold">
               {tournament.mode}
             </span>
@@ -568,15 +589,22 @@ export default function SetupWizard({
           <ul className="space-y-2 text-sm text-qw-muted">
             <li className="flex items-start gap-2">
               <span className="text-qw-accent mt-0.5">&#9656;</span>
-              <span>Generate the <strong className="text-white">schedule</strong> for each division</span>
+              <span>
+                Generate the <strong className="text-white">schedule</strong> for each division
+              </span>
             </li>
             <li className="flex items-start gap-2">
               <span className="text-qw-accent mt-0.5">&#9656;</span>
-              <span>Enter <strong className="text-white">results</strong> manually or via Discord integration</span>
+              <span>
+                Enter <strong className="text-white">results</strong> manually or via Discord
+                integration
+              </span>
             </li>
             <li className="flex items-start gap-2">
               <span className="text-qw-accent mt-0.5">&#9656;</span>
-              <span>Export to <strong className="text-white">MediaWiki</strong> format for league pages</span>
+              <span>
+                Export to <strong className="text-white">MediaWiki</strong> format for league pages
+              </span>
             </li>
           </ul>
         </div>
@@ -586,11 +614,7 @@ export default function SetupWizard({
         </p>
 
         <div className="text-center pt-2">
-          <button
-            type="button"
-            onClick={onComplete}
-            className="qw-btn px-8 py-3 text-lg"
-          >
+          <button type="button" onClick={onComplete} className="qw-btn px-8 py-3 text-lg">
             Open Tournament &rarr;
           </button>
         </div>
@@ -600,13 +624,20 @@ export default function SetupWizard({
 
   const renderCurrentStep = () => {
     switch (step) {
-      case 0: return renderStep0();
-      case 1: return renderStep1();
-      case 2: return renderStep2();
-      case 3: return renderStep3();
-      case 4: return renderStep4();
-      case 5: return renderStep5();
-      default: return null;
+      case 0:
+        return renderStep0();
+      case 1:
+        return renderStep1();
+      case 2:
+        return renderStep2();
+      case 3:
+        return renderStep3();
+      case 4:
+        return renderStep4();
+      case 5:
+        return renderStep5();
+      default:
+        return null;
     }
   };
 
@@ -619,20 +650,25 @@ export default function SetupWizard({
             className="w-8 h-8 rounded-lg flex items-center justify-center"
             style={{ background: '#FFB300' }}
           >
-            <span className="font-logo font-black text-sm" style={{ color: '#121212' }}>QW</span>
+            <span className="font-logo font-black text-sm" style={{ color: '#121212' }}>
+              QW
+            </span>
           </div>
           <span className="font-display font-bold text-white text-sm">QWICKY</span>
           <span className="text-qw-muted text-xs ml-1">Setup</span>
         </div>
-        {step >= 1 && (
-          <button
-            type="button"
-            onClick={onSkipToApp}
-            className="text-xs text-qw-muted hover:text-qw-accent transition-colors"
-          >
-            Skip setup &rarr;
-          </button>
-        )}
+        <div className="flex items-center gap-3">
+          <SaveStatusIndicator />
+          {step >= 1 && (
+            <button
+              type="button"
+              onClick={onSkipToApp}
+              className="text-xs text-qw-muted hover:text-qw-accent transition-colors"
+            >
+              Skip setup &rarr;
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Step indicator */}
@@ -643,9 +679,7 @@ export default function SetupWizard({
       </div>
 
       {/* Step content */}
-      <div className="flex-1 max-w-5xl w-full mx-auto px-4 py-8">
-        {renderCurrentStep()}
-      </div>
+      <div className="flex-1 max-w-5xl w-full mx-auto px-4 py-8">{renderCurrentStep()}</div>
 
       {/* Navigation buttons (not shown on step 5 — it has its own CTA) */}
       {step < 5 && (
@@ -657,7 +691,12 @@ export default function SetupWizard({
               className="qw-btn-secondary px-5 py-2.5 flex items-center gap-2"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 19l-7-7 7-7"
+                />
               </svg>
               Back
             </button>
@@ -677,10 +716,14 @@ export default function SetupWizard({
             >
               {(step === 3 || step === 4) && wizardDivisionIndex < totalDivisions - 1
                 ? 'Next Division'
-                : 'Next'
-              }
+                : 'Next'}
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5l7 7-7 7"
+                />
               </svg>
             </button>
           </div>

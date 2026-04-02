@@ -14,7 +14,7 @@ export default function Schedule({ matches }) {
   // Group by date
   const groupedByDate = useMemo(() => {
     const groups = {};
-    sortedMatches.forEach(match => {
+    sortedMatches.forEach((match) => {
       const dateKey = match.date ? match.date.split(' ')[0] : 'Unknown Date';
       if (!groups[dateKey]) {
         groups[dateKey] = [];
@@ -63,10 +63,7 @@ export default function Schedule({ matches }) {
               const winner = score1 > score2 ? team1 : score2 > score1 ? team2 : null;
 
               return (
-                <div
-                  key={match.id}
-                  className="p-4 hover:bg-qw-dark/50 transition-colors"
-                >
+                <div key={match.id} className="p-4 hover:bg-qw-dark/50 transition-colors">
                   <div className="flex items-center justify-between">
                     {/* Time */}
                     <div className="w-24 text-qw-muted font-mono text-sm">
@@ -76,27 +73,35 @@ export default function Schedule({ matches }) {
                     {/* Teams and Score */}
                     <div className="flex-1 flex items-center justify-center gap-4">
                       {/* Team 1 */}
-                      <div className={`flex-1 text-right font-body font-semibold text-lg
-                        ${winner === team1 ? 'text-qw-win' : winner === team2 ? 'text-qw-muted' : 'text-white'}`}>
+                      <div
+                        className={`flex-1 text-right font-body font-semibold text-lg
+                        ${winner === team1 ? 'text-qw-win' : winner === team2 ? 'text-qw-muted' : 'text-white'}`}
+                      >
                         {team1}
                       </div>
 
                       {/* Score */}
                       <div className="flex items-center gap-2 px-4 py-1 bg-qw-dark rounded">
-                        <span className={`font-mono font-bold text-xl w-8 text-center
-                          ${score1 > score2 ? 'text-qw-win' : score1 < score2 ? 'text-qw-loss' : 'text-white'}`}>
+                        <span
+                          className={`font-mono font-bold text-xl w-8 text-center
+                          ${score1 > score2 ? 'text-qw-win' : score1 < score2 ? 'text-qw-loss' : 'text-white'}`}
+                        >
                           {score1}
                         </span>
                         <span className="text-qw-muted">-</span>
-                        <span className={`font-mono font-bold text-xl w-8 text-center
-                          ${score2 > score1 ? 'text-qw-win' : score2 < score1 ? 'text-qw-loss' : 'text-white'}`}>
+                        <span
+                          className={`font-mono font-bold text-xl w-8 text-center
+                          ${score2 > score1 ? 'text-qw-win' : score2 < score1 ? 'text-qw-loss' : 'text-white'}`}
+                        >
                           {score2}
                         </span>
                       </div>
 
                       {/* Team 2 */}
-                      <div className={`flex-1 text-left font-body font-semibold text-lg
-                        ${winner === team2 ? 'text-qw-win' : winner === team1 ? 'text-qw-muted' : 'text-white'}`}>
+                      <div
+                        className={`flex-1 text-left font-body font-semibold text-lg
+                        ${winner === team2 ? 'text-qw-win' : winner === team1 ? 'text-qw-muted' : 'text-white'}`}
+                      >
                         {team2}
                       </div>
                     </div>

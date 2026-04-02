@@ -10,29 +10,94 @@
    ─────────────────────────────────────────────────────────────────────────── */
 
 :root {
-  --bg-app:      #09090B;
-  --bg-card:     #18181B;
-  --bg-input:    #18181B;
-  --bg-elevated: #27272A;
+  --bg-app: #09090b;
+  --bg-card: #18181b;
+  --bg-input: #18181b;
+  --bg-elevated: #27272a;
 
-  --text-primary:   #FAFAFA;
-  --text-secondary: #A1A1AA;
-  --text-bright:    #FFFFFF;
+  --text-primary: #fafafa;
+  --text-secondary: #a1a1aa;
+  --text-bright: #ffffff;
 
-  --accent:    #A78BFA;
-  --accent-dim:#8B5CF6;
-  --accent-on: #09090B;
+  --accent: #a78bfa;
+  --accent-dim: #8b5cf6;
+  --accent-on: #09090b;
 
-  --status-win:  #4ADE80;
-  --status-loss: #F87171;
+  --status-win: #4ade80;
+  --status-loss: #f87171;
 
-  --border:       #27272A;
-  --border-focus: #A78BFA;
+  --border: #27272a;
+  --border-focus: #a78bfa;
+
+  /* QWI-70 additions */
+  --accent-bright: #c4b5fd;
+  --status-draw: #a78bfa;
+  --status-warning: #fcd34d;
+  --status-info: #7dd3fc;
+  --text-disabled: #52525b;
+  --border-subtle: rgba(39, 39, 42, 0.5);
+  --border-control: #3f3f46;
+  --bg-overlay: rgba(0, 0, 0, 0.8);
+
+  --font-display: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-body: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, Consolas, monospace;
+
+  --text-xs: 0.65rem;
+  --text-sm: 0.75rem;
+  --text-base: 0.875rem;
+  --text-md: 1rem;
+  --text-lg: 1.25rem;
+  --text-xl: 1.5rem;
+  --text-2xl: 2rem;
+  --text-3xl: 2.5rem;
+
+  --weight-normal: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+
+  --tracking-tight: -0.02em;
+  --tracking-wide: 0.05em;
+  --tracking-widest: 0.06em;
+
+  --leading-tight: 1.2;
+  --leading-snug: 1.3;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.6;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  --radius-sm: 3px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-full: 9999px;
+
+  --focus-ring: 0 0 0 1px rgba(167, 139, 242, 0.25);
+  --focus-ring-lg: 0 0 0 2px var(--accent);
+  --shadow-none: none;
+  --shadow-hover: 0 1px 3px rgba(0, 0, 0, 0.3);
+
+  --duration-fast: 0.1s;
+  --duration-normal: 0.15s;
+  --duration-slow: 0.2s;
+  --ease-default: ease-out;
 }
 
 /* ── Reset ─────────────────────────────────────────────────────────────── */
 
-* { box-sizing: border-box; }
+* {
+  box-sizing: border-box;
+}
 
 body {
   margin: 0;
@@ -46,20 +111,44 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-body::before, body::after { content: none !important; }
-.noise-overlay, .scanline { display: none !important; }
-#root { position: relative; z-index: 1; }
+body::before,
+body::after {
+  content: none !important;
+}
+.noise-overlay,
+.scanline {
+  display: none !important;
+}
+#root {
+  position: relative;
+  z-index: 1;
+}
 
 /* ── Scrollbar ─────────────────────────────────────────────────────────── */
 
-::-webkit-scrollbar { width: 4px; height: 4px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #3F3F46; border-radius: 2px; }
-::-webkit-scrollbar-thumb:hover { background: #52525B; }
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #3f3f46;
+  border-radius: 2px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #52525b;
+}
 
 /* ── Typography ────────────────────────────────────────────────────────── */
 
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
   font-weight: 600;
   letter-spacing: -0.02em;
@@ -77,14 +166,17 @@ h1, h2, h3, h4, h5, h6 {
   position: relative;
 }
 
-.qw-panel::before, .qw-panel::after { content: none !important; }
+.qw-panel::before,
+.qw-panel::after {
+  content: none !important;
+}
 
 /* ── Inputs ────────────────────────────────────────────────────────────── */
 
-input[type="text"],
-input[type="number"],
-input[type="date"],
-input[type="time"],
+input[type='text'],
+input[type='number'],
+input[type='date'],
+input[type='time'],
 textarea,
 select {
   background: var(--bg-app);
@@ -97,10 +189,10 @@ select {
   transition: border-color 0.15s;
 }
 
-input[type="text"]:focus,
-input[type="number"]:focus,
-input[type="date"]:focus,
-input[type="time"]:focus,
+input[type='text']:focus,
+input[type='number']:focus,
+input[type='date']:focus,
+input[type='time']:focus,
 textarea:focus,
 select:focus {
   outline: none;
@@ -108,7 +200,8 @@ select:focus {
   box-shadow: 0 0 0 1px rgba(167, 139, 250, 0.25);
 }
 
-input::placeholder, textarea::placeholder {
+input::placeholder,
+textarea::placeholder {
   color: var(--text-secondary);
   opacity: 0.6;
 }
@@ -127,24 +220,26 @@ select option {
   color: var(--text-primary);
 }
 
-input[type="checkbox"] {
+input[type='checkbox'] {
   appearance: none;
   width: 16px;
   height: 16px;
-  border: 1px solid #3F3F46;
+  border: 1px solid var(--border-control);
   background: transparent;
   border-radius: 3px;
   cursor: pointer;
   position: relative;
-  transition: background 0.1s, border-color 0.1s;
+  transition:
+    background 0.1s,
+    border-color 0.1s;
 }
 
-input[type="checkbox"]:checked {
+input[type='checkbox']:checked {
   background: var(--accent);
   border-color: var(--accent);
 }
 
-input[type="checkbox"]:checked::after {
+input[type='checkbox']:checked::after {
   content: '✓';
   position: absolute;
   top: 50%;
@@ -167,13 +262,21 @@ input[type="checkbox"]:checked::after {
   border: none;
   border-radius: 6px;
   cursor: pointer;
-  transition: background 0.12s, opacity 0.12s;
+  transition:
+    background 0.12s,
+    opacity 0.12s;
   box-shadow: none;
 }
 
-.qw-btn::before { content: none !important; }
-.qw-btn:hover { background: var(--accent-dim); }
-.qw-btn:active { opacity: 0.85; }
+.qw-btn::before {
+  content: none !important;
+}
+.qw-btn:hover {
+  background: var(--accent-dim);
+}
+.qw-btn:active {
+  opacity: 0.85;
+}
 
 .qw-btn:disabled {
   background: var(--bg-elevated);
@@ -183,7 +286,7 @@ input[type="checkbox"]:checked::after {
 
 .qw-btn-secondary {
   background: transparent;
-  border: 1px solid #3F3F46;
+  border: 1px solid var(--border-control);
   color: var(--text-secondary);
   box-shadow: none;
 }
@@ -219,9 +322,17 @@ td {
   line-height: 1.5;
 }
 
-tr { transition: background 0.1s; }
-tr:hover { background: rgba(39, 39, 42, 0.3); }
-td .font-semibold, td .font-bold { color: var(--text-bright); text-shadow: none; }
+tr {
+  transition: background 0.1s;
+}
+tr:hover {
+  background: rgba(39, 39, 42, 0.3);
+}
+td .font-semibold,
+td .font-bold {
+  color: var(--text-bright);
+  text-shadow: none;
+}
 
 /* ── Tabs ──────────────────────────────────────────────────────────────── */
 
@@ -234,21 +345,42 @@ td .font-semibold, td .font-bold { color: var(--text-bright); text-shadow: none;
   animation: none !important;
 }
 
-[class*="tab"]:not(.tab-active):hover { text-shadow: none !important; }
+[class*='tab']:not(.tab-active):hover {
+  text-shadow: none !important;
+}
 
 /* ── Status colours ────────────────────────────────────────────────────── */
 
-.text-qw-win { color: var(--status-win) !important; text-shadow: none; }
-.text-qw-loss { color: var(--status-loss) !important; text-shadow: none; }
-.text-qw-accent { color: var(--accent) !important; text-shadow: none; }
+.text-qw-win {
+  color: var(--status-win) !important;
+  text-shadow: none;
+}
+.text-qw-loss {
+  color: var(--status-loss) !important;
+  text-shadow: none;
+}
+.text-qw-accent {
+  color: var(--accent) !important;
+  text-shadow: none;
+}
 
-.bg-qw-win\/10 { background: rgba(74, 222, 128, 0.08) !important; }
-.bg-qw-win\/20 { background: rgba(74, 222, 128, 0.12) !important; }
-.bg-qw-win\/30 { background: rgba(74, 222, 128, 0.18) !important; }
+.bg-qw-win\/10 {
+  background: rgba(74, 222, 128, 0.08) !important;
+}
+.bg-qw-win\/20 {
+  background: rgba(74, 222, 128, 0.12) !important;
+}
+.bg-qw-win\/30 {
+  background: rgba(74, 222, 128, 0.18) !important;
+}
 
 /* ── Legacy neutralization ─────────────────────────────────────────────── */
 
-.glow-amber, .glow-blue, .text-glow-amber, .text-glow-blue, .animate-pulse-glow {
+.glow-amber,
+.glow-blue,
+.text-glow-amber,
+.text-glow-blue,
+.animate-pulse-glow {
   box-shadow: none !important;
   text-shadow: none !important;
   animation: none !important;
@@ -260,17 +392,25 @@ td .font-semibold, td .font-bold { color: var(--text-bright); text-shadow: none;
   text-transform: uppercase;
   letter-spacing: 0.06em;
 }
-.terminal-label::before { content: none !important; }
+.terminal-label::before {
+  content: none !important;
+}
 
 .division-header {
   border-left: 2px solid var(--accent);
   padding-left: 0.75rem;
   position: relative;
 }
-.division-header::before { content: none !important; }
+.division-header::before {
+  content: none !important;
+}
 
-.bracket-line { background: var(--border); }
-.ring-2.ring-qw-accent { box-shadow: 0 0 0 2px var(--accent); }
+.bracket-line {
+  background: var(--border);
+}
+.ring-2.ring-qw-accent {
+  box-shadow: 0 0 0 2px var(--accent);
+}
 
 /* ── Wiki preview (Liquipedia light theme — unchanged) ─────────────────── */
 
@@ -285,75 +425,318 @@ td .font-semibold, td .font-bold { color: var(--text-bright); text-shadow: none;
   border: 1px solid #a2a9b1;
 }
 
-.wiki-preview tr:hover { background: rgba(0, 0, 0, 0.03); box-shadow: none; }
-.wiki-preview th { background: #eaecf0; color: #202122; font-family: inherit; text-transform: none; letter-spacing: normal; font-size: 13px; font-weight: 700; padding: 6px 8px; border: 1px solid #a2a9b1; }
-.wiki-preview td { color: #202122; padding: 4px 8px; border: 1px solid #a2a9b1; font-size: 13px; line-height: 1.5; }
-.wiki-preview table { font-family: inherit; }
+.wiki-preview tr:hover {
+  background: rgba(0, 0, 0, 0.03);
+  box-shadow: none;
+}
+.wiki-preview th {
+  background: #eaecf0;
+  color: #202122;
+  font-family: inherit;
+  text-transform: none;
+  letter-spacing: normal;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 6px 8px;
+  border: 1px solid #a2a9b1;
+}
+.wiki-preview td {
+  color: #202122;
+  padding: 4px 8px;
+  border: 1px solid #a2a9b1;
+  font-size: 13px;
+  line-height: 1.5;
+}
+.wiki-preview table {
+  font-family: inherit;
+}
 
-.wiki-table { border-collapse: collapse; width: 100%; border: 1px solid #a2a9b1; background: #ffffff; }
-.wiki-table th { background: #eaecf0; color: #202122; font-weight: 700; font-size: 13px; padding: 6px 8px; text-align: left; border: 1px solid #a2a9b1; }
-.wiki-table td { padding: 4px 8px; border: 1px solid #a2a9b1; font-size: 13px; color: #202122; }
-.wiki-table-title { background: #eaecf0; text-align: center; font-weight: 700; font-size: 14px; padding: 8px; border: 1px solid #a2a9b1; }
-.wiki-table-subtitle { background: #f0f0f0; text-align: center; font-size: 12px; color: #54595d; padding: 4px 8px; border: 1px solid #a2a9b1; }
+.wiki-table {
+  border-collapse: collapse;
+  width: 100%;
+  border: 1px solid #a2a9b1;
+  background: #ffffff;
+}
+.wiki-table th {
+  background: #eaecf0;
+  color: #202122;
+  font-weight: 700;
+  font-size: 13px;
+  padding: 6px 8px;
+  text-align: left;
+  border: 1px solid #a2a9b1;
+}
+.wiki-table td {
+  padding: 4px 8px;
+  border: 1px solid #a2a9b1;
+  font-size: 13px;
+  color: #202122;
+}
+.wiki-table-title {
+  background: #eaecf0;
+  text-align: center;
+  font-weight: 700;
+  font-size: 14px;
+  padding: 8px;
+  border: 1px solid #a2a9b1;
+}
+.wiki-table-subtitle {
+  background: #f0f0f0;
+  text-align: center;
+  font-size: 12px;
+  color: #54595d;
+  padding: 4px 8px;
+  border: 1px solid #a2a9b1;
+}
 
-.wiki-row-up { background: #D8FFD8; }
-.wiki-row-stayup { background: #E2FFE2; }
-.wiki-row-stay { background: #FFFFDD; }
-.wiki-row-staydown { background: #FFE8D0; }
-.wiki-row-down { background: #FFD0D0; }
+.wiki-row-up {
+  background: #d8ffd8;
+}
+.wiki-row-stayup {
+  background: #e2ffe2;
+}
+.wiki-row-stay {
+  background: #ffffdd;
+}
+.wiki-row-staydown {
+  background: #ffe8d0;
+}
+.wiki-row-down {
+  background: #ffd0d0;
+}
 
-.wiki-match-card { display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: #fff; border: 1px solid #c8ccd1; border-radius: 3px; }
-.wiki-match-team { display: flex; align-items: center; gap: 6px; flex: 1; color: #202122; font-size: 13px; }
-.wiki-match-team-right { justify-content: flex-end; }
-.wiki-match-winner { font-weight: 700; color: #202122; }
-.wiki-match-score { display: flex; align-items: center; gap: 3px; font-family: monospace; font-size: 13px; font-weight: 700; min-width: 3rem; justify-content: center; }
-.wiki-match-score-win { color: #008800; }
-.wiki-match-score-lose { color: #555; }
-.wiki-match-maps { display: flex; gap: 4px; margin-left: 8px; }
-.wiki-match-map { font-size: 11px; color: #54595d; padding: 1px 5px; background: #f0f0f0; border: 1px solid #c8ccd1; border-radius: 2px; }
+.wiki-match-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: #fff;
+  border: 1px solid #c8ccd1;
+  border-radius: 3px;
+}
+.wiki-match-team {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  color: #202122;
+  font-size: 13px;
+}
+.wiki-match-team-right {
+  justify-content: flex-end;
+}
+.wiki-match-winner {
+  font-weight: 700;
+  color: #202122;
+}
+.wiki-match-score {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-family: monospace;
+  font-size: 13px;
+  font-weight: 700;
+  min-width: 3rem;
+  justify-content: center;
+}
+.wiki-match-score-win {
+  color: #008800;
+}
+.wiki-match-score-lose {
+  color: #555;
+}
+.wiki-match-maps {
+  display: flex;
+  gap: 4px;
+  margin-left: 8px;
+}
+.wiki-match-map {
+  font-size: 11px;
+  color: #54595d;
+  padding: 1px 5px;
+  background: #f0f0f0;
+  border: 1px solid #c8ccd1;
+  border-radius: 2px;
+}
 
-.wiki-bracket-round-title { font-size: 15px; font-weight: 700; color: #202122; border-bottom: 1px solid #a2a9b1; padding-bottom: 4px; margin-bottom: 8px; margin-top: 16px; }
-.wiki-bracket-matchup { display: inline-flex; flex-direction: column; border: 1px solid #a2a9b1; border-radius: 2px; overflow: hidden; margin-right: 12px; margin-bottom: 8px; background: #fff; }
-.wiki-bracket-entry { display: flex; align-items: center; gap: 8px; padding: 4px 10px; font-size: 13px; color: #202122; }
-.wiki-bracket-entry + .wiki-bracket-entry { border-top: 1px solid #c8ccd1; }
-.wiki-bracket-entry-winner { background: #D8FFD8; font-weight: 700; }
-.wiki-bracket-entry-tbd { color: #72777d; font-style: italic; }
-.wiki-bracket-entry-name { min-width: 8rem; }
-.wiki-bracket-entry-score { font-family: monospace; font-size: 12px; margin-left: auto; }
-.wiki-bracket-entry-score-win { font-weight: 700; color: #008800; }
-.wiki-bracket-entry-score-lose { color: #72777d; }
+.wiki-bracket-round-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: #202122;
+  border-bottom: 1px solid #a2a9b1;
+  padding-bottom: 4px;
+  margin-bottom: 8px;
+  margin-top: 16px;
+}
+.wiki-bracket-matchup {
+  display: inline-flex;
+  flex-direction: column;
+  border: 1px solid #a2a9b1;
+  border-radius: 2px;
+  overflow: hidden;
+  margin-right: 12px;
+  margin-bottom: 8px;
+  background: #fff;
+}
+.wiki-bracket-entry {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px;
+  font-size: 13px;
+  color: #202122;
+}
+.wiki-bracket-entry + .wiki-bracket-entry {
+  border-top: 1px solid #c8ccd1;
+}
+.wiki-bracket-entry-winner {
+  background: #d8ffd8;
+  font-weight: 700;
+}
+.wiki-bracket-entry-tbd {
+  color: #72777d;
+  font-style: italic;
+}
+.wiki-bracket-entry-name {
+  min-width: 8rem;
+}
+.wiki-bracket-entry-score {
+  font-family: monospace;
+  font-size: 12px;
+  margin-left: auto;
+}
+.wiki-bracket-entry-score-win {
+  font-weight: 700;
+  color: #008800;
+}
+.wiki-bracket-entry-score-lose {
+  color: #72777d;
+}
 
-.wiki-preview h2, .wiki-preview h3, .wiki-preview h4 { color: #202122; font-family: inherit; font-weight: 400; letter-spacing: normal; text-transform: none; line-height: 1.3; }
-.wiki-section-h2 { font-size: 20px; font-weight: 400; color: #000; border-bottom: 1px solid #a2a9b1; padding-bottom: 4px; margin-top: 20px; margin-bottom: 8px; }
-.wiki-section-h3 { font-size: 16px; font-weight: 700; color: #000; margin-top: 16px; margin-bottom: 6px; }
-.wiki-text-bold { font-weight: 700; color: #202122; font-size: 13px; margin-top: 8px; }
-.wiki-text-bullet { font-size: 13px; color: #202122; }
-.wiki-text-line { font-size: 13px; color: #54595d; }
-.wiki-full-section-title { font-size: 18px; font-weight: 400; color: #000; border-bottom: 1px solid #a2a9b1; padding-bottom: 2px; margin-top: 20px; margin-bottom: 12px; }
-.wiki-empty { color: #54595d; font-size: 13px; font-style: italic; }
-.wiki-place-col { text-align: center; font-weight: 700; color: #202122; width: 30px; }
-.wiki-team-col { font-weight: 400; color: #202122; }
-.wiki-team-first { font-weight: 700; }
-.wiki-stat-win { color: #008800; text-align: center; }
-.wiki-stat-loss { color: #CC0000; text-align: center; }
-.wiki-stat-center { text-align: center; }
-.wiki-stat-diff-pos { text-align: center; font-weight: 700; color: #008800; }
-.wiki-stat-diff-neg { text-align: center; font-weight: 700; color: #CC0000; }
-.wiki-stat-diff-zero { text-align: center; font-weight: 700; color: #54595d; }
+.wiki-preview h2,
+.wiki-preview h3,
+.wiki-preview h4 {
+  color: #202122;
+  font-family: inherit;
+  font-weight: 400;
+  letter-spacing: normal;
+  text-transform: none;
+  line-height: 1.3;
+}
+.wiki-section-h2 {
+  font-size: 20px;
+  font-weight: 400;
+  color: #000;
+  border-bottom: 1px solid #a2a9b1;
+  padding-bottom: 4px;
+  margin-top: 20px;
+  margin-bottom: 8px;
+}
+.wiki-section-h3 {
+  font-size: 16px;
+  font-weight: 700;
+  color: #000;
+  margin-top: 16px;
+  margin-bottom: 6px;
+}
+.wiki-text-bold {
+  font-weight: 700;
+  color: #202122;
+  font-size: 13px;
+  margin-top: 8px;
+}
+.wiki-text-bullet {
+  font-size: 13px;
+  color: #202122;
+}
+.wiki-text-line {
+  font-size: 13px;
+  color: #54595d;
+}
+.wiki-full-section-title {
+  font-size: 18px;
+  font-weight: 400;
+  color: #000;
+  border-bottom: 1px solid #a2a9b1;
+  padding-bottom: 2px;
+  margin-top: 20px;
+  margin-bottom: 12px;
+}
+.wiki-empty {
+  color: #54595d;
+  font-size: 13px;
+  font-style: italic;
+}
+.wiki-place-col {
+  text-align: center;
+  font-weight: 700;
+  color: #202122;
+  width: 30px;
+}
+.wiki-team-col {
+  font-weight: 400;
+  color: #202122;
+}
+.wiki-team-first {
+  font-weight: 700;
+}
+.wiki-stat-win {
+  color: #008800;
+  text-align: center;
+}
+.wiki-stat-loss {
+  color: #cc0000;
+  text-align: center;
+}
+.wiki-stat-center {
+  text-align: center;
+}
+.wiki-stat-diff-pos {
+  text-align: center;
+  font-weight: 700;
+  color: #008800;
+}
+.wiki-stat-diff-neg {
+  text-align: center;
+  font-weight: 700;
+  color: #cc0000;
+}
+.wiki-stat-diff-zero {
+  text-align: center;
+  font-weight: 700;
+  color: #54595d;
+}
 
 /* ── Responsive ────────────────────────────────────────────────────────── */
 
 @media (max-width: 768px) {
-  th, td { padding: 0.4rem; font-size: 0.75rem; }
-  .qw-btn { padding: 0.4rem 0.85rem; font-size: 0.75rem; }
+  th,
+  td {
+    padding: 0.4rem;
+    font-size: 0.75rem;
+  }
+  .qw-btn {
+    padding: 0.4rem 0.85rem;
+    font-size: 0.75rem;
+  }
 }
 
 /* ── Print ─────────────────────────────────────────────────────────────── */
 
 @media print {
-  body { background: #fff; color: #1a1a1a; }
-  .noise-overlay, .scanline { display: none !important; }
-  .qw-panel { border: 1px solid #ccc; box-shadow: none; background: #fff; }
+  body {
+    background: #fff;
+    color: #1a1a1a;
+  }
+  .noise-overlay,
+  .scanline {
+    display: none !important;
+  }
+  .qw-panel {
+    border: 1px solid #ccc;
+    box-shadow: none;
+    background: #fff;
+  }
 }
 
 /* ── Drag & drop ───────────────────────────────────────────────────────── */

@@ -9,7 +9,7 @@
  * - Simple: "Team Name"
  */
 export function parseTeamsFromBulkText(text) {
-  const lines = text.split('\n').filter(l => l.trim());
+  const lines = text.split('\n').filter((l) => l.trim());
   const teams = [];
 
   lines.forEach((line, idx) => {
@@ -34,7 +34,9 @@ function parseSingleTeamLine(line, index = 0) {
 
   // Try natural format: "Team Name [TAG] 🇸🇪 - players" or "Team Name (TAG) Country: players"
   // Match flag emoji (two Regional Indicator Symbols: U+1F1E6 to U+1F1FF)
-  const naturalMatch = trimmed.match(/^([^[\(]+)[\[\(]([^\]\)]+)[\]\)]?\s*([\u{1F1E6}-\u{1F1FF}]{2})?\s*[-:–]?\s*(.*)$/u);
+  const naturalMatch = trimmed.match(
+    /^([^[(]+)[[(]([^\])]+)[\])]?\s*([\u{1F1E6}-\u{1F1FF}]{2})?\s*[-:–]?\s*(.*)$/u
+  );
   if (naturalMatch) {
     const [, name, tag, flag, players] = naturalMatch;
     return {
@@ -62,7 +64,7 @@ function parseSingleTeamLine(line, index = 0) {
  * Parse CSV format line: "Name, TAG, country, Group, players"
  */
 function parseCSVLine(line, index = 0) {
-  const parts = line.split(',').map(p => p.trim());
+  const parts = line.split(',').map((p) => p.trim());
   const name = parts[0] || '';
   const tag = parts[1] || generateTagFromName(name);
   const country = (parts[2] || '').toLowerCase();
@@ -83,7 +85,7 @@ function parseCSVLine(line, index = 0) {
  * Parse teams from CSV file content
  */
 export function parseTeamsFromCSV(csvText) {
-  const lines = csvText.split('\n').filter(l => l.trim());
+  const lines = csvText.split('\n').filter((l) => l.trim());
 
   // Check if first line is a header
   const firstLine = lines[0]?.toLowerCase();
@@ -147,8 +149,8 @@ function normalizeTeamObject(team, index = 0) {
 /**
  * Validate teams and return validation results
  */
-export function validateTeams(teams, existingTeams = [], availableGroups = []) {
-  const validatedTeams = teams.map(team => {
+export function validateTeams(teams, _existingTeams = [], availableGroups = []) {
+  const validatedTeams = teams.map((team) => {
     const errors = [];
     const warnings = [];
 
@@ -213,10 +215,10 @@ export function validateTeams(teams, existingTeams = [], availableGroups = []) {
  * Detect conflicts with existing teams
  */
 export function detectDuplicates(newTeams, existingTeams) {
-  const existingNames = new Set(existingTeams.map(t => t.name.toLowerCase()));
-  const existingTags = new Set(existingTeams.map(t => t.tag?.toLowerCase()).filter(Boolean));
+  const existingNames = new Set(existingTeams.map((t) => t.name.toLowerCase()));
+  const existingTags = new Set(existingTeams.map((t) => t.tag?.toLowerCase()).filter(Boolean));
 
-  return newTeams.map(team => {
+  return newTeams.map((team) => {
     const conflicts = [];
 
     if (existingNames.has(team.name?.toLowerCase())) {
@@ -257,11 +259,11 @@ function generateTagFromName(name) {
 function extractCountryFromFlag(flag) {
   // Flag emojis are regional indicator symbols
   // 🇸🇪 = U+1F1F8 U+1F1EA (SE)
-  const codePoints = [...flag].map(char => char.codePointAt(0));
+  const codePoints = [...flag].map((char) => char.codePointAt(0));
 
-  if (codePoints.length >= 2 && codePoints[0] >= 0x1F1E6 && codePoints[0] <= 0x1F1FF) {
-    const first = String.fromCharCode(codePoints[0] - 0x1F1E6 + 65);
-    const second = String.fromCharCode(codePoints[1] - 0x1F1E6 + 65);
+  if (codePoints.length >= 2 && codePoints[0] >= 0x1f1e6 && codePoints[0] <= 0x1f1ff) {
+    const first = String.fromCharCode(codePoints[0] - 0x1f1e6 + 65);
+    const second = String.fromCharCode(codePoints[1] - 0x1f1e6 + 65);
     return (first + second).toLowerCase();
   }
 
@@ -274,9 +276,9 @@ function extractCountryFromFlag(flag) {
 export function getImportSummary(validatedTeams) {
   return {
     total: validatedTeams.length,
-    valid: validatedTeams.filter(t => t.isValid).length,
-    errors: validatedTeams.filter(t => !t.isValid).length,
-    warnings: validatedTeams.filter(t => t.warnings?.length > 0).length,
-    conflicts: validatedTeams.filter(t => t.hasConflict).length,
+    valid: validatedTeams.filter((t) => t.isValid).length,
+    errors: validatedTeams.filter((t) => !t.isValid).length,
+    warnings: validatedTeams.filter((t) => t.warnings?.length > 0).length,
+    conflicts: validatedTeams.filter((t) => t.hasConflict).length,
   };
 }

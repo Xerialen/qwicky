@@ -102,7 +102,7 @@ function scoreSeriesAffinity(game, match, existingMaps) {
   // Check if any existing map is close in time (within 2 hours = same series)
   const SERIES_GAP_MS = 2 * 60 * 60 * 1000;
 
-  const hasCloseSibling = existingMaps.some(m => {
+  const hasCloseSibling = existingMaps.some((m) => {
     if (!m.date) return false;
     const mapTime = new Date(m.date).getTime();
     if (isNaN(mapTime)) return false;
@@ -112,7 +112,7 @@ function scoreSeriesAffinity(game, match, existingMaps) {
   if (hasCloseSibling) return 15;
 
   // Check if within same day
-  const hasSameDayMap = existingMaps.some(m => {
+  const hasSameDayMap = existingMaps.some((m) => {
     if (!m.date) return false;
     const mapDate = new Date(m.date);
     const gameDate = new Date(game.date);
@@ -139,7 +139,8 @@ export function findBestMatch(game, schedule, opts = {}) {
   const resolveTeam = opts.resolveTeam;
 
   // Resolve teams if resolver provided
-  let tc1 = 100, tc2 = 100;
+  let tc1 = 100,
+    tc2 = 100;
   if (resolveTeam) {
     const r1 = resolveTeam(game.team1);
     const r2 = resolveTeam(game.team2);

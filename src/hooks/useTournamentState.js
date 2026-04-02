@@ -10,6 +10,7 @@ import {
   listTournaments,
   tournamentSlug,
 } from '../services/tournamentService.js';
+import useSyncStatusStore from '../stores/syncStatusStore.js';
 
 const STORAGE_KEY = 'qw-tournament-data';
 const SYNC_DEBOUNCE_MS = 2000;
@@ -44,10 +45,7 @@ function readLocalStorage() {
 
 function writeLocalStorage(tournament, activeDivisionId) {
   try {
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({ ...tournament, activeDivisionId })
-    );
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...tournament, activeDivisionId }));
   } catch (err) {
     console.error('[useTournamentState] Failed to save to localStorage:', err);
   }
@@ -70,9 +68,10 @@ export function useTournamentState() {
   });
 
   const [isLoading, setIsLoading] = useState(false);
-  const [isSyncing, setIsSyncing] = useState(false);
-  const [lastSyncStatus, setLastSyncStatus] = useState(null);
   const [cloudTournaments, setCloudTournaments] = useState([]);
+
+  const { setSaving, setSynced, setUnsaved, setError, setLocalOnly } =
+    useSyncStatusStore.getState();
 
   const syncTimerRef = useRef(null);
   const mountedRef = useRef(true);
@@ -90,22 +89,30 @@ export function useTournamentState() {
   useEffect(() => {
     writeLocalStorage(tournament, activeDivisionId);
 
+    // Mark unsaved immediately; sync will update to saving/synced/error
+    setUnsaved();
+
     // Debounced cloud sync
     if (syncTimerRef.current) clearTimeout(syncTimerRef.current);
     syncTimerRef.current = setTimeout(async () => {
-      if (!isSupabaseEnabled) return;
+      if (!isSupabaseEnabled) {
+        setLocalOnly();
+        return;
+      }
       if (!mountedRef.current) return;
 
-      setIsSyncing(true);
+      setSaving();
       try {
         const result = await syncTournament(tournament, activeDivisionId);
         if (mountedRef.current) {
-          setLastSyncStatus(result.ok ? 'ok' : 'error');
+          if (result.ok) {
+            setSynced(Date.now());
+          } else {
+            setError(result.error ?? null);
+          }
         }
-      } catch {
-        if (mountedRef.current) setLastSyncStatus('error');
-      } finally {
-        if (mountedRef.current) setIsSyncing(false);
+      } catch (err) {
+        if (mountedRef.current) setError(err.message ?? null);
       }
     }, SYNC_DEBOUNCE_MS);
   }, [tournament, activeDivisionId]);
@@ -128,7 +135,9 @@ export function useTournamentState() {
       }
     })();
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // ── Background Supabase fetch on mount (merge if newer) ────────────────────
@@ -163,7 +172,9 @@ export function useTournamentState() {
       }
     })();
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
     // Only run on mount — tournament.name from initial localStorage read
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -188,7 +199,7 @@ export function useTournamentState() {
       return null;
     } catch (err) {
       console.warn('[useTournamentState] loadFromCloud failed:', err.message);
-      if (mountedRef.current) setLastSyncStatus('error');
+      if (mountedRef.current) setError(err.message);
       return null;
     } finally {
       if (mountedRef.current) setIsLoading(false);
@@ -201,8 +212,6 @@ export function useTournamentState() {
     activeDivisionId,
     setActiveDivisionId,
     isLoading,
-    isSyncing,
-    lastSyncStatus,
     loadFromCloud,
     cloudTournaments,
   };

@@ -6,7 +6,7 @@ export default function TeamImportPreview({
   teams,
   onConfirm,
   onCancel,
-  title = "Preview Import"
+  title = 'Preview Import',
 }) {
   if (!teams || teams.length === 0) {
     return null;
@@ -18,11 +18,11 @@ export default function TeamImportPreview({
 
   const handleImportAll = () => {
     if (hasErrors) return;
-    onConfirm(teams.filter(t => t.isValid));
+    onConfirm(teams.filter((t) => t.isValid));
   };
 
   const handleImportValid = () => {
-    const validTeams = teams.filter(t => t.isValid);
+    const validTeams = teams.filter((t) => t.isValid);
     if (validTeams.length === 0) return;
     onConfirm(validTeams);
   };
@@ -34,9 +34,7 @@ export default function TeamImportPreview({
         <div className="px-6 py-4 border-b border-qw-border flex items-center justify-between">
           <div>
             <h2 className="font-display text-xl text-qw-accent">{title}</h2>
-            <p className="text-sm text-qw-muted mt-1">
-              Review teams before importing
-            </p>
+            <p className="text-sm text-qw-muted mt-1">Review teams before importing</p>
           </div>
           <button
             onClick={onCancel}
@@ -101,9 +99,7 @@ export default function TeamImportPreview({
               onClick={handleImportAll}
               disabled={hasErrors}
               className={`px-4 py-2 rounded font-semibold ${
-                hasErrors
-                  ? 'bg-qw-dark text-qw-muted cursor-not-allowed'
-                  : 'qw-btn'
+                hasErrors ? 'bg-qw-dark text-qw-muted cursor-not-allowed' : 'qw-btn'
               }`}
             >
               Import All {summary.total} Team{summary.total !== 1 ? 's' : ''}
@@ -143,18 +139,14 @@ function TeamPreviewRow({ team, index }) {
     <div className={`p-3 bg-qw-dark rounded border ${borderColor}`}>
       <div className="flex items-start gap-3">
         {/* Status Icon */}
-        <span className={`${statusColor} font-bold text-lg leading-none mt-0.5`}>
-          {statusIcon}
-        </span>
+        <span className={`${statusColor} font-bold text-lg leading-none mt-0.5`}>{statusIcon}</span>
 
         {/* Team Info */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-3 mb-1">
             <span className="text-sm text-qw-muted font-mono">#{index + 1}</span>
             <span className="font-semibold text-white">{team.name || '(empty)'}</span>
-            {team.tag && (
-              <span className="text-qw-muted font-mono text-sm">[{team.tag}]</span>
-            )}
+            {team.tag && <span className="text-qw-muted font-mono text-sm">[{team.tag}]</span>}
             {team.country && (
               <span className="text-qw-muted text-sm uppercase">{team.country}</span>
             )}
@@ -167,9 +159,7 @@ function TeamPreviewRow({ team, index }) {
 
           {/* Players */}
           {team.players && (
-            <div className="text-xs text-qw-muted mt-1">
-              Players: {team.players}
-            </div>
+            <div className="text-xs text-qw-muted mt-1">Players: {team.players}</div>
           )}
 
           {/* Errors */}

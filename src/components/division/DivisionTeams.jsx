@@ -5,12 +5,24 @@ import {
   parseTeamsFromCSV,
   parseTeamsFromJSON,
   validateTeams,
-  detectDuplicates
+  detectDuplicates,
 } from '../../utils/teamImport';
 import TeamImportPreview from './TeamImportPreview';
 
-export default function DivisionTeams({ division, updateDivision, tournamentMode, allDivisions = [] }) {
-  const [newTeam, setNewTeam] = useState({ name: '', tag: '', country: '', group: '', players: '', aliases: '' });
+export default function DivisionTeams({
+  division,
+  updateDivision,
+  tournamentMode,
+  allDivisions = [],
+}) {
+  const [newTeam, setNewTeam] = useState({
+    name: '',
+    tag: '',
+    country: '',
+    group: '',
+    players: '',
+    aliases: '',
+  });
   const [editingTeam, setEditingTeam] = useState(null);
   const [bulkInput, setBulkInput] = useState('');
   const [showBulkAdd, setShowBulkAdd] = useState(false);
@@ -20,11 +32,11 @@ export default function DivisionTeams({ division, updateDivision, tournamentMode
 
   const teams = division.teams || [];
   const is1on1 = tournamentMode === '1on1';
-  
+
   // Dynamic labels based on mode
   const entityLabel = is1on1 ? 'Player' : 'Team';
   const entityLabelPlural = is1on1 ? 'Players' : 'Teams';
-  
+
   const groups = useMemo(() => {
     return Array.from({ length: division.numGroups }, (_, i) => String.fromCharCode(65 + i));
   }, [division.numGroups]);
@@ -32,16 +44,16 @@ export default function DivisionTeams({ division, updateDivision, tournamentMode
   // Group teams by their assigned group
   const teamsByGroup = useMemo(() => {
     const grouped = { unassigned: [] };
-    groups.forEach(g => grouped[g] = []);
-    
-    teams.forEach(team => {
+    groups.forEach((g) => (grouped[g] = []));
+
+    teams.forEach((team) => {
       if (team.group && grouped[team.group]) {
         grouped[team.group].push(team);
       } else {
         grouped.unassigned.push(team);
       }
     });
-    
+
     return grouped;
   }, [teams, groups]);
 
@@ -56,7 +68,12 @@ export default function DivisionTeams({ division, updateDivision, tournamentMode
       country: newTeam.country.trim().toLowerCase(),
       group: newTeam.group || '',
       players: newTeam.players.trim(),
-      aliases: newTeam.aliases.trim() ? newTeam.aliases.split(',').map(a => a.trim()).filter(Boolean) : [],
+      aliases: newTeam.aliases.trim()
+        ? newTeam.aliases
+            .split(',')
+            .map((a) => a.trim())
+            .filter(Boolean)
+        : [],
     };
 
     updateDivision({ teams: [...teams, team] });
@@ -82,7 +99,7 @@ export default function DivisionTeams({ division, updateDivision, tournamentMode
     const finalTeams = teamsToImport.map((team, idx) => ({
       ...team,
       id: `team-${Date.now()}-${idx}`,
-      aliases: team.aliases || [],  // Ensure aliases field exists
+      aliases: team.aliases || [], // Ensure aliases field exists
       // Remove validation fields
       errors: undefined,
       warnings: undefined,
@@ -154,14 +171,14 @@ export default function DivisionTeams({ division, updateDivision, tournamentMode
   };
 
   const handleImportFromDivision = (sourceDivisionId, clearGroups = false) => {
-    const sourceDivision = allDivisions.find(d => d.id === sourceDivisionId);
+    const sourceDivision = allDivisions.find((d) => d.id === sourceDivisionId);
     if (!sourceDivision || !sourceDivision.teams || sourceDivision.teams.length === 0) {
       alert('No teams found in selected division.');
       return;
     }
 
     // Clone teams and optionally clear group assignments
-    const clonedTeams = sourceDivision.teams.map(team => ({
+    const clonedTeams = sourceDivision.teams.map((team) => ({
       ...team,
       id: `team-${Date.now()}-${Math.random()}`, // Generate new IDs
       group: clearGroups ? '' : team.group,
@@ -174,12 +191,12 @@ export default function DivisionTeams({ division, updateDivision, tournamentMode
   };
 
   const handleRemoveTeam = (teamId) => {
-    updateDivision({ teams: teams.filter(t => t.id !== teamId) });
+    updateDivision({ teams: teams.filter((t) => t.id !== teamId) });
   };
 
   const handleUpdateTeam = (teamId, field, value) => {
     updateDivision({
-      teams: teams.map(t => t.id === teamId ? { ...t, [field]: value } : t)
+      teams: teams.map((t) => (t.id === teamId ? { ...t, [field]: value } : t)),
     });
   };
 
@@ -189,11 +206,11 @@ export default function DivisionTeams({ division, updateDivision, tournamentMode
 
   const handleRandomizeGroups = () => {
     if (!window.confirm('Randomly assign all teams to groups?')) return;
-    
+
     // Shuffle teams
     const shuffled = [...teams].sort(() => Math.random() - 0.5);
     const teamsPerGroup = division.teamsPerGroup;
-    
+
     const updated = shuffled.map((team, idx) => {
       const groupIdx = Math.floor(idx / teamsPerGroup);
       const group = groupIdx < groups.length ? groups[groupIdx] : '';
@@ -206,7 +223,7 @@ export default function DivisionTeams({ division, updateDivision, tournamentMode
   const handleClearGroups = () => {
     if (!window.confirm('Clear all group assignments?')) return;
     updateDivision({
-      teams: teams.map(t => ({ ...t, group: '' }))
+      teams: teams.map((t) => ({ ...t, group: '' })),
     });
   };
 
@@ -232,7 +249,8 @@ export default function DivisionTeams({ division, updateDivision, tournamentMode
                 <div className="text-2xl mb-2">✍️</div>
                 <h4 className="font-semibold text-white mb-1">Bulk Import</h4>
                 <p className="text-sm text-qw-muted">
-                  Paste a list of teams from your signup sheet. Fastest for tournaments with many teams.
+                  Paste a list of teams from your signup sheet. Fastest for tournaments with many
+                  teams.
                 </p>
               </div>
               <div className="p-4 bg-qw-dark rounded border border-qw-border">
@@ -262,9 +280,9 @@ export default function DivisionTeams({ division, updateDivision, tournamentMode
             <div>
               <h4 className="font-body font-semibold text-white mb-1">1on1 Tournament Tip</h4>
               <p className="text-sm text-qw-muted">
-                For 1on1 tournaments, each "team" represents a single player.
-                Just add the player's name in the "Team Name" field.
-                You can leave "Players" field empty or use it for alternate names.
+                For 1on1 tournaments, each "team" represents a single player. Just add the player's
+                name in the "Team Name" field. You can leave "Players" field empty or use it for
+                alternate names.
               </p>
             </div>
           </div>
@@ -296,9 +314,21 @@ export default function DivisionTeams({ division, updateDivision, tournamentMode
                   One {entityLabel.toLowerCase()} per line. Supports multiple formats:
                 </p>
                 <div className="text-xs text-qw-muted space-y-0.5">
-                  <div>• CSV: <code className="bg-qw-dark px-1 rounded">Name, TAG, country, Group{is1on1 ? '' : ', players'}</code></div>
-                  <div>• Natural: <code className="bg-qw-dark px-1 rounded">Team Name [TAG] 🇸🇪 - player1, player2</code></div>
-                  <div>• Simple: <code className="bg-qw-dark px-1 rounded">Team Name</code></div>
+                  <div>
+                    • CSV:{' '}
+                    <code className="bg-qw-dark px-1 rounded">
+                      Name, TAG, country, Group{is1on1 ? '' : ', players'}
+                    </code>
+                  </div>
+                  <div>
+                    • Natural:{' '}
+                    <code className="bg-qw-dark px-1 rounded">
+                      Team Name [TAG] 🇸🇪 - player1, player2
+                    </code>
+                  </div>
+                  <div>
+                    • Simple: <code className="bg-qw-dark px-1 rounded">Team Name</code>
+                  </div>
                 </div>
               </div>
               <button
@@ -309,17 +339,15 @@ export default function DivisionTeams({ division, updateDivision, tournamentMode
                 📋 Paste
               </button>
             </div>
-            {clipboardFeedback && (
-              <div className="text-xs text-qw-accent">
-                {clipboardFeedback}
-              </div>
-            )}
+            {clipboardFeedback && <div className="text-xs text-qw-accent">{clipboardFeedback}</div>}
             <textarea
               value={bulkInput}
               onChange={(e) => setBulkInput(e.target.value)}
-              placeholder={is1on1
-                ? "razer, raz, se, A\nzero, zer, se, A\nParadokS [prd] 🇩🇰"
-                : "Slackers, SLK, eu, A, ParadokS Zero grisling Phrenic\nHell Xpress [hx] 🇸🇪 - Splash ok98 Shaka mm\nTeam Paradoks"}
+              placeholder={
+                is1on1
+                  ? 'razer, raz, se, A\nzero, zer, se, A\nParadokS [prd] 🇩🇰'
+                  : 'Slackers, SLK, eu, A, ParadokS Zero grisling Phrenic\nHell Xpress [hx] 🇸🇪 - Splash ok98 Shaka mm\nTeam Paradoks'
+              }
               rows={6}
               className="w-full bg-qw-dark border border-qw-border rounded px-4 py-2 font-mono text-white text-sm resize-none"
             />
@@ -330,31 +358,73 @@ export default function DivisionTeams({ division, updateDivision, tournamentMode
         ) : (
           <form onSubmit={handleAddTeam} className="space-y-3">
             <div className="flex gap-3 flex-wrap">
-              <input 
-                type="text" 
-                value={newTeam.name} 
-                onChange={(e) => setNewTeam({ ...newTeam, name: e.target.value })} 
-                placeholder={is1on1 ? "Player Name" : "Team Name"}
-                className="flex-1 min-w-40 bg-qw-dark border border-qw-border rounded px-4 py-2 text-white" 
+              <input
+                type="text"
+                value={newTeam.name}
+                onChange={(e) => setNewTeam({ ...newTeam, name: e.target.value })}
+                placeholder={is1on1 ? 'Player Name' : 'Team Name'}
+                className="flex-1 min-w-40 bg-qw-dark border border-qw-border rounded px-4 py-2 text-white"
               />
-              <input type="text" value={newTeam.tag} onChange={(e) => setNewTeam({ ...newTeam, tag: e.target.value })} placeholder="Tag" className="w-20 bg-qw-dark border border-qw-border rounded px-4 py-2 text-white" />
-              <input type="text" value={newTeam.country} onChange={(e) => setNewTeam({ ...newTeam, country: e.target.value })} placeholder="Country" className="w-20 bg-qw-dark border border-qw-border rounded px-4 py-2 text-white" />
-              <select value={newTeam.group} onChange={(e) => setNewTeam({ ...newTeam, group: e.target.value })} className="w-24 bg-qw-dark border border-qw-border rounded px-2 py-2 text-white">
+              <input
+                type="text"
+                value={newTeam.tag}
+                onChange={(e) => setNewTeam({ ...newTeam, tag: e.target.value })}
+                placeholder="Tag"
+                className="w-20 bg-qw-dark border border-qw-border rounded px-4 py-2 text-white"
+              />
+              <input
+                type="text"
+                value={newTeam.country}
+                onChange={(e) => setNewTeam({ ...newTeam, country: e.target.value })}
+                placeholder="Country"
+                className="w-20 bg-qw-dark border border-qw-border rounded px-4 py-2 text-white"
+              />
+              <select
+                value={newTeam.group}
+                onChange={(e) => setNewTeam({ ...newTeam, group: e.target.value })}
+                className="w-24 bg-qw-dark border border-qw-border rounded px-2 py-2 text-white"
+              >
                 <option value="">No Group</option>
-                {groups.map(g => <option key={g} value={g}>Group {g}</option>)}
+                {groups.map((g) => (
+                  <option key={g} value={g}>
+                    Group {g}
+                  </option>
+                ))}
               </select>
             </div>
             {!is1on1 && (
               <div className="space-y-3">
-                <input type="text" value={newTeam.players} onChange={(e) => setNewTeam({ ...newTeam, players: e.target.value })} placeholder="Players (for wiki): player1, player2, player3..." className="w-full bg-qw-dark border border-qw-border rounded px-4 py-2 text-white text-sm" />
-                <input type="text" value={newTeam.aliases} onChange={(e) => setNewTeam({ ...newTeam, aliases: e.target.value })} placeholder="Aliases (optional): old tag, old name, ..." className="w-full bg-qw-dark border border-qw-border rounded px-4 py-2 text-white text-sm" />
-                <button type="submit" className="qw-btn w-full">Add</button>
+                <input
+                  type="text"
+                  value={newTeam.players}
+                  onChange={(e) => setNewTeam({ ...newTeam, players: e.target.value })}
+                  placeholder="Players (for wiki): player1, player2, player3..."
+                  className="w-full bg-qw-dark border border-qw-border rounded px-4 py-2 text-white text-sm"
+                />
+                <input
+                  type="text"
+                  value={newTeam.aliases}
+                  onChange={(e) => setNewTeam({ ...newTeam, aliases: e.target.value })}
+                  placeholder="Aliases (optional): old tag, old name, ..."
+                  className="w-full bg-qw-dark border border-qw-border rounded px-4 py-2 text-white text-sm"
+                />
+                <button type="submit" className="qw-btn w-full">
+                  Add
+                </button>
               </div>
             )}
             {is1on1 && (
               <div className="space-y-3">
-                <input type="text" value={newTeam.aliases} onChange={(e) => setNewTeam({ ...newTeam, aliases: e.target.value })} placeholder="Aliases (optional): old name, alternate spelling, ..." className="w-full bg-qw-dark border border-qw-border rounded px-4 py-2 text-white text-sm" />
-                <button type="submit" className="qw-btn w-full">Add {entityLabel}</button>
+                <input
+                  type="text"
+                  value={newTeam.aliases}
+                  onChange={(e) => setNewTeam({ ...newTeam, aliases: e.target.value })}
+                  placeholder="Aliases (optional): old name, alternate spelling, ..."
+                  className="w-full bg-qw-dark border border-qw-border rounded px-4 py-2 text-white text-sm"
+                />
+                <button type="submit" className="qw-btn w-full">
+                  Add {entityLabel}
+                </button>
               </div>
             )}
           </form>
@@ -380,12 +450,13 @@ export default function DivisionTeams({ division, updateDivision, tournamentMode
                 className="hidden"
               />
             </label>
-            <span className="text-xs text-qw-muted">
-              Supported: .csv, .json
-            </span>
+            <span className="text-xs text-qw-muted">Supported: .csv, .json</span>
           </div>
           <div className="text-xs text-qw-muted space-y-1">
-            <div>• CSV format: <code className="bg-qw-dark px-1 rounded">Name,Tag,Country,Group,Players</code></div>
+            <div>
+              • CSV format:{' '}
+              <code className="bg-qw-dark px-1 rounded">Name,Tag,Country,Group,Players</code>
+            </div>
             <div>• JSON format: Array of team objects or full tournament export</div>
           </div>
         </div>
@@ -406,7 +477,8 @@ export default function DivisionTeams({ division, updateDivision, tournamentMode
                 id="source-division"
                 onChange={(e) => {
                   const divisionId = e.target.value;
-                  const clearGroups = document.getElementById('clear-groups-checkbox')?.checked || false;
+                  const clearGroups =
+                    document.getElementById('clear-groups-checkbox')?.checked || false;
                   if (divisionId) {
                     handleImportFromDivision(divisionId, clearGroups);
                   }
@@ -415,8 +487,8 @@ export default function DivisionTeams({ division, updateDivision, tournamentMode
               >
                 <option value="">Select division...</option>
                 {allDivisions
-                  .filter(d => d.id !== division.id)
-                  .map(d => (
+                  .filter((d) => d.id !== division.id)
+                  .map((d) => (
                     <option key={d.id} value={d.id}>
                       {d.name} ({d.teams?.length || 0} teams)
                     </option>
@@ -439,23 +511,34 @@ export default function DivisionTeams({ division, updateDivision, tournamentMode
       {teams.length > 0 && (
         <div className="flex items-center justify-between">
           <div className="flex gap-2">
-            <button onClick={() => setViewMode(viewMode === 'list' ? 'groups' : 'list')} className="px-3 py-1 rounded border border-qw-border text-sm text-qw-muted hover:text-white">
+            <button
+              onClick={() => setViewMode(viewMode === 'list' ? 'groups' : 'list')}
+              className="px-3 py-1 rounded border border-qw-border text-sm text-qw-muted hover:text-white"
+            >
               {viewMode === 'list' ? '📊 View by Groups' : '📋 View as List'}
             </button>
-            <button onClick={handleRandomizeGroups} className="px-3 py-1 rounded border border-qw-border text-sm text-qw-muted hover:text-white">
+            <button
+              onClick={handleRandomizeGroups}
+              className="px-3 py-1 rounded border border-qw-border text-sm text-qw-muted hover:text-white"
+            >
               🎲 Randomize Groups
             </button>
-            <button onClick={handleClearGroups} className="px-3 py-1 rounded border border-qw-border text-sm text-qw-muted hover:text-white">
+            <button
+              onClick={handleClearGroups}
+              className="px-3 py-1 rounded border border-qw-border text-sm text-qw-muted hover:text-white"
+            >
               ↩️ Clear Assignments
             </button>
           </div>
-          <button onClick={handleClearAll} className="text-sm text-red-400 hover:text-red-300">Clear All Teams</button>
+          <button onClick={handleClearAll} className="text-sm text-red-400 hover:text-red-300">
+            Clear All Teams
+          </button>
         </div>
       )}
 
       {/* Teams Display */}
-      {teams.length > 0 && (
-        viewMode === 'list' ? (
+      {teams.length > 0 &&
+        (viewMode === 'list' ? (
           <div className="qw-panel p-6">
             <h3 className="font-display text-lg text-qw-accent mb-4">TEAMS ({teams.length})</h3>
             <div className="space-y-2 max-h-96 overflow-y-auto">
@@ -466,26 +549,79 @@ export default function DivisionTeams({ division, updateDivision, tournamentMode
 
                     {editingTeam === team.id ? (
                       <>
-                        <input type="text" value={team.name} onChange={(e) => handleUpdateTeam(team.id, 'name', e.target.value)} className="flex-1 bg-qw-darker border border-qw-accent rounded px-2 py-1 text-white text-sm" placeholder="Team Name" />
-                        <input type="text" value={team.tag} onChange={(e) => handleUpdateTeam(team.id, 'tag', e.target.value)} className="w-16 bg-qw-darker border border-qw-accent rounded px-2 py-1 text-white text-sm" placeholder="Tag" />
-                        <input type="text" value={team.country} onChange={(e) => handleUpdateTeam(team.id, 'country', e.target.value)} className="w-12 bg-qw-darker border border-qw-accent rounded px-2 py-1 text-white text-sm" placeholder="cc" />
-                        <select value={team.group || ''} onChange={(e) => handleUpdateTeam(team.id, 'group', e.target.value)} className="w-16 bg-qw-darker border border-qw-accent rounded px-1 py-1 text-white text-sm">
+                        <input
+                          type="text"
+                          value={team.name}
+                          onChange={(e) => handleUpdateTeam(team.id, 'name', e.target.value)}
+                          className="flex-1 bg-qw-darker border border-qw-accent rounded px-2 py-1 text-white text-sm"
+                          placeholder="Team Name"
+                        />
+                        <input
+                          type="text"
+                          value={team.tag}
+                          onChange={(e) => handleUpdateTeam(team.id, 'tag', e.target.value)}
+                          className="w-16 bg-qw-darker border border-qw-accent rounded px-2 py-1 text-white text-sm"
+                          placeholder="Tag"
+                        />
+                        <input
+                          type="text"
+                          value={team.country}
+                          onChange={(e) => handleUpdateTeam(team.id, 'country', e.target.value)}
+                          className="w-12 bg-qw-darker border border-qw-accent rounded px-2 py-1 text-white text-sm"
+                          placeholder="cc"
+                        />
+                        <select
+                          value={team.group || ''}
+                          onChange={(e) => handleUpdateTeam(team.id, 'group', e.target.value)}
+                          className="w-16 bg-qw-darker border border-qw-accent rounded px-1 py-1 text-white text-sm"
+                        >
                           <option value="">-</option>
-                          {groups.map(g => <option key={g} value={g}>{g}</option>)}
+                          {groups.map((g) => (
+                            <option key={g} value={g}>
+                              {g}
+                            </option>
+                          ))}
                         </select>
-                        <button onClick={() => setEditingTeam(null)} className="text-qw-win hover:text-white px-2">✓</button>
+                        <button
+                          onClick={() => setEditingTeam(null)}
+                          className="text-qw-win hover:text-white px-2"
+                        >
+                          ✓
+                        </button>
                       </>
                     ) : (
                       <>
-                        <span className="flex-1 font-body font-semibold text-white">{team.name}</span>
+                        <span className="flex-1 font-body font-semibold text-white">
+                          {team.name}
+                        </span>
                         <span className="text-qw-muted font-mono text-sm">[{team.tag}]</span>
-                        {team.country && <span className="text-qw-muted text-sm uppercase">{team.country}</span>}
-                        <select value={team.group || ''} onChange={(e) => handleAssignGroup(team.id, e.target.value)} className="w-20 bg-qw-dark border border-qw-border rounded px-1 py-1 text-sm text-qw-muted">
+                        {team.country && (
+                          <span className="text-qw-muted text-sm uppercase">{team.country}</span>
+                        )}
+                        <select
+                          value={team.group || ''}
+                          onChange={(e) => handleAssignGroup(team.id, e.target.value)}
+                          className="w-20 bg-qw-dark border border-qw-border rounded px-1 py-1 text-sm text-qw-muted"
+                        >
                           <option value="">-</option>
-                          {groups.map(g => <option key={g} value={g}>Grp {g}</option>)}
+                          {groups.map((g) => (
+                            <option key={g} value={g}>
+                              Grp {g}
+                            </option>
+                          ))}
                         </select>
-                        <button onClick={() => setEditingTeam(team.id)} className="opacity-0 group-hover:opacity-100 text-qw-muted hover:text-white transition-opacity">✏️</button>
-                        <button onClick={() => handleRemoveTeam(team.id)} className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-300 transition-opacity">✕</button>
+                        <button
+                          onClick={() => setEditingTeam(team.id)}
+                          className="opacity-0 group-hover:opacity-100 text-qw-muted hover:text-white transition-opacity"
+                        >
+                          ✏️
+                        </button>
+                        <button
+                          onClick={() => handleRemoveTeam(team.id)}
+                          className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-300 transition-opacity"
+                        >
+                          ✕
+                        </button>
                       </>
                     )}
                   </div>
@@ -502,14 +638,25 @@ export default function DivisionTeams({ division, updateDivision, tournamentMode
                       <input
                         type="text"
                         value={Array.isArray(team.aliases) ? team.aliases.join(', ') : ''}
-                        onChange={(e) => handleUpdateTeam(team.id, 'aliases', e.target.value.split(',').map(a => a.trim()).filter(Boolean))}
+                        onChange={(e) =>
+                          handleUpdateTeam(
+                            team.id,
+                            'aliases',
+                            e.target.value
+                              .split(',')
+                              .map((a) => a.trim())
+                              .filter(Boolean)
+                          )
+                        }
                         className="w-full bg-qw-darker border border-qw-accent rounded px-2 py-1 text-white text-xs"
                         placeholder="Aliases: old tag, old name, ..."
                       />
                     </div>
                   ) : (
                     <>
-                      {team.players && <div className="mt-1 ml-9 text-xs text-qw-muted">{team.players}</div>}
+                      {team.players && (
+                        <div className="mt-1 ml-9 text-xs text-qw-muted">{team.players}</div>
+                      )}
                       {team.aliases && team.aliases.length > 0 && (
                         <div className="mt-1 ml-9 text-xs text-qw-muted">
                           <span className="text-qw-accent">Aliases:</span> {team.aliases.join(', ')}
@@ -522,70 +669,100 @@ export default function DivisionTeams({ division, updateDivision, tournamentMode
             </div>
           </div>
         ) : (
-        /* Group View */
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {groups.map(groupName => (
-            <div key={groupName} className="qw-panel overflow-hidden">
-              <div className="bg-qw-dark px-4 py-2 border-b border-qw-border flex items-center justify-between">
-                <h4 className="font-display font-bold text-qw-accent">Group {groupName}</h4>
-                <span className="text-xs text-qw-muted">{teamsByGroup[groupName]?.length || 0}/{division.teamsPerGroup}</span>
-              </div>
-              <div className="p-3 min-h-24">
-                {teamsByGroup[groupName]?.length === 0 ? (
-                  <div className="text-center text-qw-muted text-sm py-4">No teams assigned</div>
-                ) : (
-                  <div className="space-y-1">
-                    {teamsByGroup[groupName]?.map((team, idx) => (
-                      <div key={team.id} className="flex items-center justify-between p-2 bg-qw-dark rounded text-sm group">
-                        <span className="font-body text-white">{idx + 1}. {team.name}</span>
-                        <div className="flex items-center gap-2">
-                          {team.country && <span className="text-qw-muted uppercase text-xs">{team.country}</span>}
-                          <button onClick={() => handleAssignGroup(team.id, '')} className="opacity-0 group-hover:opacity-100 text-red-400 text-xs">Remove</button>
+          /* Group View */
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {groups.map((groupName) => (
+              <div key={groupName} className="qw-panel overflow-hidden">
+                <div className="bg-qw-dark px-4 py-2 border-b border-qw-border flex items-center justify-between">
+                  <h4 className="font-display font-bold text-qw-accent">Group {groupName}</h4>
+                  <span className="text-xs text-qw-muted">
+                    {teamsByGroup[groupName]?.length || 0}/{division.teamsPerGroup}
+                  </span>
+                </div>
+                <div className="p-3 min-h-24">
+                  {teamsByGroup[groupName]?.length === 0 ? (
+                    <div className="text-center text-qw-muted text-sm py-4">No teams assigned</div>
+                  ) : (
+                    <div className="space-y-1">
+                      {teamsByGroup[groupName]?.map((team, idx) => (
+                        <div
+                          key={team.id}
+                          className="flex items-center justify-between p-2 bg-qw-dark rounded text-sm group"
+                        >
+                          <span className="font-body text-white">
+                            {idx + 1}. {team.name}
+                          </span>
+                          <div className="flex items-center gap-2">
+                            {team.country && (
+                              <span className="text-qw-muted uppercase text-xs">
+                                {team.country}
+                              </span>
+                            )}
+                            <button
+                              onClick={() => handleAssignGroup(team.id, '')}
+                              className="opacity-0 group-hover:opacity-100 text-red-400 text-xs"
+                            >
+                              Remove
+                            </button>
+                          </div>
                         </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+
+            {/* Unassigned */}
+            {teamsByGroup.unassigned?.length > 0 && (
+              <div className="qw-panel overflow-hidden md:col-span-2">
+                <div className="bg-qw-dark px-4 py-2 border-b border-qw-border">
+                  <h4 className="font-display font-bold text-qw-muted">
+                    Unassigned ({teamsByGroup.unassigned.length})
+                  </h4>
+                </div>
+                <div className="p-3">
+                  <div className="flex flex-wrap gap-2">
+                    {teamsByGroup.unassigned.map((team) => (
+                      <div
+                        key={team.id}
+                        className="flex items-center gap-2 px-3 py-1 bg-qw-dark rounded border border-qw-border"
+                      >
+                        <span className="text-white text-sm">{team.name}</span>
+                        <select
+                          onChange={(e) => handleAssignGroup(team.id, e.target.value)}
+                          value=""
+                          className="bg-transparent text-qw-accent text-xs border-none outline-none cursor-pointer"
+                        >
+                          <option value="" disabled>
+                            → Group
+                          </option>
+                          {groups.map((g) => (
+                            <option key={g} value={g}>
+                              {g}
+                            </option>
+                          ))}
+                        </select>
                       </div>
                     ))}
                   </div>
-                )}
-              </div>
-            </div>
-          ))}
-          
-          {/* Unassigned */}
-          {teamsByGroup.unassigned?.length > 0 && (
-            <div className="qw-panel overflow-hidden md:col-span-2">
-              <div className="bg-qw-dark px-4 py-2 border-b border-qw-border">
-                <h4 className="font-display font-bold text-qw-muted">Unassigned ({teamsByGroup.unassigned.length})</h4>
-              </div>
-              <div className="p-3">
-                <div className="flex flex-wrap gap-2">
-                  {teamsByGroup.unassigned.map(team => (
-                    <div key={team.id} className="flex items-center gap-2 px-3 py-1 bg-qw-dark rounded border border-qw-border">
-                      <span className="text-white text-sm">{team.name}</span>
-                      <select onChange={(e) => handleAssignGroup(team.id, e.target.value)} value="" className="bg-transparent text-qw-accent text-xs border-none outline-none cursor-pointer">
-                        <option value="" disabled>→ Group</option>
-                        {groups.map(g => <option key={g} value={g}>{g}</option>)}
-                      </select>
-                    </div>
-                  ))}
                 </div>
               </div>
-            </div>
-          )}
-        </div>
-        )
-      )}
+            )}
+          </div>
+        ))}
 
       {/* Summary */}
       {teams.length > 0 && (
         <div className="qw-panel p-4">
           <div className="flex items-center justify-between text-sm">
             <span className="text-qw-muted">
-              {teams.length} teams total •
-              {teams.filter(t => t.group).length} assigned •
-              {teams.filter(t => !t.group).length} unassigned
+              {teams.length} teams total •{teams.filter((t) => t.group).length} assigned •
+              {teams.filter((t) => !t.group).length} unassigned
             </span>
             <span className="text-qw-muted">
-              Target: {division.numGroups} groups × {division.teamsPerGroup} teams = {division.numGroups * division.teamsPerGroup}
+              Target: {division.numGroups} groups × {division.teamsPerGroup} teams ={' '}
+              {division.numGroups * division.teamsPerGroup}
             </span>
           </div>
         </div>

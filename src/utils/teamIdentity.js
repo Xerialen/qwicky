@@ -20,7 +20,14 @@ import { resolveTeamName } from './teamResolver.js';
  * @returns {object} Team context for use with resolveTeam/getTeamMeta/etc.
  */
 export function createTeamContext(teams, globalAliases = []) {
-  if (!teams?.length) return { teams: [], globalAliases, byNormName: new Map(), byNormTag: new Map(), byAlias: new Map() };
+  if (!teams?.length)
+    return {
+      teams: [],
+      globalAliases,
+      byNormName: new Map(),
+      byNormTag: new Map(),
+      byAlias: new Map(),
+    };
 
   const byNormName = new Map();
   const byNormTag = new Map();
@@ -103,9 +110,7 @@ export function getTeamMeta(rawName, ctx) {
   if (!rawName || !ctx) return { name: rawName || '', tag: '', country: '', players: '' };
   const norm = normalize(rawName);
 
-  const team = ctx.byNormName.get(norm)
-    || ctx.byNormTag.get(norm)
-    || ctx.byAlias.get(norm);
+  const team = ctx.byNormName.get(norm) || ctx.byNormTag.get(norm) || ctx.byAlias.get(norm);
 
   if (team) return team;
 

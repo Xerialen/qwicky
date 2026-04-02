@@ -15,21 +15,25 @@ export function normalizeQW(name) {
   if (!name || typeof name !== 'string') return '';
 
   // Step 1: Strip high-bit QW encoding (bytes 128-255 → 0-127)
-  let s = [...name].map(c => {
-    const code = c.charCodeAt(0);
-    return code > 127 ? String.fromCharCode(code & 0x7F) : c;
-  }).join('');
+  let s = [...name]
+    .map((c) => {
+      const code = c.charCodeAt(0);
+      return code > 127 ? String.fromCharCode(code & 0x7f) : c;
+    })
+    .join('');
 
   // Step 2: Handle QW special chars (bytes 0-31)
   // 16-17 → [ ], 18-27 → 0-9, others → strip
-  s = [...s].map(c => {
-    const code = c.charCodeAt(0);
-    if (code >= 18 && code <= 27) return String(code - 18);
-    if (code === 16) return '[';
-    if (code === 17) return ']';
-    if (code < 32 || code === 127) return '';
-    return c;
-  }).join('');
+  s = [...s]
+    .map((c) => {
+      const code = c.charCodeAt(0);
+      if (code >= 18 && code <= 27) return String(code - 18);
+      if (code === 16) return '[';
+      if (code === 17) return ']';
+      if (code < 32 || code === 127) return '';
+      return c;
+    })
+    .join('');
 
   // Step 3: Strip soft hyphens
   s = s.replace(/\u00AD/g, '');
@@ -38,15 +42,15 @@ export function normalizeQW(name) {
   s = s.toLowerCase().trim();
 
   // Step 5: Strip bracket/decorator patterns
-  s = s.replace(/^\[([^\]]*)\]$/, '$1');   // [tag]
-  s = s.replace(/^\]([^\[]*)\[$/, '$1');   // ]tag[
-  s = s.replace(/^\(([^)]*)\)$/, '$1');    // (tag)
-  s = s.replace(/^\.([^.]*)\.$/,  '$1');   // .tag.
-  s = s.replace(/^-([^-]*)-$/,    '$1');   // -tag-
-  s = s.replace(/^\|([^|]*)\|$/,  '$1');   // |tag|
+  s = s.replace(/^\[([^\]]*)\]$/, '$1'); // [tag]
+  s = s.replace(/^\]([^[]*)\[$/, '$1'); // ]tag[
+  s = s.replace(/^\(([^)]*)\)$/, '$1'); // (tag)
+  s = s.replace(/^\.([^.]*)\.$/, '$1'); // .tag.
+  s = s.replace(/^-([^-]*)-$/, '$1'); // -tag-
+  s = s.replace(/^\|([^|]*)\|$/, '$1'); // |tag|
 
   // Step 6: Strip leading/trailing decorators (brackets, quotes, angle brackets)
-  s = s.replace(/^[\[\](){}.|'`"<>]+|[\[\](){}.|'`"<>]+$/g, '');
+  s = s.replace(/^[[\](){}.|'`"<>]+|[[\](){}.|'`"<>]+$/g, '');
 
   return s.trim();
 }
@@ -86,21 +90,30 @@ export function resolveTeamTag(rawName, teams, aliasMap = {}) {
 
   // Additional alias map (e.g., QW-encoded forms like "0151" → "ving")
   if (aliasMap[norm]) {
-    const resolved = teams.find(t => normalizeQW(t.tag) === aliasMap[norm] || t.name.toLowerCase() === aliasMap[norm]);
+    const resolved = teams.find(
+      (t) => normalizeQW(t.tag) === aliasMap[norm] || t.name.toLowerCase() === aliasMap[norm]
+    );
     if (resolved) return { team: resolved, confidence: 80 };
   }
 
   // Pre-strip form (before decorator removal) for aliases like "'><>"
-  const preStrip = [...(rawName || '')].map(c => {
-    const code = c.charCodeAt(0);
-    if (code > 127) return String.fromCharCode(code & 0x7F);
-    if (code >= 18 && code <= 27) return String(code - 18);
-    if (code < 32 || code === 127) return '';
-    return c;
-  }).join('').toLowerCase().trim();
+  const preStrip = [...(rawName || '')]
+    .map((c) => {
+      const code = c.charCodeAt(0);
+      if (code > 127) return String.fromCharCode(code & 0x7f);
+      if (code >= 18 && code <= 27) return String(code - 18);
+      if (code < 32 || code === 127) return '';
+      return c;
+    })
+    .join('')
+    .toLowerCase()
+    .trim();
 
   if (aliasMap[preStrip]) {
-    const resolved = teams.find(t => normalizeQW(t.tag) === aliasMap[preStrip] || t.name.toLowerCase() === aliasMap[preStrip]);
+    const resolved = teams.find(
+      (t) =>
+        normalizeQW(t.tag) === aliasMap[preStrip] || t.name.toLowerCase() === aliasMap[preStrip]
+    );
     if (resolved) return { team: resolved, confidence: 80 };
   }
 
@@ -137,7 +150,7 @@ export function applyHardGates(game, config) {
   }
 
   // Gate 2: Both team names must resolve to registered teams
-  const gameTeams = (game.teams || []).map(t => typeof t === 'object' ? t.name : t);
+  const gameTeams = (game.teams || []).map((t) => (typeof t === 'object' ? t.name : t));
   if (gameTeams.length < 2) return { pass: false, rejectedBy: 'fewer than 2 teams' };
 
   const r1 = resolveTeamTag(gameTeams[0], regTeams, aliasMap);
@@ -150,9 +163,10 @@ export function applyHardGates(game, config) {
 
   // Gate 3: Teams must be a valid matchup
   if (!isPlayoffs && schedule) {
-    const isScheduled = schedule.some(m =>
-      (m.team1 === r1.team.name && m.team2 === r2.team.name) ||
-      (m.team1 === r2.team.name && m.team2 === r1.team.name)
+    const isScheduled = schedule.some(
+      (m) =>
+        (m.team1 === r1.team.name && m.team2 === r2.team.name) ||
+        (m.team1 === r2.team.name && m.team2 === r1.team.name)
     );
     if (!isScheduled) return { pass: false, rejectedBy: 'not scheduled matchup' };
   }
@@ -171,12 +185,12 @@ export function applyHardGates(game, config) {
 
   // Gate 6: Correct player count
   const players = game.players || [];
-  const team1Players = players.filter(p => {
+  const team1Players = players.filter((p) => {
     const pTeamNorm = normalizeQW(p.team || '');
     const t1Norm = normalizeQW(gameTeams[0]);
     return pTeamNorm === t1Norm || p.team === gameTeams[0];
   });
-  const team2Players = players.filter(p => {
+  const team2Players = players.filter((p) => {
     const pTeamNorm = normalizeQW(p.team || '');
     const t2Norm = normalizeQW(gameTeams[1]);
     return pTeamNorm === t2Norm || p.team === gameTeams[1];
@@ -195,7 +209,7 @@ export function applyHardGates(game, config) {
   }
 
   // Gate 11: No bots, no generic names
-  if (players.some(p => p.is_bot)) return { pass: false, rejectedBy: 'has bots' };
+  if (players.some((p) => p.is_bot)) return { pass: false, rejectedBy: 'has bots' };
   const n1 = normalizeQW(gameTeams[0]);
   const n2 = normalizeQW(gameTeams[1]);
   if (REJECT_NAMES.has(n1) || REJECT_NAMES.has(n2)) {
@@ -252,10 +266,14 @@ export function scoreConfidence(game, gateResult, config) {
 
 function scoreRoster(game, r1, r2) {
   const players = game.players || [];
-  const gameTeams = (game.teams || []).map(t => typeof t === 'object' ? t.name : t);
+  const gameTeams = (game.teams || []).map((t) => (typeof t === 'object' ? t.name : t));
 
-  const t1Players = players.filter(p => p.team === gameTeams[0] || normalizeQW(p.team) === normalizeQW(gameTeams[0]));
-  const t2Players = players.filter(p => p.team === gameTeams[1] || normalizeQW(p.team) === normalizeQW(gameTeams[1]));
+  const t1Players = players.filter(
+    (p) => p.team === gameTeams[0] || normalizeQW(p.team) === normalizeQW(gameTeams[0])
+  );
+  const t2Players = players.filter(
+    (p) => p.team === gameTeams[1] || normalizeQW(p.team) === normalizeQW(gameTeams[1])
+  );
 
   const match1 = countRosterMatches(t1Players, r1.team.roster || r1.team.players || []);
   const match2 = countRosterMatches(t2Players, r2.team.roster || r2.team.players || []);
@@ -277,13 +295,17 @@ function scoreRoster(game, r1, r2) {
 }
 
 function countRosterMatches(gamePlayers, roster) {
-  const rosterNorm = roster.map(p => normalizeQW(p).toLowerCase());
+  const rosterNorm = roster.map((p) => normalizeQW(p).toLowerCase());
   let matched = 0;
   for (const gp of gamePlayers) {
     const gpNorm = normalizeQW(gp.name).toLowerCase();
     // Also try without common suffixes (e.g., "rusti FU" → "rusti")
     const gpBase = gpNorm.replace(/\s+\S{1,4}$/, ''); // strip short suffix
-    if (rosterNorm.some(r => r === gpNorm || r === gpBase || gpNorm.includes(r) || r.includes(gpNorm))) {
+    if (
+      rosterNorm.some(
+        (r) => r === gpNorm || r === gpBase || gpNorm.includes(r) || r.includes(gpNorm)
+      )
+    ) {
       matched++;
     }
   }
@@ -297,9 +319,10 @@ function scoreScheduleProximity(game, team1, team2, schedule) {
   if (isNaN(gameDate.getTime())) return 15;
 
   // Find scheduled match for this team pair
-  const match = schedule.find(m =>
-    (m.team1 === team1.name && m.team2 === team2.name) ||
-    (m.team1 === team2.name && m.team2 === team1.name)
+  const match = schedule.find(
+    (m) =>
+      (m.team1 === team1.name && m.team2 === team2.name) ||
+      (m.team1 === team2.name && m.team2 === team1.name)
   );
   if (!match) return 5; // Teams in tournament but no specific scheduled date
 
@@ -359,9 +382,9 @@ function scoreTimeOfDay(timestamp) {
   // Convert to CET (UTC+1, rough — ignoring DST for simplicity)
   const hourCET = (d.getUTCHours() + 1) % 24;
 
-  if (hourCET >= 17 || hourCET < 1) return 10;  // 17:00-01:00
-  if (hourCET >= 1 && hourCET < 5) return 3;    // 01:00-05:00
-  return 7;                                       // 05:00-17:00
+  if (hourCET >= 17 || hourCET < 1) return 10; // 17:00-01:00
+  if (hourCET >= 1 && hourCET < 5) return 3; // 01:00-05:00
+  return 7; // 05:00-17:00
 }
 
 /**
@@ -372,8 +395,8 @@ export function groupIntoSeries(games) {
   const SERIES_GAP_MS = 3 * 60 * 60 * 1000;
 
   // Sort by timestamp
-  const sorted = [...games].sort((a, b) =>
-    new Date(a.timestamp || a.date) - new Date(b.timestamp || b.date)
+  const sorted = [...games].sort(
+    (a, b) => new Date(a.timestamp || a.date) - new Date(b.timestamp || b.date)
   );
 
   const series = [];
@@ -383,8 +406,11 @@ export function groupIntoSeries(games) {
     const gameTime = new Date(game.timestamp || game.date).getTime();
     const teamKey = [game._resolved1, game._resolved2].sort().join(' vs ');
 
-    if (currentSeries && currentSeries.key === teamKey &&
-        gameTime - currentSeries.lastTime < SERIES_GAP_MS) {
+    if (
+      currentSeries &&
+      currentSeries.key === teamKey &&
+      gameTime - currentSeries.lastTime < SERIES_GAP_MS
+    ) {
       currentSeries.games.push(game);
       currentSeries.lastTime = gameTime;
     } else {

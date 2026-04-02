@@ -4,17 +4,14 @@
  * Generate MediaWiki markup for tournament standings table
  */
 export function generateStandingsWiki(standings, options = {}) {
-  const { 
-    title = 'Group Stage Standings',
-    showHeader = true 
-  } = options;
+  const { title = 'Group Stage Standings', showHeader = true } = options;
 
   if (standings.length === 0) {
     return '<!-- No standings data available -->';
   }
 
   let wiki = '';
-  
+
   if (showHeader) {
     wiki += `=== ${title} ===\n\n`;
   }
@@ -28,7 +25,7 @@ export function generateStandingsWiki(standings, options = {}) {
     const mapDiff = team.mapsWon - team.mapsLost;
     const diffStr = mapDiff > 0 ? `+${mapDiff}` : `${mapDiff}`;
     const position = idx + 1;
-    
+
     // Highlight top positions
     let rowStyle = '';
     if (position === 1) {
@@ -50,11 +47,7 @@ export function generateStandingsWiki(standings, options = {}) {
  * Generate MediaWiki markup for match schedule
  */
 export function generateScheduleWiki(matches, options = {}) {
-  const { 
-    title = 'Match Schedule',
-    showHeader = true,
-    groupByDate = true 
-  } = options;
+  const { title = 'Match Schedule', showHeader = true, groupByDate = true } = options;
 
   if (matches.length === 0) {
     return '<!-- No matches available -->';
@@ -68,7 +61,7 @@ export function generateScheduleWiki(matches, options = {}) {
   });
 
   let wiki = '';
-  
+
   if (showHeader) {
     wiki += `=== ${title} ===\n\n`;
   }
@@ -76,7 +69,7 @@ export function generateScheduleWiki(matches, options = {}) {
   if (groupByDate) {
     // Group by date
     const groups = {};
-    sortedMatches.forEach(match => {
+    sortedMatches.forEach((match) => {
       const dateKey = match.date ? match.date.split(' ')[0] : 'TBD';
       if (!groups[dateKey]) {
         groups[dateKey] = [];
@@ -104,13 +97,13 @@ function generateMatchTable(matches) {
   wiki += `|-\n`;
   wiki += `! Time !! Team 1 !! Score !! Team 2 !! Map\n`;
 
-  matches.forEach(match => {
+  matches.forEach((match) => {
     const team1 = match.teams[0];
     const team2 = match.teams[1];
     const score1 = match.scores[team1] || 0;
     const score2 = match.scores[team2] || 0;
     const time = match.date?.split(' ')[1] || 'TBD';
-    
+
     // Bold the winner's score
     const score1Str = score1 > score2 ? `'''${score1}'''` : `${score1}`;
     const score2Str = score2 > score1 ? `'''${score2}'''` : `${score2}`;
@@ -127,14 +120,14 @@ function generateMatchTable(matches) {
  * Generate MediaWiki markup for playoff bracket
  */
 export function generateBracketWiki(bracketConfig, seriesSummary, options = {}) {
-  const { 
+  const {
     title = 'Playoffs',
     showHeader = true,
-    bracketType = '8team' // '8team' (QF+SF+F) or '4team' (SF+F)
+    bracketType: _bracketType = '8team', // '8team' (QF+SF+F) or '4team' (SF+F)
   } = options;
 
   let wiki = '';
-  
+
   if (showHeader) {
     wiki += `=== ${title} ===\n\n`;
   }
@@ -142,15 +135,15 @@ export function generateBracketWiki(bracketConfig, seriesSummary, options = {}) 
   // Helper to get score for a matchup
   const getMatchResult = (team1, team2) => {
     if (!team1 || !team2) return { score1: '', score2: '' };
-    
+
     const sortedTeams = [team1, team2].sort((a, b) => a.localeCompare(b));
-    const matchupKey = sortedTeams.join("vs");
-    
+    const matchupKey = sortedTeams.join('vs');
+
     if (seriesSummary[matchupKey]) {
       const s = seriesSummary[matchupKey];
       return {
         score1: s.mapWins[team1] || 0,
-        score2: s.mapWins[team2] || 0
+        score2: s.mapWins[team2] || 0,
       };
     }
     return { score1: '', score2: '' };
@@ -164,7 +157,7 @@ export function generateBracketWiki(bracketConfig, seriesSummary, options = {}) 
     bracketConfig.quarterFinals.forEach((match, idx) => {
       const result = getMatchResult(match.team1, match.team2);
       const matchNum = idx + 1;
-      
+
       wiki += `<!-- Quarter-Final ${matchNum} -->\n`;
       wiki += `|R1M${matchNum}={{Match\n`;
       wiki += `    |opponent1={{TeamOpponent|${match.team1 || 'TBD'}}}\n`;
@@ -181,7 +174,7 @@ export function generateBracketWiki(bracketConfig, seriesSummary, options = {}) 
     bracketConfig.semiFinals.forEach((match, idx) => {
       const result = getMatchResult(match.team1, match.team2);
       const matchNum = idx + 1;
-      
+
       wiki += `<!-- Semi-Final ${matchNum} -->\n`;
       wiki += `|R2M${matchNum}={{Match\n`;
       wiki += `    |opponent1={{TeamOpponent|${match.team1 || 'TBD'}}}\n`;
@@ -196,7 +189,7 @@ export function generateBracketWiki(bracketConfig, seriesSummary, options = {}) 
   // Final
   if (bracketConfig.final) {
     const result = getMatchResult(bracketConfig.final.team1, bracketConfig.final.team2);
-    
+
     wiki += `<!-- Grand Final -->\n`;
     wiki += `|R3M1={{Match\n`;
     wiki += `    |opponent1={{TeamOpponent|${bracketConfig.final.team1 || 'TBD'}}}\n`;
@@ -218,15 +211,15 @@ export function generateBracketWiki(bracketConfig, seriesSummary, options = {}) 
 export function generateSimpleBracketWiki(bracketConfig, seriesSummary) {
   const getMatchResult = (team1, team2) => {
     if (!team1 || !team2) return null;
-    
+
     const sortedTeams = [team1, team2].sort((a, b) => a.localeCompare(b));
-    const matchupKey = sortedTeams.join("vs");
-    
+    const matchupKey = sortedTeams.join('vs');
+
     if (seriesSummary[matchupKey]) {
       const s = seriesSummary[matchupKey];
       return {
         score1: s.mapWins[team1] || 0,
-        score2: s.mapWins[team2] || 0
+        score2: s.mapWins[team2] || 0,
       };
     }
     return null;
@@ -234,11 +227,11 @@ export function generateSimpleBracketWiki(bracketConfig, seriesSummary) {
 
   const formatMatch = (match) => {
     if (!match.team1 && !match.team2) return 'TBD vs TBD';
-    
+
     const result = getMatchResult(match.team1, match.team2);
     const team1 = match.team1 || 'TBD';
     const team2 = match.team2 || 'TBD';
-    
+
     if (result) {
       const winner1 = result.score1 > result.score2;
       const winner2 = result.score2 > result.score1;
@@ -251,22 +244,22 @@ export function generateSimpleBracketWiki(bracketConfig, seriesSummary) {
   wiki += `|-\n`;
   wiki += `! Quarter-Finals !! Semi-Finals !! Grand Final\n`;
   wiki += `|-\n`;
-  
+
   // Row 1: QF1, SF1, Final
   wiki += `| ${formatMatch(bracketConfig.quarterFinals[0])}\n`;
   wiki += `| rowspan="2" | ${formatMatch(bracketConfig.semiFinals[0])}\n`;
   wiki += `| rowspan="4" | ${formatMatch(bracketConfig.final)}\n`;
   wiki += `|-\n`;
-  
+
   // Row 2: QF2
   wiki += `| ${formatMatch(bracketConfig.quarterFinals[1])}\n`;
   wiki += `|-\n`;
-  
+
   // Row 3: QF3, SF2
   wiki += `| ${formatMatch(bracketConfig.quarterFinals[2])}\n`;
   wiki += `| rowspan="2" | ${formatMatch(bracketConfig.semiFinals[1])}\n`;
   wiki += `|-\n`;
-  
+
   // Row 4: QF4
   wiki += `| ${formatMatch(bracketConfig.quarterFinals[3])}\n`;
   wiki += `|}\n`;
@@ -277,22 +270,25 @@ export function generateSimpleBracketWiki(bracketConfig, seriesSummary) {
 /**
  * Generate complete tournament wiki page
  */
-export function generateFullTournamentWiki(standings, matches, bracketConfig, seriesSummary, options = {}) {
-  const { 
-    tournamentName = 'Tournament',
-    useSimpleBracket = true 
-  } = options;
+export function generateFullTournamentWiki(
+  standings,
+  matches,
+  bracketConfig,
+  seriesSummary,
+  options = {}
+) {
+  const { tournamentName = 'Tournament', useSimpleBracket = true } = options;
 
   let wiki = `== ${tournamentName} ==\n\n`;
-  
+
   // Standings
   wiki += generateStandingsWiki(standings, { showHeader: true });
   wiki += '\n';
-  
+
   // Schedule
   wiki += generateScheduleWiki(matches, { showHeader: true, groupByDate: true });
   wiki += '\n';
-  
+
   // Bracket
   if (useSimpleBracket) {
     wiki += `=== Playoffs ===\n\n`;

@@ -28,9 +28,9 @@ export default function FetchMatches({ matches, setMatches }) {
 
     try {
       const parsed = await fetchSingleGame(gameId.trim());
-      
+
       // Check if match already exists
-      const exists = matches.some(m => m.id === parsed.id);
+      const exists = matches.some((m) => m.id === parsed.id);
       if (exists) {
         setError(`Match ${parsed.id} already exists in the list`);
         setLoading(false);
@@ -51,8 +51,8 @@ export default function FetchMatches({ matches, setMatches }) {
     e.preventDefault();
     const ids = batchIds
       .split(/[\n,\s]+/)
-      .map(id => id.trim())
-      .filter(id => id.length > 0);
+      .map((id) => id.trim())
+      .filter((id) => id.length > 0);
 
     if (ids.length === 0) return;
 
@@ -61,12 +61,12 @@ export default function FetchMatches({ matches, setMatches }) {
 
     const results = [];
     const errors = [];
-    
+
     for (const id of ids) {
       try {
         const parsed = await fetchSingleGame(id);
-        const exists = matches.some(m => m.id === parsed.id);
-        if (!exists && !results.some(r => r.id === parsed.id)) {
+        const exists = matches.some((m) => m.id === parsed.id);
+        if (!exists && !results.some((r) => r.id === parsed.id)) {
           results.push(parsed);
         }
       } catch (err) {
@@ -88,7 +88,7 @@ export default function FetchMatches({ matches, setMatches }) {
   };
 
   const handleRemoveMatch = (id) => {
-    setMatches(matches.filter(m => m.id !== id));
+    setMatches(matches.filter((m) => m.id !== id));
     if (lastFetched?.id === id) {
       setLastFetched(null);
     }
@@ -108,9 +108,10 @@ export default function FetchMatches({ matches, setMatches }) {
         <button
           onClick={() => setMode('single')}
           className={`px-4 py-2 rounded font-body font-semibold transition-all
-            ${mode === 'single' 
-              ? 'bg-qw-accent text-qw-dark' 
-              : 'bg-qw-panel border border-qw-border text-qw-muted hover:text-white'
+            ${
+              mode === 'single'
+                ? 'bg-qw-accent text-qw-dark'
+                : 'bg-qw-panel border border-qw-border text-qw-muted hover:text-white'
             }`}
         >
           Single Fetch
@@ -118,9 +119,10 @@ export default function FetchMatches({ matches, setMatches }) {
         <button
           onClick={() => setMode('batch')}
           className={`px-4 py-2 rounded font-body font-semibold transition-all
-            ${mode === 'batch' 
-              ? 'bg-qw-accent text-qw-dark' 
-              : 'bg-qw-panel border border-qw-border text-qw-muted hover:text-white'
+            ${
+              mode === 'batch'
+                ? 'bg-qw-accent text-qw-dark'
+                : 'bg-qw-panel border border-qw-border text-qw-muted hover:text-white'
             }`}
         >
           Batch Fetch
@@ -152,8 +154,20 @@ export default function FetchMatches({ matches, setMatches }) {
               {loading ? (
                 <span className="flex items-center gap-2">
                   <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                      fill="none"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    />
                   </svg>
                   Fetching...
                 </span>
@@ -180,8 +194,20 @@ export default function FetchMatches({ matches, setMatches }) {
               {loading ? (
                 <span className="flex items-center gap-2">
                   <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                      fill="none"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    />
                   </svg>
                   Fetching...
                 </span>
@@ -223,7 +249,8 @@ export default function FetchMatches({ matches, setMatches }) {
               <div className="col-span-2">
                 <span className="text-qw-muted">Teams:</span>
                 <span className="ml-2 text-white">
-                  {lastFetched.teams[0]} ({lastFetched.scores[lastFetched.teams[0]] || 0}) vs {lastFetched.teams[1]} ({lastFetched.scores[lastFetched.teams[1]] || 0})
+                  {lastFetched.teams[0]} ({lastFetched.scores[lastFetched.teams[0]] || 0}) vs{' '}
+                  {lastFetched.teams[1]} ({lastFetched.scores[lastFetched.teams[1]] || 0})
                 </span>
               </div>
             </div>
@@ -265,14 +292,16 @@ export default function FetchMatches({ matches, setMatches }) {
                   <span className="text-qw-muted font-mono text-sm w-8">#{idx + 1}</span>
                   <div>
                     <div className="font-body font-semibold text-white">
-                      {match.teams[0]} 
-                      <span className="text-qw-accent mx-2">vs</span> 
+                      {match.teams[0]}
+                      <span className="text-qw-accent mx-2">vs</span>
                       {match.teams[1]}
                     </div>
                     <div className="flex gap-4 text-sm text-qw-muted font-mono">
                       <span>{match.map}</span>
                       <span>•</span>
-                      <span>{match.scores[match.teams[0]] || 0} - {match.scores[match.teams[1]] || 0}</span>
+                      <span>
+                        {match.scores[match.teams[0]] || 0} - {match.scores[match.teams[1]] || 0}
+                      </span>
                       <span>•</span>
                       <span>{match.id}</span>
                     </div>

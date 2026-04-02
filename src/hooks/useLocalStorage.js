@@ -1,5 +1,5 @@
 // src/hooks/useLocalStorage.js
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 export function useLocalStorage(key, initialValue) {
   // Get from local storage then parse stored json or return initialValue
@@ -24,9 +24,9 @@ export function useLocalStorage(key, initialValue) {
     try {
       // Allow value to be a function so we have same API as useState
       const valueToStore = value instanceof Function ? value(storedValue) : value;
-      
+
       setStoredValue(valueToStore);
-      
+
       if (typeof window !== 'undefined') {
         window.localStorage.setItem(key, JSON.stringify(valueToStore));
       }

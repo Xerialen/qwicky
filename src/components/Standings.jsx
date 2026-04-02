@@ -48,7 +48,7 @@ export default function Standings({ matches }) {
             {standings.map((team, idx) => {
               const mapDiff = team.mapsWon - team.mapsLost;
               const isTop = idx < Math.ceil(standings.length / 2);
-              
+
               return (
                 <tr
                   key={team.name}
@@ -61,23 +61,31 @@ export default function Standings({ matches }) {
                 >
                   {/* Position */}
                   <td className="text-center">
-                    <span className={`
+                    <span
+                      className={`
                       inline-flex items-center justify-center w-8 h-8 rounded-full font-display font-bold
-                      ${idx === 0 ? 'bg-qw-accent text-qw-dark' : 
-                        idx === 1 ? 'bg-gray-400 text-qw-dark' :
-                        idx === 2 ? 'bg-amber-700 text-white' :
-                        'bg-qw-border text-qw-muted'
+                      ${
+                        idx === 0
+                          ? 'bg-qw-accent text-qw-dark'
+                          : idx === 1
+                            ? 'bg-gray-400 text-qw-dark'
+                            : idx === 2
+                              ? 'bg-amber-700 text-white'
+                              : 'bg-qw-border text-qw-muted'
                       }
-                    `}>
+                    `}
+                    >
                       {idx + 1}
                     </span>
                   </td>
 
                   {/* Team Name */}
                   <td>
-                    <span className={`font-body font-semibold text-lg
+                    <span
+                      className={`font-body font-semibold text-lg
                       ${idx === 0 ? 'text-qw-accent' : 'text-white'}
-                    `}>
+                    `}
+                    >
                       {team.name}
                     </span>
                   </td>
@@ -103,21 +111,24 @@ export default function Standings({ matches }) {
 
                   {/* Map Difference */}
                   <td className="text-center font-mono font-semibold">
-                    <span className={
-                      mapDiff > 0 ? 'text-qw-win' : 
-                      mapDiff < 0 ? 'text-qw-loss' : 
-                      'text-qw-muted'
-                    }>
-                      {mapDiff > 0 ? '+' : ''}{mapDiff}
+                    <span
+                      className={
+                        mapDiff > 0 ? 'text-qw-win' : mapDiff < 0 ? 'text-qw-loss' : 'text-qw-muted'
+                      }
+                    >
+                      {mapDiff > 0 ? '+' : ''}
+                      {mapDiff}
                     </span>
                   </td>
 
                   {/* Points */}
                   <td className="text-center">
-                    <span className={`
+                    <span
+                      className={`
                       font-display font-bold text-lg
                       ${idx === 0 ? 'text-qw-accent' : 'text-white'}
-                    `}>
+                    `}
+                    >
                       {team.points}
                     </span>
                   </td>

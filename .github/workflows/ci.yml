@@ -19,8 +19,8 @@ jobs:
       - run: npm ci
       - run: npm run build
 
-  test:
-    name: Test
+  lint:
+    name: Lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -29,4 +29,16 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
-      - run: npm test
+      - run: npm run lint
+
+  format:
+    name: Format check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run format:check

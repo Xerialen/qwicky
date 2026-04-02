@@ -19,7 +19,7 @@ export default function Header({
     const data = {
       ...tournament,
       exportedAt: new Date().toISOString(),
-      version: 3
+      version: 3,
     };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -60,7 +60,7 @@ export default function Header({
   };
 
   const activeDivName = activeDivisionId
-    ? divisions.find(d => d.id === activeDivisionId)?.name
+    ? divisions.find((d) => d.id === activeDivisionId)?.name
     : null;
 
   return (
@@ -72,7 +72,9 @@ export default function Header({
             onClick={() => onGoHome?.()}
             className="flex items-center gap-2 hover:opacity-70 transition-opacity"
           >
-            <span className="font-display font-bold text-sm tracking-tight text-qw-accent">QWICKY</span>
+            <span className="font-display font-bold text-sm tracking-tight text-qw-accent">
+              QWICKY
+            </span>
           </button>
 
           {/* Nav — flat text links */}
@@ -110,14 +112,21 @@ export default function Header({
                   }`}
                 >
                   {activeDivName || 'Select'}
-                  <svg className={`w-3 h-3 transition-transform ${showDivisionDropdown ? 'rotate-180' : ''}`} fill="currentColor" viewBox="0 0 12 12">
+                  <svg
+                    className={`w-3 h-3 transition-transform ${showDivisionDropdown ? 'rotate-180' : ''}`}
+                    fill="currentColor"
+                    viewBox="0 0 12 12"
+                  >
                     <path d="M6 8L1 3h10z" />
                   </svg>
                 </button>
 
                 {showDivisionDropdown && (
                   <>
-                    <div className="fixed inset-0 z-40" onClick={() => setShowDivisionDropdown(false)} />
+                    <div
+                      className="fixed inset-0 z-40"
+                      onClick={() => setShowDivisionDropdown(false)}
+                    />
                     <div className="absolute top-full right-0 mt-1 w-48 bg-qw-dark border border-qw-border rounded-md z-50 overflow-hidden py-1">
                       {divisions.map((div) => (
                         <button
@@ -141,7 +150,13 @@ export default function Header({
           </nav>
 
           {/* File controls — minimal */}
-          <input type="file" ref={fileInputRef} onChange={handleImport} accept=".json" className="hidden" />
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleImport}
+            accept=".json"
+            className="hidden"
+          />
           <div className="flex items-center gap-2">
             <button
               onClick={() => fileInputRef.current?.click()}
