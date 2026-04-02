@@ -232,34 +232,6 @@ export default function WizardDraftCard({
 
   return (
     <>
-      <style>{`
-        @keyframes wizardCardShimmer {
-          0%   { background-position: -200% 0; }
-          100% { background-position:  200% 0; }
-        }
-        @keyframes wizardCardFadeIn {
-          from { opacity: 0; transform: translateY(8px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-        .wizard-draft-card {
-          background: var(--bg-card);
-          border: 1px solid var(--border);
-          border-radius: var(--radius-lg);
-          padding: var(--space-6);
-          transition: border-color var(--duration-fast), box-shadow var(--duration-fast);
-          animation: wizardCardFadeIn var(--duration-slow) var(--ease-default) 0.05s both;
-        }
-        .wizard-draft-card:hover {
-          border-color: var(--border-control);
-          box-shadow: var(--shadow-hover);
-        }
-        @media (max-width: 767px) {
-          .wizard-draft-card {
-            padding: var(--space-4);
-          }
-        }
-      `}</style>
-
       {deleteTarget && (
         <ConfirmDeleteModal
           draftName={deleteTarget.name}

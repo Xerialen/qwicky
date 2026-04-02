@@ -55,11 +55,7 @@ function deleteGuestDraft(draftId) {
 }
 
 function generateUUID() {
-  // Simple RFC4122-compliant UUID v4
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-    const r = (Math.random() * 16) | 0;
-    return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16);
-  });
+  return crypto.randomUUID();
 }
 
 // ── Component ────────────────────────────────────────────────────────────────
@@ -98,6 +94,16 @@ export default function SetupWizard({
   const autosaveTimerRef = useRef(null);
   const stepInitialisedRef = useRef(false);
 
+  // Refs for latest tournament/step — used by persistDraft to avoid stale closures
+  const tournamentRef = useRef(tournament);
+  const stepRef = useRef(step);
+  useEffect(() => {
+    tournamentRef.current = tournament;
+  }, [tournament]);
+  useEffect(() => {
+    stepRef.current = step;
+  }, [step]);
+
   // ── Draft initialisation on mount ───────────────────────────────────────
 
   useEffect(() => {
@@ -130,15 +136,18 @@ export default function SetupWizard({
 
   const persistDraft = useCallback(async () => {
     if (!draftId) return;
+    // Read latest values from refs to avoid stale closure capturing pre-update state
+    const currentTournament = tournamentRef.current;
+    const currentStep = stepRef.current;
     // Only autosave if user has advanced past step 0
-    if (step === 0) return;
+    if (currentStep === 0) return;
 
-    const name = tournament.name || null;
-    const teamCount = (tournament.divisions || []).reduce(
+    const name = currentTournament.name || null;
+    const teamCount = (currentTournament.divisions || []).reduce(
       (sum, d) => sum + (d.teams?.length || 0),
       0
     );
-    const draftData = { ...tournament, currentStep: step, teamCount };
+    const draftData = { ...currentTournament, currentStep, teamCount };
 
     setSaving();
     try {
@@ -166,13 +175,15 @@ export default function SetupWizard({
       }
 
       // Guest / no session: write to localStorage
-      writeGuestDraft(draftId, name, draftData, step);
+      writeGuestDraft(draftId, name, draftData, currentStep);
       markClean();
       setSynced(Date.now());
     } catch (err) {
       setError(err.message || 'Autosave failed');
     }
-  }, [draftId, tournament, step, setSaving, setSynced, setError, markClean]);
+    // tournament and step intentionally omitted — read via refs to avoid stale captures
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draftId, setSaving, setSynced, setError, markClean]);
 
   const scheduleAutosave = useCallback(() => {
     markDirty();
