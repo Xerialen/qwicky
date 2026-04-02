@@ -13,49 +13,14 @@ export default function FormatRecommendation({ teamCount }) {
   if (!rec) return null;
 
   return (
-    <div
-      style={{
-        background: 'var(--bg-card)',
-        border: '1px solid var(--accent)',
-        borderRadius: '8px',
-        padding: '12px 16px',
-        display: 'flex',
-        alignItems: 'flex-start',
-        gap: '12px',
-      }}
-    >
+    <div className="bg-qw-dark border border-qw-accent rounded-lg p-3 px-4 flex items-start gap-3">
       {/* accent bar */}
-      <div
-        style={{
-          width: '3px',
-          borderRadius: '2px',
-          background: 'var(--accent)',
-          alignSelf: 'stretch',
-          flexShrink: 0,
-        }}
-      />
+      <div className="w-1 rounded shrink-0 self-stretch bg-qw-accent" />
       <div>
-        <p
-          style={{
-            margin: 0,
-            fontSize: 'var(--text-xs)',
-            fontWeight: 'var(--weight-medium)',
-            letterSpacing: 'var(--tracking-wide)',
-            textTransform: 'uppercase',
-            color: 'var(--accent)',
-          }}
-        >
+        <p className="m-0 text-xs font-medium tracking-wide uppercase text-qw-accent">
           Recommended for {teamCount} team{teamCount !== 1 ? 's' : ''}: {rec.label}
         </p>
-        <p
-          style={{
-            margin: '4px 0 0',
-            fontSize: '0.8125rem',
-            color: 'var(--text-secondary)',
-          }}
-        >
-          {rec.description}
-        </p>
+        <p className="mt-1 text-sm text-qw-muted">{rec.description}</p>
       </div>
     </div>
   );

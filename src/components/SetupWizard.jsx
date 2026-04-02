@@ -191,7 +191,10 @@ export default function SetupWizard({
   const scheduleAutosave = useCallback(() => {
     markDirty();
     clearTimeout(autosaveTimerRef.current);
-    autosaveTimerRef.current = setTimeout(() => persistDraftRef.current?.(), AUTOSAVE_DEBOUNCE_MS);
+    autosaveTimerRef.current = setTimeout(
+      () => persistDraftRef.current?.(),
+      AUTOSAVE_DEBOUNCE_MS
+    );
   }, [markDirty]);
 
   // Patch updateTournamentInfo to trigger autosave on blur
