@@ -1,6 +1,7 @@
 // src/App.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import Header from './components/Header';
+import Leaderboard from './components/Leaderboard';
 import TournamentInfo from './components/TournamentInfo';
 import DivisionManager from './components/DivisionManager';
 import DivisionView from './components/DivisionView';
@@ -488,6 +489,8 @@ function App() {
             setActiveTab={setActiveTab}
           />
         );
+      case 'leaderboard':
+        return <Leaderboard />;
       case 'division':
         if (!activeDivision) {
           return (
