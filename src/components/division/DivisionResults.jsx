@@ -1,5 +1,6 @@
 // src/components/division/DivisionResults.jsx
 import React, { useState, useRef, useMemo, useCallback, useEffect } from 'react';
+import ConfirmModal from '../ConfirmModal';
 import { parseMatch, unicodeToAscii } from '../../utils/matchLogic';
 import {
   createTeamContext,
@@ -43,6 +44,7 @@ export default function DivisionResults({
 
   // Wiki publish toast
   const [wikiToast, setWikiToast] = useState(null);
+  const [pendingConfirm, setPendingConfirm] = useState(null);
 
   // Discover states
   const [discoverResults, setDiscoverResults] = useState(null);
@@ -963,18 +965,32 @@ export default function DivisionResults({
   };
 
   const handleClearResults = () => {
-    if (window.confirm('Clear all imported results?')) {
-      updateDivision({
-        rawMaps: [],
-        schedule: schedule.map((m) => ({ ...m, maps: [], status: '' })),
-      });
-      setLastImported([]);
-    }
+    setPendingConfirm({
+      title: 'Clear all imported results?',
+      body: 'This will remove all map data and reset all match results. This cannot be undone.',
+      confirmLabel: 'Clear Results',
+      variant: 'danger',
+      onConfirm: () => {
+        updateDivision({
+          rawMaps: [],
+          schedule: schedule.map((m) => ({ ...m, maps: [], status: '' })),
+        });
+        setLastImported([]);
+      },
+    });
   };
 
   const removeSeries = (series) => {
-    if (!window.confirm(`Remove this series (${series.maps.length} maps)?`)) return;
+    setPendingConfirm({
+      title: `Remove this series?`,
+      body: `This series contains ${series.maps.length} map${series.maps.length !== 1 ? 's' : ''}. Removing it will unlink these maps from the schedule.`,
+      confirmLabel: 'Remove Series',
+      variant: 'danger',
+      onConfirm: () => doRemoveSeries(series),
+    });
+  };
 
+  const doRemoveSeries = (series) => {
     // Get IDs of maps in this series
     const seriesToRemove = new Set(series.maps.map((m) => m.id));
 
@@ -2212,6 +2228,20 @@ export default function DivisionResults({
           </div>
         )}
       </div>
+
+      {pendingConfirm && (
+        <ConfirmModal
+          title={pendingConfirm.title}
+          body={pendingConfirm.body}
+          confirmLabel={pendingConfirm.confirmLabel}
+          variant={pendingConfirm.variant}
+          onConfirm={() => {
+            pendingConfirm.onConfirm();
+            setPendingConfirm(null);
+          }}
+          onCancel={() => setPendingConfirm(null)}
+        />
+      )}
     </div>
   );
 }

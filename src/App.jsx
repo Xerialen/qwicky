@@ -427,11 +427,8 @@ function App() {
     return newDiv.id;
   };
 
-  // Reset entire tournament
+  // Reset entire tournament — confirmation is handled by Header.jsx two-step modal (QW1c)
   const resetTournament = () => {
-    if (!window.confirm('Reset ALL tournament data? This cannot be undone.')) return;
-    if (!window.confirm('This will delete all divisions, teams, and results. Continue?')) return;
-
     setTournament(createDefaultTournament());
     setActiveDivisionId(null);
     setActiveTab('info');

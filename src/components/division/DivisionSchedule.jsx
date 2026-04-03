@@ -1,6 +1,7 @@
 // src/components/division/DivisionSchedule.jsx
 import React, { useState, useMemo, useRef } from 'react';
 import { findConflicts, getMatchConflicts } from '../../utils/scheduleValidator';
+import ConfirmModal from '../ConfirmModal';
 
 // Polygon (circle) method: produces N-1 rounds (N even) where every team
 // plays exactly once per round. Odd team counts get a null bye placeholder.
@@ -67,6 +68,7 @@ export default function DivisionSchedule({
   const [dragOverRound, setDragOverRound] = useState(null);
   const [discordToast, setDiscordToast] = useState(null);
   const [postingRound, setPostingRound] = useState(null);
+  const [pendingConfirm, setPendingConfirm] = useState(null);
   const dragGroupRef = useRef(null);
 
   const teams = division.teams || [];
@@ -165,13 +167,13 @@ export default function DivisionSchedule({
       return;
     }
 
-    if (
-      window.confirm(
-        `Generate ${newSchedule.length} group stage matches (${meetings}x round-robin)? This replaces existing schedule.`
-      )
-    ) {
-      updateDivision({ schedule: newSchedule });
-    }
+    setPendingConfirm({
+      title: 'Generate group stage schedule?',
+      body: `This will generate ${newSchedule.length} match${newSchedule.length !== 1 ? 'es' : ''} (${meetings}x round-robin) and replace any existing schedule.`,
+      confirmLabel: 'Generate',
+      variant: 'default',
+      onConfirm: () => updateDivision({ schedule: newSchedule }),
+    });
   };
 
   const handleAddMatch = (e) => {
@@ -460,11 +462,15 @@ export default function DivisionSchedule({
         </div>
         {schedule.length > 0 && (
           <button
-            onClick={() => {
-              if (window.confirm('Clear all scheduled matches?')) {
-                updateDivision({ schedule: [] });
-              }
-            }}
+            onClick={() =>
+              setPendingConfirm({
+                title: 'Clear all scheduled matches?',
+                body: `This will permanently remove all ${schedule.length} scheduled match${schedule.length !== 1 ? 'es' : ''}.`,
+                confirmLabel: 'Clear All',
+                variant: 'danger',
+                onConfirm: () => updateDivision({ schedule: [] }),
+              })
+            }
             className="text-sm text-red-400 hover:text-red-300"
           >
             Clear All
@@ -748,6 +754,20 @@ export default function DivisionSchedule({
             </div>
           )}
         </>
+      )}
+
+      {pendingConfirm && (
+        <ConfirmModal
+          title={pendingConfirm.title}
+          body={pendingConfirm.body}
+          confirmLabel={pendingConfirm.confirmLabel}
+          variant={pendingConfirm.variant}
+          onConfirm={() => {
+            pendingConfirm.onConfirm();
+            setPendingConfirm(null);
+          }}
+          onCancel={() => setPendingConfirm(null)}
+        />
       )}
     </div>
   );
