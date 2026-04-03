@@ -1,6 +1,7 @@
 // src/components/Header.jsx
 import React, { useState, useRef } from 'react';
 import ConfirmModal from './ConfirmModal';
+import { useDirtyGuard } from '../hooks/useDirtyGuard';
 
 export default function Header({
   tournament,
@@ -15,6 +16,7 @@ export default function Header({
 }) {
   const [showDivisionDropdown, setShowDivisionDropdown] = useState(false);
   const fileInputRef = useRef(null);
+  const { markClean, guardedNavigate, DirtyModal } = useDirtyGuard();
 
   // Import confirm — holds parsed data until user confirms
   const [pendingImport, setPendingImport] = useState(null);
@@ -38,6 +40,7 @@ export default function Header({
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+    markClean();
   };
 
   const handleImport = (e) => {
@@ -78,9 +81,11 @@ export default function Header({
   };
 
   const handleSelectDivision = (divId) => {
-    setActiveDivisionId(divId);
-    setActiveTab('division');
-    setShowDivisionDropdown(false);
+    guardedNavigate(() => {
+      setActiveDivisionId(divId);
+      setActiveTab('division');
+      setShowDivisionDropdown(false);
+    });
   };
 
   const activeDivName = activeDivisionId
@@ -92,6 +97,7 @@ export default function Header({
 
   return (
     <header className="sticky top-0 z-50 border-b border-qw-border/50 bg-qw-darker/95 backdrop-blur-sm">
+      {DirtyModal}
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex items-center justify-between h-12">
           {/* Logo — text only */}
@@ -107,7 +113,7 @@ export default function Header({
           {/* Nav — flat text links */}
           <nav className="flex items-center gap-1">
             <button
-              onClick={() => setActiveTab('info')}
+              onClick={() => guardedNavigate(() => setActiveTab('info'))}
               className={`px-3 py-1.5 text-xs font-medium rounded transition-colors ${
                 activeTab === 'info'
                   ? 'bg-qw-accent text-qw-darker'
@@ -118,7 +124,7 @@ export default function Header({
             </button>
 
             <button
-              onClick={() => setActiveTab('divisions')}
+              onClick={() => guardedNavigate(() => setActiveTab('divisions'))}
               className={`px-3 py-1.5 text-xs font-medium rounded transition-colors ${
                 activeTab === 'divisions'
                   ? 'bg-qw-accent text-qw-darker'

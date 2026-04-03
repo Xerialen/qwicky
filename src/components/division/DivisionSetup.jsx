@@ -1,6 +1,7 @@
 // src/components/division/DivisionSetup.jsx
 import React, { useState, useEffect } from 'react';
 import { createDefaultBracket } from '../../App';
+import { useDirtyGuard } from '../../hooks/useDirtyGuard';
 
 const formatDisplay = (type, count) => {
   const prefix = type === 'playall' ? 'Go' : 'Bo';
@@ -107,8 +108,13 @@ function FormatSelect({
 }
 
 export default function DivisionSetup({ division, updateDivision }) {
+  const { markDirty } = useDirtyGuard();
+  const dirtyUpdate = (updates) => {
+    markDirty('Division Setup');
+    updateDivision(updates);
+  };
   const handleUpdate = (field, value) => {
-    updateDivision({ [field]: value });
+    dirtyUpdate({ [field]: value });
   };
 
   // Default tier configuration
@@ -218,7 +224,7 @@ export default function DivisionSetup({ division, updateDivision }) {
       updates.playoffLosersType = type;
       updates.playoffLosersBestOf = count;
     }
-    updateDivision(updates);
+    dirtyUpdate(updates);
   };
 
   // Multi-tier helper functions
@@ -239,13 +245,13 @@ export default function DivisionSetup({ division, updateDivision }) {
       bracket: createDefaultBracket('single', 4),
     };
 
-    updateDivision({ playoffTiers: [...tiers, newTier] });
+    dirtyUpdate({ playoffTiers: [...tiers, newTier] });
   };
 
   const handleRemoveTier = (tierId) => {
     const tiers = division.playoffTiers || [];
     if (tiers.length <= 1) return; // Keep at least one tier
-    updateDivision({ playoffTiers: tiers.filter((t) => t.id !== tierId) });
+    dirtyUpdate({ playoffTiers: tiers.filter((t) => t.id !== tierId) });
   };
 
   const handleUpdateTier = (tierId, field, value) => {
@@ -267,7 +273,7 @@ export default function DivisionSetup({ division, updateDivision }) {
       return { ...t, [field]: value };
     });
 
-    updateDivision({ playoffTiers: updatedTiers });
+    dirtyUpdate({ playoffTiers: updatedTiers });
   };
 
   const FORMAT_OPTIONS = [
