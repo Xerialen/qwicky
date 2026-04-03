@@ -1,43 +1,141 @@
-// api/auto-approve.mjs
-// Phase 4: Auto-approval engine.
-// Called by the Discord bot after a submission is inserted.
-// Attempts to resolve both teams and link the game to a scheduled match.
+// api/admin.mjs
+// Consolidated admin endpoint — routes via ?action= query parameter.
 //
-// POST /api/auto-approve
-// Body: { submissionId, tournamentId, divisionId, gameData }
+// GET  ?action=aliases&tournamentId=<id>    — list aliases for tournament + globals
+// POST ?action=aliases                      — create alias
+// DELETE ?action=aliases&id=<uuid>         — delete alias by id
 //
-// Returns:
-//   { status: 'approved', matchId, confidence }
-//   { status: 'flagged', reason, confidence, flags }
-//   { status: 'pending', reason }
-//   { status: 'error', error }
+// GET  ?action=submissions&tournamentId=<id>[&status=pending]  — list submissions
+//
+// POST ?action=auto-approve                 — auto-approval engine (bot-facing, requires auth)
+//   Body: { submissionId, tournamentId, divisionId, gameData }
 
 import { createClient } from '@supabase/supabase-js';
+import { requireAdminAuth } from './_auth.mjs';
 import { normalize } from '../src/utils/nameNormalizer.js';
 import { resolveTeamName } from '../src/utils/teamResolver.js';
-import { requireAdminAuth } from './_auth.mjs';
 
 const supabase = createClient(
   process.env.QWICKY_SUPABASE_URL,
   process.env.QWICKY_SUPABASE_SERVICE_KEY
 );
 
-// ── Team resolver — delegates to the shared 7-tier resolver ──────────────────
-// No more inlined copies. Uses the authoritative teamResolver.js which handles:
-// exact(100) → normalized(95) → tag+variants(90) → core(85) → alias(80) →
-// fuzzyJW≥0.92(70) → fuzzyJW≥0.80/Dice≥0.70(60)
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+function cors(res) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+}
+
+// ── Action: aliases ──────────────────────────────────────────────────────────
+
+async function handleAliases(req, res) {
+  // GET — list aliases
+  if (req.method === 'GET') {
+    const { tournamentId } = req.query;
+    if (!tournamentId) {
+      return res.status(400).json({ error: 'tournamentId is required' });
+    }
+
+    const { data, error } = await supabase
+      .from('team_aliases')
+      .select('*')
+      .or(`tournament_id.eq.${tournamentId},is_global.eq.true`)
+      .order('created_at', { ascending: false });
+
+    if (error) return res.status(500).json({ error: error.message });
+    return res.json(data || []);
+  }
+
+  // POST — create alias
+  if (req.method === 'POST') {
+    const { tournamentId, teamId, alias, canonical, isGlobal = false, source = 'manual' } = req.body || {};
+
+    if (!alias || !canonical) {
+      return res.status(400).json({ error: 'alias and canonical are required' });
+    }
+
+    const { data, error } = await supabase
+      .from('team_aliases')
+      .insert({
+        tournament_id: isGlobal ? null : (tournamentId || null),
+        team_id: teamId || null,
+        alias: alias.toLowerCase().trim(),
+        canonical,
+        is_global: isGlobal,
+        source,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      if (error.code === '23505') return res.status(409).json({ error: 'Alias already exists' });
+      return res.status(500).json({ error: error.message });
+    }
+    return res.status(201).json(data);
+  }
+
+  // DELETE — remove alias
+  if (req.method === 'DELETE') {
+    const { id } = req.query;
+    if (!id) return res.status(400).json({ error: 'id is required' });
+
+    const { error } = await supabase
+      .from('team_aliases')
+      .delete()
+      .eq('id', id);
+
+    if (error) return res.status(500).json({ error: error.message });
+    return res.status(204).end();
+  }
+
+  return res.status(405).json({ error: 'Method not allowed' });
+}
+
+// ── Action: submissions ──────────────────────────────────────────────────────
+
+async function handleSubmissions(req, res) {
+  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+
+  const { tournamentId } = req.query;
+  const status = req.query.status || 'pending';
+
+  if (!process.env.QWICKY_SUPABASE_URL || !process.env.QWICKY_SUPABASE_SERVICE_KEY) {
+    return res.status(500).json({ error: 'Missing QWICKY_SUPABASE_URL or QWICKY_SUPABASE_SERVICE_KEY env vars' });
+  }
+
+  try {
+    let query = supabase
+      .from('match_submissions')
+      .select('*')
+      .eq('tournament_id', tournamentId)
+      .order('created_at', { ascending: false });
+
+    if (status !== 'all') {
+      query = query.eq('status', status);
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+
+    return res.json({ submissions: data });
+  } catch (err) {
+    console.error('[admin/submissions] Error:', err);
+    return res.status(500).json({ error: 'Failed to fetch submissions', details: err.message });
+  }
+}
+
+// ── Auto-approve helpers (inlined from auto-approve.mjs) ─────────────────────
+
 function resolveTeam(rawName, teams, aliases = []) {
   const result = resolveTeamName(rawName, teams, aliases);
-  // Map from teamResolver's { match, confidence, method } to auto-approve's { team, confidence, method }
   return {
     team: result.match,
     confidence: result.confidence,
     method: result.method,
   };
 }
-
-// ── Multi-factor match scoring (inline from matchConfidence.js) ──────────────
-// Score 0–100 = teamMatch(0–40) + scheduleProximity(0–30) + bestOfFit(0–15) + seriesAffinity(0–15)
 
 function scoreTeamMatch(opts) {
   const c1 = opts.teamConfidence1 ?? 0;
@@ -48,7 +146,7 @@ function scoreTeamMatch(opts) {
 }
 
 function scoreScheduleProximity(gameDate, matchDate) {
-  if (!gameDate || !matchDate) return 15; // No date info — neutral score
+  if (!gameDate || !matchDate) return 15;
   const gd = new Date(gameDate);
   const md = new Date(matchDate);
   if (isNaN(gd.getTime()) || isNaN(md.getTime())) return 15;
@@ -71,7 +169,7 @@ function scoreBestOfFit(bestOf, existingMaps) {
 }
 
 function scoreSeriesAffinity(gameDate, existingMaps) {
-  if (!existingMaps || existingMaps.length === 0) return 10; // No existing maps — neutral
+  if (!existingMaps || existingMaps.length === 0) return 10;
   if (!gameDate) return 8;
   const gameTime = new Date(gameDate).getTime();
   if (isNaN(gameTime)) return 8;
@@ -112,16 +210,13 @@ function confidenceLabel(score) {
   return 'Very Low';
 }
 
-// ── Best schedule match finder (replaces findScheduleMatch) ─────────────────
 function findBestScheduleMatch(game, schedule, opts = {}) {
   const { teamConfidence1 = 100, teamConfidence2 = 100, minScore = 40 } = opts;
   let best = null;
 
   for (const match of schedule) {
-    // Skip completed matches that are already full
     if (match.status === 'completed') continue;
 
-    // Check team names match (either order)
     const n1 = normalize(match.team1), n2 = normalize(match.team2);
     const gt1 = normalize(game.team1), gt2 = normalize(game.team2);
     const teamsMatch = (n1 === gt1 && n2 === gt2) || (n1 === gt2 && n2 === gt1);
@@ -141,15 +236,12 @@ function findBestScheduleMatch(game, schedule, opts = {}) {
   return best;
 }
 
-// ── Main handler ──────────────────────────────────────────────────────────────
-export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+// ── Action: auto-approve ─────────────────────────────────────────────────────
 
-  if (req.method === 'OPTIONS') return res.status(200).end();
-  if (!await requireAdminAuth(req, res)) return;
+async function handleAutoApprove(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
+
+  if (!await requireAdminAuth(req, res)) return;
 
   const { submissionId, tournamentId, divisionId, gameData } = req.body || {};
 
@@ -158,7 +250,6 @@ export default async function handler(req, res) {
   }
 
   try {
-    // 1. Load tournament config (for settings like minAutoApproveConfidence)
     const { data: tournamentRow } = await supabase
       .from('tournaments')
       .select('settings')
@@ -169,14 +260,12 @@ export default async function handler(req, res) {
     const {
       autoApprove = true,
       minAutoApproveConfidence = 80,
-      approvalWindowDays = 3,
     } = settings;
 
     if (!autoApprove) {
       return res.json({ status: 'pending', reason: 'auto-approve disabled for this tournament' });
     }
 
-    // 2. Load division teams + schedule
     const divQuery = supabase.from('teams').select('id, name, tag').eq('tournament_id', tournamentId);
     if (divisionId) divQuery.eq('division_id', divisionId);
 
@@ -187,13 +276,11 @@ export default async function handler(req, res) {
       .eq('tournament_id', tournamentId)
       .in('status', ['scheduled', 'live']);
 
-    // 3. Load aliases
     const { data: aliases } = await supabase
       .from('team_aliases')
       .select('alias, canonical')
       .or(`tournament_id.eq.${tournamentId},is_global.eq.true`);
 
-    // 4. Extract team names from game data
     const rawTeams = (gameData.teams || []).map(t =>
       typeof t === 'object' ? (t.name || '') : String(t || '')
     );
@@ -204,7 +291,6 @@ export default async function handler(req, res) {
       return res.json({ status: 'pending', reason: 'game has fewer than 2 teams', flags });
     }
 
-    // 5. Resolve each team
     const r1 = resolveTeam(rawTeams[0], teams || [], aliases || []);
     const r2 = resolveTeam(rawTeams[1], teams || [], aliases || []);
 
@@ -214,7 +300,6 @@ export default async function handler(req, res) {
       team2: { raw: rawTeams[1], resolved: r2.team?.name, confidence: r2.confidence, method: r2.method },
     };
 
-    // 6. If both teams unresolved, bail early as pending
     if (!r1.team || !r2.team) {
       const reason = !r1.team
         ? `unknown team: "${rawTeams[0]}"`
@@ -223,7 +308,6 @@ export default async function handler(req, res) {
       return res.json({ status: 'pending', reason, confidence: 0, flags });
     }
 
-    // 7. Multi-factor scoring: find best matching scheduled match
     const game = {
       team1: r1.team.name,
       team2: r2.team.name,
@@ -242,7 +326,6 @@ export default async function handler(req, res) {
     const scheduleMatch = bestResult?.match ?? null;
     const label = confidenceLabel(matchScore);
 
-    // Attach confidence info to flags
     const confidenceFlags = {
       ...flags,
       confidence: matchScore,
@@ -250,9 +333,7 @@ export default async function handler(req, res) {
       breakdown: matchBreakdown,
     };
 
-    // 8. Decision logic based on composite score + team confidence
     if (!scheduleMatch || matchScore < 40) {
-      // No match found or score too low → pending
       const reason = !scheduleMatch
         ? `no scheduled match found for ${r1.team.name} vs ${r2.team.name}`
         : `match score too low: ${matchScore} (${label})`;
@@ -261,7 +342,6 @@ export default async function handler(req, res) {
     }
 
     if (matchScore < 70 || minConfidence < minAutoApproveConfidence) {
-      // Score 40–69 or team confidence below threshold → flag for review
       const reason = minConfidence < minAutoApproveConfidence
         ? `team confidence ${minConfidence}% below threshold ${minAutoApproveConfidence}% (match score: ${matchScore})`
         : `match score ${matchScore} (${label}) below auto-approve threshold`;
@@ -278,7 +358,6 @@ export default async function handler(req, res) {
       });
     }
 
-    // 9. Auto-approve: score >= 70 AND team confidence >= threshold
     const approvalMethod = minConfidence >= 90 ? 'auto' : 'fuzzy-auto';
 
     await supabase.from('match_submissions').update({
@@ -296,14 +375,13 @@ export default async function handler(req, res) {
       diff: { flags: confidenceFlags, matchId: scheduleMatch.id },
     });
 
-    // Fire-and-forget wiki auto-publish if enabled
     if (settings.wikiAutoPublish) {
       const baseUrl = `https://${req.headers.host || 'qwicky.vercel.app'}`;
-      await fetch(`${baseUrl}/api/wiki/auto-publish`, {
+      fetch(`${baseUrl}/api/wiki?action=auto-publish`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ tournamentId, divisionId }),
-      }).catch(() => {}); // Best-effort — errors are silently ignored
+      }).catch(() => {});
     }
 
     return res.json({
@@ -317,7 +395,36 @@ export default async function handler(req, res) {
     });
 
   } catch (err) {
-    console.error('[auto-approve] Error:', err.message);
+    console.error('[admin/auto-approve] Error:', err.message);
     return res.status(500).json({ status: 'error', error: err.message });
+  }
+}
+
+// ── Router ───────────────────────────────────────────────────────────────────
+
+const actions = {
+  aliases: handleAliases,
+  submissions: handleSubmissions,
+  'auto-approve': handleAutoApprove,
+};
+
+export default async function handler(req, res) {
+  cors(res);
+  if (req.method === 'OPTIONS') return res.status(200).end();
+
+  const action = req.query?.action;
+  const fn = actions[action];
+
+  if (!fn) {
+    return res.status(400).json({
+      error: `Missing or unknown action. Valid: ${Object.keys(actions).join(', ')}`,
+    });
+  }
+
+  try {
+    return await fn(req, res);
+  } catch (err) {
+    console.error(`[admin/${action}] Error:`, err);
+    return res.status(500).json({ error: err.message });
   }
 }

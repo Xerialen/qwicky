@@ -415,7 +415,7 @@ export default function PublicTournament({ slug }) {
 
   const fetchData = useCallback(async () => {
     try {
-      const res = await fetch(`/api/public/${slug}`);
+      const res = await fetch(`/api/public?action=get&slug=${encodeURIComponent(slug)}`);
       if (res.status === 404) {
         setError('Tournament not found');
         setLoading(false);
