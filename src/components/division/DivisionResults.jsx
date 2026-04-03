@@ -1415,9 +1415,10 @@ export default function DivisionResults({
                   aliasMap: {},
                 };
 
+                const authHeaders = await getAuthHeaders();
                 const res = await fetch('/api/discover-games', {
                   method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
+                  headers: { 'Content-Type': 'application/json', ...authHeaders },
                   body: JSON.stringify({ config }),
                 });
                 const data = await res.json();

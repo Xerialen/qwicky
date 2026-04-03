@@ -13,6 +13,7 @@ import {
   normalizeQW, resolveTeamTag, applyHardGates,
   scoreConfidence, groupIntoSeries,
 } from '../src/utils/confidenceModel.js';
+import { requireAdminAuth } from './_auth.mjs';
 
 const supabase = createClient(
   process.env.QWICKY_SUPABASE_URL,
@@ -21,7 +22,8 @@ const supabase = createClient(
 
 const QW_STATS_API = 'https://qw-api.poker-affiliate.org';
 const HUB_SUPABASE = 'https://ncsphkjfominimxztjip.supabase.co/rest/v1';
-const HUB_KEY = process.env.HUB_SUPABASE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5jc3Boa2pmb21pbmlteHp0amlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE2OTY5Mzg1NjMsImV4cCI6MjAxMjUxNDU2M30.NN6hjlEW-qB4Og9hWAVlgvUdwrbBO13s8OkAJuBGVbo';
+// SUPABASE_KEY: Hub Supabase anon key — consistent with api/game/[gameId].mjs
+const HUB_KEY = process.env.SUPABASE_KEY;
 
 // ── Fetch games from ParadokS API ───────────────────────────────────────────
 
@@ -78,10 +80,12 @@ async function fetchFromHub(tag1, tag2, startDate, endDate) {
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
+  if (!await requireAdminAuth(req, res)) return;
+  if (!HUB_KEY) return res.status(500).json({ error: 'SUPABASE_KEY environment variable is not set' });
 
   const { tournamentId, divisionId, config: directConfig } = req.body || {};
 
