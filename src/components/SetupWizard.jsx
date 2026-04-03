@@ -1,13 +1,8 @@
 // src/components/SetupWizard.jsx
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import WizardStepIndicator from './WizardStepIndicator';
 import DivisionSetup from './division/DivisionSetup';
 import DivisionTeams from './division/DivisionTeams';
-import SaveStatusIndicator from './SaveStatusIndicator';
-import FormatRecommendation from './FormatRecommendation';
-import { useWizardStore } from '../stores/wizardStore.js';
-import useSyncStatusStore from '../stores/syncStatusStore.js';
-import { supabase } from '../services/supabaseClient.js';
 
 const GAME_MODES = [
   { value: '4on4', label: '4on4', desc: 'Classic team deathmatch' },
@@ -17,45 +12,6 @@ const GAME_MODES = [
 ];
 
 const DIVISION_PRESETS = ['Division 1', 'Division 2', 'Division 3', 'Pro', 'Open'];
-const AUTOSAVE_DEBOUNCE_MS = 800;
-const GUEST_DRAFTS_KEY = 'qwicky-wizard-drafts';
-
-// ── localStorage guest draft helpers ────────────────────────────────────────
-
-function readGuestDrafts() {
-  try {
-    const raw = localStorage.getItem(GUEST_DRAFTS_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
-}
-
-function writeGuestDraft(draftId, name, data, currentStep) {
-  const drafts = readGuestDrafts().filter((d) => d.id !== draftId);
-  const now = new Date().toISOString();
-  // Enforce 10-draft cap — delete oldest by updatedAt
-  const capped =
-    drafts.length >= 10
-      ? drafts.sort((a, b) => new Date(a.updatedAt) - new Date(b.updatedAt)).slice(1)
-      : drafts;
-  capped.push({
-    id: draftId,
-    name,
-    data,
-    currentStep,
-    updatedAt: now,
-    createdAt: capped.find((d) => d.id === draftId)?.createdAt || now,
-  });
-  localStorage.setItem(GUEST_DRAFTS_KEY, JSON.stringify(capped));
-}
-
-function deleteGuestDraft(draftId) {
-  const drafts = readGuestDrafts().filter((d) => d.id !== draftId);
-  localStorage.setItem(GUEST_DRAFTS_KEY, JSON.stringify(drafts));
-}
-
-// ── Component ────────────────────────────────────────────────────────────────
 
 export default function SetupWizard({
   tournament,
@@ -75,144 +31,18 @@ export default function SetupWizard({
     () => localStorage.getItem('qw-skip-welcome') === 'true'
   );
   const [wizardDivisionIndex, setWizardDivisionIndex] = useState(0);
+
+  // Custom division name input
   const [customDivName, setCustomDivName] = useState('');
-
-  // wizardStore
-  const {
-    draftId,
-    setDraftId,
-    setStep: setStoreStep,
-    markDirty,
-    markClean,
-    reset: resetStore,
-  } = useWizardStore();
-  const { setSaving, setSynced, setError } = useSyncStatusStore.getState();
-
-  const autosaveTimerRef = useRef(null);
-  const stepInitialisedRef = useRef(false);
-  const persistDraftRef = useRef(null);
-
-  // Refs for latest tournament/step — used by persistDraft to avoid stale closures
-  const tournamentRef = useRef(tournament);
-  const stepRef = useRef(step);
-  useEffect(() => {
-    tournamentRef.current = tournament;
-  }, [tournament]);
-  useEffect(() => {
-    stepRef.current = step;
-  }, [step]);
-
-  // ── Draft initialisation on mount ───────────────────────────────────────
-
-  useEffect(() => {
-    if (stepInitialisedRef.current) return;
-    stepInitialisedRef.current = true;
-
-    const initDraft = async () => {
-      // If store already has a draftId (resume flow), nothing to create
-      if (draftId) return;
-
-      const id = crypto.randomUUID();
-      setDraftId(id);
-      // Only persist draft after user advances past step 0 (handled in handleNext)
-    };
-
-    initDraft();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Sync step to store whenever it changes
-  useEffect(() => {
-    setStoreStep(step);
-  }, [step, setStoreStep]);
 
   useEffect(() => {
     localStorage.setItem('qw-skip-welcome', skipWelcome ? 'true' : 'false');
   }, [skipWelcome]);
 
-  // ── Autosave ─────────────────────────────────────────────────────────────
-
-  const persistDraft = useCallback(async () => {
-    if (!draftId) return;
-    // Read latest values from refs to avoid stale closure capturing pre-update state
-    const currentTournament = tournamentRef.current;
-    const currentStep = stepRef.current;
-    // Only autosave if user has advanced past step 0
-    if (currentStep === 0) return;
-
-    const name = currentTournament.name || null;
-    const teamCount = (currentTournament.divisions || []).reduce(
-      (sum, d) => sum + (d.teams?.length || 0),
-      0
-    );
-    const draftData = { ...currentTournament, currentStep, teamCount };
-
-    setSaving();
-    try {
-      if (supabase) {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession();
-        if (session) {
-          // Supabase upsert — enforce 10-draft cap server-side (prune oldest client-side on create)
-          const { error } = await supabase.from('tournament_drafts').upsert(
-            {
-              id: draftId,
-              user_id: session.user.id,
-              data: draftData,
-              name,
-              updated_at: new Date().toISOString(),
-            },
-            { onConflict: 'id' }
-          );
-          if (error) throw new Error(error.message);
-          markClean();
-          setSynced(Date.now());
-          return;
-        }
-      }
-
-      // Guest / no session: write to localStorage
-      writeGuestDraft(draftId, name, draftData, currentStep);
-      markClean();
-      setSynced(Date.now());
-    } catch (err) {
-      setError(err.message || 'Autosave failed');
-    }
-    // tournament and step intentionally omitted — read via refs to avoid stale captures
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [draftId, setSaving, setSynced, setError, markClean]);
-
-  // Keep persistDraftRef current so scheduleAutosave always calls the latest version
-  useEffect(() => {
-    persistDraftRef.current = persistDraft;
-  });
-
-  const scheduleAutosave = useCallback(() => {
-    markDirty();
-    clearTimeout(autosaveTimerRef.current);
-    autosaveTimerRef.current = setTimeout(
-      () => persistDraftRef.current?.(),
-      AUTOSAVE_DEBOUNCE_MS
-    );
-  }, [markDirty]);
-
-  // Patch updateTournamentInfo to trigger autosave on blur
-  const handleFieldBlur = useCallback(() => {
-    scheduleAutosave();
-  }, [scheduleAutosave]);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      clearTimeout(autosaveTimerRef.current);
-    };
-  }, []);
-
-  // ── Navigation ───────────────────────────────────────────────────────────
-
   const divisions = tournament.divisions || [];
   const totalDivisions = divisions.length;
+
+  // Current division for steps 3 & 4
   const currentDivision = divisions[wizardDivisionIndex] || null;
 
   const canNext = () => {
@@ -235,6 +65,7 @@ export default function SetupWizard({
   };
 
   const handleNext = () => {
+    // Steps 3 & 4: cycle through divisions before advancing
     if ((step === 3 || step === 4) && wizardDivisionIndex < totalDivisions - 1) {
       setWizardDivisionIndex((prev) => prev + 1);
       return;
@@ -243,26 +74,26 @@ export default function SetupWizard({
     if (step < 5) {
       const nextStep = step + 1;
       setStep(nextStep);
+      // Reset division cycling when entering step 3 or 4
       if (nextStep === 3 || nextStep === 4) {
         setWizardDivisionIndex(0);
-      }
-      // Start persisting draft once user advances past step 0
-      if (step === 0) {
-        scheduleAutosave();
       }
     }
   };
 
   const handleBack = () => {
+    // Steps 3 & 4: cycle backwards through divisions first
     if ((step === 3 || step === 4) && wizardDivisionIndex > 0) {
       setWizardDivisionIndex((prev) => prev - 1);
       return;
     }
+
     if (step === 0) {
       onBackToLanding();
     } else {
       const prevStep = step - 1;
       setStep(prevStep);
+      // When going back to step 3 or 4, start at last division
       if (prevStep === 3 || prevStep === 4) {
         setWizardDivisionIndex(Math.max(0, totalDivisions - 1));
       }
@@ -285,38 +116,6 @@ export default function SetupWizard({
     }
   };
 
-  // "Save & exit" — force-save immediately then go back to landing
-  const handleSaveAndExit = async () => {
-    clearTimeout(autosaveTimerRef.current);
-    await persistDraft();
-    markClean();
-    onBackToLanding();
-  };
-
-  // On wizard complete (publish): delete draft, clear store
-  const handleComplete = async () => {
-    clearTimeout(autosaveTimerRef.current);
-    if (draftId) {
-      try {
-        if (supabase) {
-          const {
-            data: { session },
-          } = await supabase.auth.getSession();
-          if (session) {
-            await supabase.from('tournament_drafts').delete().eq('id', draftId);
-          }
-        }
-        deleteGuestDraft(draftId);
-      } catch {
-        // Non-fatal — draft cleanup failure should not block publish
-      }
-    }
-    resetStore();
-    onComplete();
-  };
-
-  // ── Division helpers ─────────────────────────────────────────────────────
-
   const handleAddPreset = (name) => {
     // Avoid duplicates
     if (divisions.some((d) => d.name === name)) return;
@@ -333,12 +132,13 @@ export default function SetupWizard({
 
   const handleRemoveDivision = (divId) => {
     removeDivision(divId);
+    // Fix cycling index if needed
     if (wizardDivisionIndex >= divisions.length - 1) {
       setWizardDivisionIndex(Math.max(0, divisions.length - 2));
     }
   };
 
-  // ── Step renderers ───────────────────────────────────────────────────────
+  // ─── Step renderers ────────────────────────────────────────────────
 
   const renderStep0 = () => (
     <div className="space-y-6">
@@ -425,7 +225,7 @@ export default function SetupWizard({
           onChange={(e) => setSkipWelcome(e.target.checked)}
           className="rounded border-qw-border bg-qw-dark text-qw-accent focus:ring-qw-accent"
         />
-        Don&apos;t show this again
+        Don't show this again
       </label>
     </div>
   );
@@ -437,6 +237,7 @@ export default function SetupWizard({
         <p className="text-qw-muted">Name your tournament and pick a game mode</p>
       </div>
 
+      {/* Tournament name */}
       <div>
         <label className="block text-sm font-semibold text-qw-muted mb-1.5">
           Tournament Name <span className="text-qw-loss">*</span>
@@ -445,13 +246,13 @@ export default function SetupWizard({
           type="text"
           value={tournament.name || ''}
           onChange={(e) => updateTournamentInfo({ name: e.target.value })}
-          onBlur={handleFieldBlur}
           placeholder="e.g. EQL Season 38"
           className="w-full bg-qw-dark border border-qw-border rounded-lg px-4 py-3 text-white placeholder-qw-muted/50 focus:outline-none focus:border-qw-accent focus:shadow-input-focus transition-all text-lg"
           autoFocus
         />
       </div>
 
+      {/* Game mode */}
       <div>
         <label className="block text-sm font-semibold text-qw-muted mb-2">Game Mode</label>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -459,10 +260,7 @@ export default function SetupWizard({
             <button
               key={mode.value}
               type="button"
-              onClick={() => {
-                updateTournamentInfo({ mode: mode.value });
-                scheduleAutosave();
-              }}
+              onClick={() => updateTournamentInfo({ mode: mode.value })}
               className={`
                 p-3 rounded-lg border-2 text-center transition-all
                 ${
@@ -479,6 +277,7 @@ export default function SetupWizard({
         </div>
       </div>
 
+      {/* Dates */}
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-semibold text-qw-muted mb-1.5">Start Date</label>
@@ -486,7 +285,6 @@ export default function SetupWizard({
             type="date"
             value={tournament.startDate || ''}
             onChange={(e) => updateTournamentInfo({ startDate: e.target.value })}
-            onBlur={handleFieldBlur}
             className="w-full bg-qw-dark border border-qw-border rounded-lg px-3 py-2.5 text-white focus:outline-none focus:border-qw-accent focus:shadow-input-focus transition-all"
           />
         </div>
@@ -496,7 +294,6 @@ export default function SetupWizard({
             type="date"
             value={tournament.endDate || ''}
             onChange={(e) => updateTournamentInfo({ endDate: e.target.value })}
-            onBlur={handleFieldBlur}
             className="w-full bg-qw-dark border border-qw-border rounded-lg px-3 py-2.5 text-white focus:outline-none focus:border-qw-accent focus:shadow-input-focus transition-all"
           />
         </div>
@@ -511,6 +308,7 @@ export default function SetupWizard({
         <p className="text-qw-muted">Most tournaments have 2-3 skill-based divisions</p>
       </div>
 
+      {/* Preset buttons */}
       <div>
         <label className="block text-sm font-semibold text-qw-muted mb-2">Quick Add</label>
         <div className="flex flex-wrap gap-2">
@@ -520,10 +318,7 @@ export default function SetupWizard({
               <button
                 key={name}
                 type="button"
-                onClick={() => {
-                  handleAddPreset(name);
-                  scheduleAutosave();
-                }}
+                onClick={() => handleAddPreset(name)}
                 disabled={exists}
                 className={`
                   px-4 py-2 rounded-lg text-sm font-semibold transition-all
@@ -542,6 +337,7 @@ export default function SetupWizard({
         </div>
       </div>
 
+      {/* Custom name */}
       <div>
         <label className="block text-sm font-semibold text-qw-muted mb-1.5">
           Custom Division Name
@@ -551,21 +347,13 @@ export default function SetupWizard({
             type="text"
             value={customDivName}
             onChange={(e) => setCustomDivName(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                handleAddCustom();
-                scheduleAutosave();
-              }
-            }}
+            onKeyDown={(e) => e.key === 'Enter' && handleAddCustom()}
             placeholder="e.g. Rookie"
             className="flex-1 bg-qw-dark border border-qw-border rounded-lg px-3 py-2.5 text-white placeholder-qw-muted/50 focus:outline-none focus:border-qw-accent focus:shadow-input-focus transition-all"
           />
           <button
             type="button"
-            onClick={() => {
-              handleAddCustom();
-              scheduleAutosave();
-            }}
+            onClick={handleAddCustom}
             disabled={!customDivName.trim()}
             className="qw-btn px-4 disabled:opacity-40 disabled:cursor-not-allowed"
           >
@@ -574,6 +362,7 @@ export default function SetupWizard({
         </div>
       </div>
 
+      {/* Created divisions list */}
       {divisions.length > 0 && (
         <div>
           <label className="block text-sm font-semibold text-qw-muted mb-2">
@@ -593,10 +382,7 @@ export default function SetupWizard({
                 </div>
                 <button
                   type="button"
-                  onClick={() => {
-                    handleRemoveDivision(div.id);
-                    scheduleAutosave();
-                  }}
+                  onClick={() => handleRemoveDivision(div.id)}
                   className="text-qw-muted hover:text-qw-loss transition-colors p-1"
                   title="Remove division"
                 >
@@ -633,6 +419,65 @@ export default function SetupWizard({
 
     return (
       <div className="space-y-4">
+        {/* Division selector header */}
+        <div className="text-center mb-4">
+          <h2 className="font-display font-bold text-2xl text-white mb-2">Division Format</h2>
+          {totalDivisions > 1 && (
+            <div className="flex items-center justify-center gap-2 mt-3">
+              {divisions.map((div, idx) => (
+                <button
+                  key={div.id}
+                  type="button"
+                  onClick={() => setWizardDivisionIndex(idx)}
+                  className={`
+                    px-3 py-1 rounded-full text-xs font-semibold transition-all
+                    ${
+                      idx === wizardDivisionIndex
+                        ? 'bg-qw-accent text-qw-dark'
+                        : 'bg-qw-dark border border-qw-border text-qw-muted hover:text-white'
+                    }
+                  `}
+                >
+                  {div.name}
+                </button>
+              ))}
+            </div>
+          )}
+          <p className="text-qw-muted text-sm mt-2">
+            Configuring: {currentDivision.name} ({wizardDivisionIndex + 1} of {totalDivisions})
+          </p>
+        </div>
+
+        {/* Embedded DivisionSetup */}
+        <DivisionSetup
+          division={currentDivision}
+          updateDivision={(updates) => updateDivision(currentDivision.id, updates)}
+        />
+
+        {/* Skip remaining link */}
+        {totalDivisions > 1 && wizardDivisionIndex < totalDivisions - 1 && (
+          <div className="text-center pt-2">
+            <button
+              type="button"
+              onClick={handleSkipRemaining}
+              className="text-sm text-qw-muted hover:text-qw-accent transition-colors underline"
+            >
+              Skip remaining divisions
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderStep4 = () => {
+    if (!currentDivision) {
+      return <div className="text-center py-12 text-qw-muted">No divisions to configure.</div>;
+    }
+
+    return (
+      <div className="space-y-4">
+        {/* Division selector header */}
         <div className="text-center mb-4">
           <h2 className="font-display font-bold text-2xl text-white mb-2">Add Teams</h2>
           {totalDivisions > 1 && (
@@ -663,16 +508,15 @@ export default function SetupWizard({
           </p>
         </div>
 
+        {/* Embedded DivisionTeams */}
         <DivisionTeams
           division={currentDivision}
-          updateDivision={(updates) => {
-            updateDivision(currentDivision.id, updates);
-            scheduleAutosave();
-          }}
+          updateDivision={(updates) => updateDivision(currentDivision.id, updates)}
           tournamentMode={tournament.mode}
           allDivisions={tournament.divisions}
         />
 
+        {/* Skip links */}
         <div className="text-center pt-2 flex items-center justify-center gap-4">
           {totalDivisions > 1 && wizardDivisionIndex < totalDivisions - 1 && (
             <button
@@ -684,71 +528,6 @@ export default function SetupWizard({
             </button>
           )}
         </div>
-      </div>
-    );
-  };
-
-  const renderStep4 = () => {
-    if (!currentDivision) {
-      return <div className="text-center py-12 text-qw-muted">No divisions to configure.</div>;
-    }
-
-    const totalTeamCount = (tournament.divisions || []).reduce(
-      (sum, d) => sum + (d.teams?.length || 0),
-      0
-    );
-
-    return (
-      <div className="space-y-4">
-        <div className="text-center mb-4">
-          <h2 className="font-display font-bold text-2xl text-white mb-2">Division Format</h2>
-          {totalDivisions > 1 && (
-            <div className="flex items-center justify-center gap-2 mt-3">
-              {divisions.map((div, idx) => (
-                <button
-                  key={div.id}
-                  type="button"
-                  onClick={() => setWizardDivisionIndex(idx)}
-                  className={`
-                    px-3 py-1 rounded-full text-xs font-semibold transition-all
-                    ${
-                      idx === wizardDivisionIndex
-                        ? 'bg-qw-accent text-qw-dark'
-                        : 'bg-qw-dark border border-qw-border text-qw-muted hover:text-white'
-                    }
-                  `}
-                >
-                  {div.name}
-                </button>
-              ))}
-            </div>
-          )}
-          <p className="text-qw-muted text-sm mt-2">
-            Configuring: {currentDivision.name} ({wizardDivisionIndex + 1} of {totalDivisions})
-          </p>
-        </div>
-
-        <FormatRecommendation teamCount={totalTeamCount} />
-
-        <DivisionSetup
-          division={currentDivision}
-          updateDivision={(updates) => {
-            updateDivision(currentDivision.id, updates);
-            scheduleAutosave();
-          }}
-        />
-
-        {totalDivisions > 1 && wizardDivisionIndex < totalDivisions - 1 && (
-          <div className="text-center pt-2">
-            <button
-              type="button"
-              onClick={handleSkipRemaining}
-              className="text-sm text-qw-muted hover:text-qw-accent transition-colors underline"
-            >
-              Skip remaining divisions
-            </button>
-          </div>
-        )}
       </div>
     );
   };
@@ -772,10 +551,11 @@ export default function SetupWizard({
     return (
       <div className="space-y-6 max-w-lg mx-auto">
         <div className="text-center mb-6">
-          <h2 className="font-display font-bold text-2xl text-white mb-2">You&apos;re All Set!</h2>
-          <p className="text-qw-muted">Here&apos;s a summary of your tournament</p>
+          <h2 className="font-display font-bold text-2xl text-white mb-2">You're All Set!</h2>
+          <p className="text-qw-muted">Here's a summary of your tournament</p>
         </div>
 
+        {/* Summary card */}
         <div className="qw-panel p-6 space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="font-display font-bold text-lg text-white">{tournament.name}</h3>
@@ -802,8 +582,9 @@ export default function SetupWizard({
           </div>
         </div>
 
+        {/* What's next */}
         <div className="qw-panel p-5">
-          <h4 className="font-display font-semibold text-white mb-3">What&apos;s next</h4>
+          <h4 className="font-display font-semibold text-white mb-3">What's next</h4>
           <ul className="space-y-2 text-sm text-qw-muted">
             <li className="flex items-start gap-2">
               <span className="text-qw-accent mt-0.5">&#9656;</span>
@@ -832,7 +613,7 @@ export default function SetupWizard({
         </p>
 
         <div className="text-center pt-2">
-          <button type="button" onClick={handleComplete} className="qw-btn px-8 py-3 text-lg">
+          <button type="button" onClick={onComplete} className="qw-btn px-8 py-3 text-lg">
             Open Tournament &rarr;
           </button>
         </div>
@@ -861,7 +642,7 @@ export default function SetupWizard({
 
   return (
     <div className="min-h-screen bg-qw-darker flex flex-col">
-      {/* Top bar */}
+      {/* Top bar with branding + skip */}
       <div className="bg-qw-panel border-b border-qw-border px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div
@@ -875,18 +656,15 @@ export default function SetupWizard({
           <span className="font-display font-bold text-white text-sm">QWICKY</span>
           <span className="text-qw-muted text-xs ml-1">Setup</span>
         </div>
-        <div className="flex items-center gap-3">
-          <SaveStatusIndicator />
-          {step >= 1 && (
-            <button
-              type="button"
-              onClick={onSkipToApp}
-              className="text-xs text-qw-muted hover:text-qw-accent transition-colors"
-            >
-              Skip setup &rarr;
-            </button>
-          )}
-        </div>
+        {step >= 1 && (
+          <button
+            type="button"
+            onClick={onSkipToApp}
+            className="text-xs text-qw-muted hover:text-qw-accent transition-colors"
+          >
+            Skip setup &rarr;
+          </button>
+        )}
       </div>
 
       {/* Step indicator */}
@@ -919,22 +697,11 @@ export default function SetupWizard({
               Back
             </button>
 
-            {/* Step 3/4 context */}
+            {/* Step 3/4 context: show which division we're on */}
             {(step === 3 || step === 4) && totalDivisions > 1 && (
               <span className="text-xs text-qw-muted font-mono">
                 {wizardDivisionIndex + 1} / {totalDivisions}
               </span>
-            )}
-
-            {/* Save & exit — shown from step 1 onward */}
-            {step >= 1 && (
-              <button
-                type="button"
-                onClick={handleSaveAndExit}
-                className="qw-btn-secondary px-4 py-2.5 text-sm"
-              >
-                Save &amp; exit
-              </button>
             )}
 
             <button
