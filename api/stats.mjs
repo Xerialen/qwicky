@@ -250,6 +250,6 @@ export default async function handler(req, res) {
     }
   } catch (err) {
     console.error(`[stats] action=${action} error:`, err.message);
-    return res.status(500).json({ status: "error", message: err.message });
+    return res.status(500).json({ status: "error", message: "Database query failed" });
   }
 }
