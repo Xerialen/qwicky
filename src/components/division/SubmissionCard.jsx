@@ -84,6 +84,9 @@ export default function SubmissionCard({
               Submitted by{' '}
               <span className="text-qw-accent">{sub.submitted_by_name}</span> &middot;{' '}
               {new Date(sub.created_at).toLocaleString()} &middot; Game #{sub.game_id}
+              {gameData.date && (
+                <> &middot; Match date: <span className="text-white font-mono">{gameData.date}</span></>
+              )}
             </span>
             {detectedDivisions ? (
               detectedDivisions.length === 1 ? (

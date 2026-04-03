@@ -40,7 +40,7 @@ export default function ResultsPendingQueue({
     try {
       const status = includeApproved ? 'all' : 'pending';
       const res = await fetch(
-        `/api/submissions/${encodeURIComponent(tournamentId)}?status=${status}`
+        `/api/admin?action=submissions&tournamentId=${encodeURIComponent(tournamentId)}&status=${status}`
       );
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to fetch');
@@ -102,6 +102,8 @@ export default function ResultsPendingQueue({
   const handleBulkReprocess = () => {
     const approved = filteredSubmissions.filter((s) => s.status === 'approved');
     onBulkReprocess(approved);
+    const approvedIds = new Set(approved.map((s) => s.id));
+    setSubmissions((prev) => prev.filter((s) => !approvedIds.has(s.id)));
   };
 
   return (

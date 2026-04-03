@@ -1,6 +1,14 @@
 // src/components/division/ResultSearchPanel.jsx
 import React, { useState } from 'react';
 import QWStatsService from '../../services/QWStatsService';
+import { supabase } from '../../services/supabaseClient';
+
+const getAuthHeaders = async () => {
+  if (!supabase) return {};
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.access_token) return {};
+  return { Authorization: `Bearer ${session.access_token}` };
+};
 
 /**
  * Merged Browse + Discover panel.
@@ -135,9 +143,10 @@ export default function ResultSearchPanel({ division, tournament, tournamentId, 
         ],
         aliasMap: {},
       };
+      const authHeaders = await getAuthHeaders();
       const res = await fetch('/api/discover-games', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...authHeaders },
         body: JSON.stringify({ config }),
       });
       const data = await res.json();
