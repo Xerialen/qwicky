@@ -1243,6 +1243,14 @@ export default function DivisionResults({
                         </div>
                         <div className="text-xs text-qw-muted mt-1 flex items-center gap-2 flex-wrap">
                           <span>
+                            {gameData.date && (
+                              <>
+                                <span className="text-qw-text">
+                                  📅 {gameData.date.replace(/\s*\+\d{4}$/, '').trim()}
+                                </span>{' '}
+                                &middot;{' '}
+                              </>
+                            )}
                             Submitted by{' '}
                             <span className="text-qw-accent">{sub.submitted_by_name}</span> &middot;{' '}
                             {new Date(sub.created_at).toLocaleString()} &middot; Game #{sub.game_id}
