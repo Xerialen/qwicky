@@ -37,10 +37,10 @@ module.exports = {
         }
       },
       fontFamily: {
-        'display': ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
-        'body':    ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
+        'display': ['"Outfit"', 'system-ui', 'sans-serif'],
+        'body':    ['"Outfit"', 'system-ui', 'sans-serif'],
         'mono':    ['"JetBrains Mono"', 'ui-monospace', 'Consolas', 'monospace'],
-        'logo':    ['"Plus Jakarta Sans"', 'sans-serif'],
+        'logo':    ['"Outfit"', 'sans-serif'],
       },
       boxShadow: {
         'card':        'none',
