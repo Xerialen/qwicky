@@ -82,7 +82,7 @@
   --radius-lg: 8px;
   --radius-full: 9999px;
 
-  --focus-ring: 0 0 0 1px rgba(167, 139, 242, 0.25);
+  --focus-ring: 0 0 0 1px rgba(167, 139, 250, 0.25);
   --focus-ring-lg: 0 0 0 2px var(--accent);
   --shadow-none: none;
   --shadow-hover: 0 1px 3px rgba(0, 0, 0, 0.3);
