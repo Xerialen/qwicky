@@ -1,6 +1,5 @@
 import axios from 'axios';
-
-const HUB_DB_URL = "https://ncsphkjfominimxztjip.supabase.co/rest/v1/v1_games";
+import { turso } from "../_turso.mjs";
 
 export default async function handler(req, res) {
   // Set CORS headers
@@ -18,38 +17,23 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'gameId is required' });
   }
 
-  const HUB_HEADERS = {
-    "apikey": process.env.SUPABASE_KEY,
-    "Authorization": `Bearer ${process.env.SUPABASE_KEY}`,
-    "Content-Type": "application/json"
-  };
-
   try {
     console.log(`[${new Date().toISOString()}] Fetching game ${gameId}...`);
 
-    // 1. Hub Lookup
-    const hubRes = await axios.get(`${HUB_DB_URL}?id=eq.${gameId}&select=*`, {
-      headers: HUB_HEADERS
+    // 1. Turso lookup by sha256
+    const dbRes = await turso.execute({
+      sql: `SELECT sha256 FROM games WHERE sha256 = ?`,
+      args: [gameId],
     });
 
-    if (!hubRes.data || hubRes.data.length === 0) {
+    if (!dbRes.rows.length) {
       return res.status(404).json({ error: `Game ${gameId} not found` });
     }
 
-    const game = hubRes.data[0];
+    const sha256 = dbRes.rows[0][0] || dbRes.rows[0].sha256;
 
-    // 2. Build stats URL
-    let statsUrl = null;
-    if (game.demo_sha256) {
-      const chk = game.demo_sha256;
-      statsUrl = `https://d.quake.world/${chk.substring(0,3)}/${chk}.mvd.ktxstats.json`;
-    } else {
-      statsUrl = game.demo_source_url || game.url;
-    }
-
-    if (!statsUrl) {
-      return res.json({ status: 'partial', message: "No demo path found", meta: game });
-    }
+    // 2. Build ktxstats URL from sha256
+    const statsUrl = `https://d.quake.world/${sha256.substring(0, 3)}/${sha256}.mvd.ktxstats.json`;
 
     // 3. Fetch stats
     try {
