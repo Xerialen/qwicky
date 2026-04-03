@@ -44,15 +44,16 @@ export default function ConfirmModal({
           <div className="text-sm text-qw-muted">{body}</div>
         </div>
         <div className="px-5 pb-5 flex justify-end gap-3">
-          <button
-            onClick={onCancel}
-            className="qw-btn-secondary text-sm px-4 py-1.5"
-          >
+          <button onClick={onCancel} className="qw-btn-secondary text-sm px-4 py-1.5">
             {cancelLabel}
           </button>
           <button
             onClick={onConfirm}
-            className={variant === 'danger' ? 'qw-btn-danger text-sm px-4 py-1.5' : 'qw-btn text-sm px-4 py-1.5'}
+            className={
+              variant === 'danger'
+                ? 'qw-btn-danger text-sm px-4 py-1.5'
+                : 'qw-btn text-sm px-4 py-1.5'
+            }
           >
             {confirmLabel}
           </button>

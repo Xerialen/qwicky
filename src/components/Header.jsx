@@ -248,9 +248,16 @@ export default function Header({
                 <span>
                   {' '}
                   This includes{' '}
-                  <strong className="text-white">{divisions.length} division{divisions.length !== 1 ? 's' : ''}</strong>
-                  {divisionCount > 0 ? `, ${divisionCount} team${divisionCount !== 1 ? 's' : ''}` : ''}
-                  {scheduleCount > 0 ? `, and ${scheduleCount} scheduled match${scheduleCount !== 1 ? 'es' : ''}` : ''}.
+                  <strong className="text-white">
+                    {divisions.length} division{divisions.length !== 1 ? 's' : ''}
+                  </strong>
+                  {divisionCount > 0
+                    ? `, ${divisionCount} team${divisionCount !== 1 ? 's' : ''}`
+                    : ''}
+                  {scheduleCount > 0
+                    ? `, and ${scheduleCount} scheduled match${scheduleCount !== 1 ? 'es' : ''}`
+                    : ''}
+                  .
                 </span>
               )}
             </span>

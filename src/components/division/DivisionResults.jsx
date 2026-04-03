@@ -990,7 +990,6 @@ export default function DivisionResults({
   };
 
   const doRemoveSeries = (series) => {
-
     // Get IDs of maps in this series
     const seriesToRemove = new Set(series.maps.map((m) => m.id));
 
