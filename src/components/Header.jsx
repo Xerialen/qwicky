@@ -101,6 +101,17 @@ export default function Header({
               Divisions{divisions.length > 0 ? ` (${divisions.length})` : ''}
             </button>
 
+            <button
+              onClick={() => setActiveTab('leaderboard')}
+              className={`px-3 py-1.5 text-xs font-medium rounded transition-colors ${
+                activeTab === 'leaderboard'
+                  ? 'bg-qw-accent text-qw-darker'
+                  : 'text-qw-muted hover:text-white'
+              }`}
+            >
+              Leaderboard
+            </button>
+
             {divisions.length > 0 && (
               <div className="relative">
                 <button
