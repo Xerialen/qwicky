@@ -14,6 +14,7 @@ import {
   scoreConfidence, groupIntoSeries,
 } from '../src/utils/confidenceModel.js';
 import { requireAdminAuth } from './_auth.mjs';
+import { turso } from './_turso.mjs';
 
 const supabase = createClient(
   process.env.QWICKY_SUPABASE_URL,
@@ -21,9 +22,6 @@ const supabase = createClient(
 );
 
 const QW_STATS_API = 'https://qw-api.poker-affiliate.org';
-const HUB_SUPABASE = 'https://ncsphkjfominimxztjip.supabase.co/rest/v1';
-// SUPABASE_KEY: Hub Supabase anon key — consistent with api/game/[gameId].mjs
-const HUB_KEY = process.env.SUPABASE_KEY;
 
 // ── Fetch games from ParadokS API ───────────────────────────────────────────
 
@@ -50,26 +48,40 @@ async function fetchFromParadoks(tag1, tag2, months = 6) {
   }
 }
 
-// ── Fetch games from Hub Supabase (fallback) ────────────────────────────────
+// ── Fetch games from Turso (fallback) ───────────────────────────────────────
 
 async function fetchFromHub(tag1, tag2, startDate, endDate) {
   try {
-    // Query by team_names which is a lowercased text array for search
-    const url = `${HUB_SUPABASE}/v1_games?mode=eq.4on4&timestamp=gte.${startDate}T00:00:00Z&timestamp=lte.${endDate}T23:59:59Z&select=id,timestamp,map,matchtag,teams,players,hostname&order=timestamp.asc&limit=200`;
-    const res = await fetch(url, {
-      headers: { apikey: HUB_KEY, Authorization: `Bearer ${HUB_KEY}` },
-      signal: AbortSignal.timeout(10000),
+    const result = await turso.execute({
+      sql: `
+        SELECT sha256 as id, date as timestamp, map, team1, team2, score1, score2, winner, mode
+        FROM games
+        WHERE mode = '4on4'
+          AND date >= ?
+          AND date <= ?
+          AND (
+            (team1 = ? AND team2 = ?) OR (team1 = ? AND team2 = ?)
+          )
+        ORDER BY date ASC
+        LIMIT 200
+      `,
+      args: [
+        `${startDate}T00:00:00Z`,
+        `${endDate}T23:59:59Z`,
+        tag1, tag2, tag2, tag1,
+      ],
     });
-    if (!res.ok) return [];
-    const games = await res.json();
 
-    // Filter to games where both tags appear
-    const n1 = normalizeQW(tag1);
-    const n2 = normalizeQW(tag2);
-    return games.filter(g => {
-      const teamNames = (g.teams || []).map(t => normalizeQW(typeof t === 'object' ? t.name : t));
-      return teamNames.some(t => t === n1) && teamNames.some(t => t === n2);
-    });
+    return result.rows.map(r => ({
+      id: r.id,
+      timestamp: r.timestamp,
+      map: r.map,
+      teams: [
+        { name: r.team1 },
+        { name: r.team2 },
+      ],
+      _source: 'turso',
+    }));
   } catch {
     return [];
   }
@@ -85,7 +97,6 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
   if (!await requireAdminAuth(req, res)) return;
-  if (!HUB_KEY) return res.status(500).json({ error: 'SUPABASE_KEY environment variable is not set' });
 
   const { tournamentId, divisionId, config: directConfig } = req.body || {};
 
