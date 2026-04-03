@@ -1,5 +1,6 @@
 // src/components/Header.jsx
 import React, { useState, useRef } from 'react';
+import ConfirmModal from './ConfirmModal';
 
 export default function Header({
   tournament,
@@ -14,6 +15,12 @@ export default function Header({
 }) {
   const [showDivisionDropdown, setShowDivisionDropdown] = useState(false);
   const fileInputRef = useRef(null);
+
+  // Import confirm — holds parsed data until user confirms
+  const [pendingImport, setPendingImport] = useState(null);
+
+  // Reset two-step
+  const [resetStep, setResetStep] = useState(null); // null | 'step1' | 'step2'
 
   const handleExport = () => {
     const data = {
@@ -43,14 +50,31 @@ export default function Header({
         if (!data.divisions && !data.name) {
           throw new Error('Invalid tournament file');
         }
-        if (!window.confirm('Replace current tournament with imported data?')) return;
-        importTournament(data);
+        setPendingImport(data);
       } catch (err) {
         alert('Failed to import: ' + err.message);
       }
     };
     reader.readAsText(file);
     e.target.value = '';
+  };
+
+  const handleImportConfirm = () => {
+    importTournament(pendingImport);
+    setPendingImport(null);
+  };
+
+  const handleResetClick = () => {
+    setResetStep('step1');
+  };
+
+  const handleResetStep1Confirm = () => {
+    setResetStep('step2');
+  };
+
+  const handleResetStep2Confirm = () => {
+    setResetStep(null);
+    resetTournament();
   };
 
   const handleSelectDivision = (divId) => {
@@ -62,6 +86,9 @@ export default function Header({
   const activeDivName = activeDivisionId
     ? divisions.find((d) => d.id === activeDivisionId)?.name
     : null;
+
+  const divisionCount = divisions.reduce((sum, d) => sum + (d.teams?.length || 0), 0);
+  const scheduleCount = divisions.reduce((sum, d) => sum + (d.schedule?.length || 0), 0);
 
   return (
     <header className="sticky top-0 z-50 border-b border-qw-border/50 bg-qw-darker/95 backdrop-blur-sm">
@@ -173,7 +200,7 @@ export default function Header({
               Save
             </button>
             <button
-              onClick={resetTournament}
+              onClick={handleResetClick}
               className="text-xs text-qw-muted hover:text-red-400 transition-colors"
               title="Reset"
             >
@@ -182,6 +209,59 @@ export default function Header({
           </div>
         </div>
       </div>
+
+      {/* Import confirm modal */}
+      {pendingImport && (
+        <ConfirmModal
+          title="Replace tournament data?"
+          body="Replace current tournament with imported data? This will overwrite everything."
+          confirmLabel="Replace"
+          cancelLabel="Cancel"
+          variant="default"
+          onConfirm={handleImportConfirm}
+          onCancel={() => setPendingImport(null)}
+        />
+      )}
+
+      {/* Reset step 1 */}
+      {resetStep === 'step1' && (
+        <ConfirmModal
+          title="Reset tournament?"
+          body="This will permanently delete all tournament data including divisions, teams, schedule, and results. This cannot be undone."
+          confirmLabel="Continue"
+          cancelLabel="Cancel"
+          variant="danger"
+          onConfirm={handleResetStep1Confirm}
+          onCancel={() => setResetStep(null)}
+        />
+      )}
+
+      {/* Reset step 2 */}
+      {resetStep === 'step2' && (
+        <ConfirmModal
+          title="Are you sure?"
+          body={
+            <span>
+              You are about to permanently reset{' '}
+              <strong className="text-white">{tournament.name || 'this tournament'}</strong>.
+              {divisionCount > 0 && (
+                <span>
+                  {' '}
+                  This includes{' '}
+                  <strong className="text-white">{divisions.length} division{divisions.length !== 1 ? 's' : ''}</strong>
+                  {divisionCount > 0 ? `, ${divisionCount} team${divisionCount !== 1 ? 's' : ''}` : ''}
+                  {scheduleCount > 0 ? `, and ${scheduleCount} scheduled match${scheduleCount !== 1 ? 'es' : ''}` : ''}.
+                </span>
+              )}
+            </span>
+          }
+          confirmLabel="Reset Anyway"
+          cancelLabel="Cancel"
+          variant="danger"
+          onConfirm={handleResetStep2Confirm}
+          onCancel={() => setResetStep(null)}
+        />
+      )}
     </header>
   );
 }

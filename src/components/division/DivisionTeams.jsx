@@ -8,6 +8,7 @@ import {
   detectDuplicates,
 } from '../../utils/teamImport';
 import TeamImportPreview from './TeamImportPreview';
+import ConfirmModal from '../ConfirmModal';
 
 export default function DivisionTeams({
   division,
@@ -29,6 +30,7 @@ export default function DivisionTeams({
   const [viewMode, setViewMode] = useState('list'); // 'list' or 'groups'
   const [previewTeams, setPreviewTeams] = useState(null);
   const [clipboardFeedback, setClipboardFeedback] = useState('');
+  const [pendingConfirm, setPendingConfirm] = useState(null); // { title, body, confirmLabel, variant, onConfirm }
 
   const teams = division.teams || [];
   const is1on1 = tournamentMode === '1on1';
@@ -205,32 +207,46 @@ export default function DivisionTeams({
   };
 
   const handleRandomizeGroups = () => {
-    if (!window.confirm('Randomly assign all teams to groups?')) return;
-
-    // Shuffle teams
-    const shuffled = [...teams].sort(() => Math.random() - 0.5);
-    const teamsPerGroup = division.teamsPerGroup;
-
-    const updated = shuffled.map((team, idx) => {
-      const groupIdx = Math.floor(idx / teamsPerGroup);
-      const group = groupIdx < groups.length ? groups[groupIdx] : '';
-      return { ...team, group };
+    setPendingConfirm({
+      title: 'Randomly assign groups?',
+      body: 'All teams will be shuffled and assigned to groups automatically.',
+      confirmLabel: 'Randomize',
+      variant: 'default',
+      onConfirm: () => {
+        const shuffled = [...teams].sort(() => Math.random() - 0.5);
+        const teamsPerGroup = division.teamsPerGroup;
+        const updated = shuffled.map((team, idx) => {
+          const groupIdx = Math.floor(idx / teamsPerGroup);
+          const group = groupIdx < groups.length ? groups[groupIdx] : '';
+          return { ...team, group };
+        });
+        updateDivision({ teams: updated });
+      },
     });
-
-    updateDivision({ teams: updated });
   };
 
   const handleClearGroups = () => {
-    if (!window.confirm('Clear all group assignments?')) return;
-    updateDivision({
-      teams: teams.map((t) => ({ ...t, group: '' })),
+    setPendingConfirm({
+      title: 'Clear all group assignments?',
+      body: 'All teams will be unassigned from their groups. Teams will not be removed.',
+      confirmLabel: 'Clear Assignments',
+      variant: 'default',
+      onConfirm: () => {
+        updateDivision({ teams: teams.map((t) => ({ ...t, group: '' })) });
+      },
     });
   };
 
   const handleClearAll = () => {
-    if (window.confirm(`Remove all ${teams.length} teams?`)) {
-      updateDivision({ teams: [] });
-    }
+    setPendingConfirm({
+      title: `Remove all ${teams.length} ${entityLabelPlural.toLowerCase()}?`,
+      body: `This will permanently remove all ${teams.length} ${entityLabelPlural.toLowerCase()} from this division.`,
+      confirmLabel: `Remove All`,
+      variant: 'danger',
+      onConfirm: () => {
+        updateDivision({ teams: [] });
+      },
+    });
   };
 
   return (
@@ -775,6 +791,21 @@ export default function DivisionTeams({
           onConfirm={handleConfirmImport}
           onCancel={handleCancelImport}
           title="Preview Bulk Import"
+        />
+      )}
+
+      {/* Confirm Modal */}
+      {pendingConfirm && (
+        <ConfirmModal
+          title={pendingConfirm.title}
+          body={pendingConfirm.body}
+          confirmLabel={pendingConfirm.confirmLabel}
+          variant={pendingConfirm.variant}
+          onConfirm={() => {
+            pendingConfirm.onConfirm();
+            setPendingConfirm(null);
+          }}
+          onCancel={() => setPendingConfirm(null)}
         />
       )}
     </div>
