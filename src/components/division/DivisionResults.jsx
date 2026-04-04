@@ -1,6 +1,7 @@
 // src/components/division/DivisionResults.jsx
 import React, { useState, useRef, useMemo, useCallback, useEffect } from 'react';
 import ConfirmModal from '../ConfirmModal';
+import EmptyState from '../EmptyState';
 import { parseMatch, unicodeToAscii } from '../../utils/matchLogic';
 import {
   createTeamContext,
@@ -12,6 +13,23 @@ import { scheduleWikiPublish } from '../../services/wikiPublisher';
 import { supabase } from '../../services/supabaseClient';
 import DivisionStats from './DivisionStats';
 import QWStatsService from '../../services/QWStatsService';
+
+function humanizeError(err) {
+  const msg = typeof err === 'string' ? err : err?.message || String(err);
+  if (/SyntaxError|Unexpected token|JSON/i.test(msg))
+    return 'Your file has a formatting error. Check for extra commas or missing brackets.';
+  if (/Failed to fetch|NetworkError|network/i.test(msg))
+    return "Couldn't connect to the server. Check your internet connection and try again.";
+  if (/401|Unauthorized/i.test(msg))
+    return 'Your session expired. Reload the page to log back in.';
+  if (/404|Not Found/i.test(msg))
+    return 'Resource not found. It may have been deleted.';
+  if (/TypeError.*read|Cannot read/i.test(msg))
+    return 'The file is missing required fields. Check the import format and try again.';
+  if (/timeout|timed out/i.test(msg))
+    return 'This is taking longer than expected. Try again, or use a smaller file.';
+  return msg;
+}
 
 export default function DivisionResults({
   division,
@@ -1157,8 +1175,15 @@ export default function DivisionResults({
           )}
 
           {submissionsError && (
-            <div className="p-3 bg-red-900/30 border border-red-500/50 rounded text-red-300 text-sm">
-              {submissionsError}
+            <div className="qw-error-banner">
+              <strong>Failed to load submissions</strong> — {humanizeError(submissionsError)}
+            </div>
+          )}
+
+          {submissionsLoading && (
+            <div className="flex items-center gap-3 py-4 text-qw-muted text-sm">
+              <div className="w-4 h-4 border-2 border-qw-border border-t-qw-accent rounded-full animate-spin flex-shrink-0" />
+              Fetching submissions...
             </div>
           )}
 
@@ -1354,7 +1379,14 @@ export default function DivisionResults({
             className="px-4 py-3 rounded border-2 border-dashed border-qw-border hover:border-qw-accent text-qw-muted hover:text-white transition-all w-full flex items-center justify-center gap-2 disabled:opacity-50"
           >
             <span className="text-2xl">?</span>
-            <span>{loading ? 'Processing...' : 'Select JSON files (Ctrl+click for multiple)'}</span>
+            {loading ? (
+              <span className="flex items-center gap-2">
+                <span className="w-4 h-4 border-2 border-qw-border border-t-qw-accent rounded-full animate-spin" />
+                Processing...
+              </span>
+            ) : (
+              <span>Select JSON files (Ctrl+click for multiple)</span>
+            )}
           </button>
 
           <div>
@@ -2004,8 +2036,17 @@ export default function DivisionResults({
       )}
 
       {error && (
-        <div className="p-4 bg-red-900/30 border border-red-500/50 rounded text-red-300 font-mono text-sm whitespace-pre-wrap">
-          {error}
+        <div className="qw-error-banner">
+          <div className="flex items-start justify-between gap-2">
+            <span>{humanizeError(error)}</span>
+            <button
+              onClick={() => setError(null)}
+              className="text-qw-loss/70 hover:text-qw-loss flex-shrink-0 text-xs"
+              aria-label="Dismiss error"
+            >
+              ✕
+            </button>
+          </div>
         </div>
       )}
 
@@ -2196,10 +2237,11 @@ export default function DivisionResults({
         {showRawMaps && (
           <div className="p-6">
             {rawMaps.length === 0 ? (
-              <div className="text-center py-8 text-qw-muted">
-                <div className="text-4xl mb-2">?</div>
-                <p>No results imported yet</p>
-              </div>
+              <EmptyState
+                icon="🎮"
+                title="No results entered yet"
+                description="Submit results via Discord or import them manually using one of the import options above."
+              />
             ) : (
               <div className="space-y-1 max-h-48 overflow-y-auto">
                 {rawMaps
