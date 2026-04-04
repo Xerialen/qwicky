@@ -2,8 +2,6 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import WikiSetupWizard from './WikiSetupWizard';
 import { calculateStandings } from './division/DivisionStandings';
-import { useDirtyGuard } from '../hooks/useDirtyGuard';
-
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 const countryToFlag = (code) => {
@@ -136,16 +134,8 @@ function DivisionStandingsCard({ division, onNavigate }) {
   );
 }
 
-export default function TournamentInfo({ tournament, updateTournament: _updateTournament, onNavigateToDivision }) {
+export default function TournamentInfo({ tournament, updateTournament, onNavigateToDivision }) {
   const [copiedField, setCopiedField] = useState(null);
-  const { markDirty } = useDirtyGuard();
-  const updateTournament = useCallback(
-    (updates) => {
-      markDirty('Tournament Settings');
-      _updateTournament(updates);
-    },
-    [markDirty, _updateTournament]
-  );
   const [showSettings, setShowSettings] = useState(false);
   const [showWikiWizard, setShowWikiWizard] = useState(false);
   const [channels, setChannels] = useState(null);

@@ -64,6 +64,7 @@ export default function Header({
 
   const handleImportConfirm = () => {
     importTournament(pendingImport);
+    markClean();
     setPendingImport(null);
   };
 

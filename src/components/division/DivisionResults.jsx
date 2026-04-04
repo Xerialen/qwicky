@@ -63,6 +63,10 @@ export default function DivisionResults({
   const [browseError, setBrowseError] = useState(null);
   const [browseSelected, setBrowseSelected] = useState(new Set());
 
+  // Confirm modal state for destructive actions
+  const [confirmClear, setConfirmClear] = useState(false);
+  const [confirmRemoveSeries, setConfirmRemoveSeries] = useState(null);
+
   // Helper function to detect which division(s) a submission belongs to
   const detectSubmissionDivision = useCallback(
     (submission) => {
@@ -1033,6 +1037,28 @@ export default function DivisionResults({
 
   return (
     <div className="space-y-6">
+      {confirmClear && (
+        <ConfirmModal
+          title="Clear all results?"
+          body="This will permanently remove all imported results and reset match statuses. This cannot be undone."
+          confirmLabel="Clear results"
+          cancelLabel="Cancel"
+          variant="danger"
+          onConfirm={executeClearResults}
+          onCancel={() => setConfirmClear(false)}
+        />
+      )}
+      {confirmRemoveSeries && (
+        <ConfirmModal
+          title="Remove this series?"
+          body={`Remove this series (${confirmRemoveSeries.maps.length} map${confirmRemoveSeries.maps.length !== 1 ? 's' : ''})? This cannot be undone.`}
+          confirmLabel="Remove series"
+          cancelLabel="Cancel"
+          variant="danger"
+          onConfirm={() => executeRemoveSeries(confirmRemoveSeries)}
+          onCancel={() => setConfirmRemoveSeries(null)}
+        />
+      )}
       {/* Wiki publish toast */}
       {wikiToast && (
         <div
