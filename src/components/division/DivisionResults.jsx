@@ -20,10 +20,8 @@ function humanizeError(err) {
     return 'Your file has a formatting error. Check for extra commas or missing brackets.';
   if (/Failed to fetch|NetworkError|network/i.test(msg))
     return "Couldn't connect to the server. Check your internet connection and try again.";
-  if (/401|Unauthorized/i.test(msg))
-    return 'Your session expired. Reload the page to log back in.';
-  if (/404|Not Found/i.test(msg))
-    return 'Resource not found. It may have been deleted.';
+  if (/401|Unauthorized/i.test(msg)) return 'Your session expired. Reload the page to log back in.';
+  if (/404|Not Found/i.test(msg)) return 'Resource not found. It may have been deleted.';
   if (/TypeError.*read|Cannot read/i.test(msg))
     return 'The file is missing required fields. Check the import format and try again.';
   if (/timeout|timed out/i.test(msg))

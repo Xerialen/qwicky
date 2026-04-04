@@ -428,7 +428,11 @@ export default function DivisionTeams({
                   type="submit"
                   className="qw-btn w-full"
                   disabled={!newTeam.name.trim() || !newTeam.tag.trim()}
-                  title={!newTeam.name.trim() || !newTeam.tag.trim() ? 'Fill in Team name and Tag to continue.' : undefined}
+                  title={
+                    !newTeam.name.trim() || !newTeam.tag.trim()
+                      ? 'Fill in Team name and Tag to continue.'
+                      : undefined
+                  }
                 >
                   Add
                 </button>
