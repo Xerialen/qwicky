@@ -71,7 +71,11 @@ export default function DivisionManager({
               <input
                 type="text"
                 value={newDivName}
-                onChange={(e) => { setNewDivName(e.target.value); if (e.target.value) markDirty('Division Manager'); else markClean(); }}
+                onChange={(e) => {
+                  setNewDivName(e.target.value);
+                  if (e.target.value) markDirty('Division Manager');
+                  else markClean();
+                }}
                 placeholder="e.g., Division 1"
                 className="w-full bg-qw-dark border border-qw-border rounded px-4 py-2 text-white"
                 autoFocus
@@ -87,7 +91,10 @@ export default function DivisionManager({
                     <button
                       key={name}
                       type="button"
-                      onClick={() => { setNewDivName(name); markDirty('Division Manager'); }}
+                      onClick={() => {
+                        setNewDivName(name);
+                        markDirty('Division Manager');
+                      }}
                       className="px-3 py-1 bg-qw-dark border border-qw-border rounded text-sm text-qw-muted hover:text-white hover:border-qw-accent transition-colors"
                     >
                       {name}
