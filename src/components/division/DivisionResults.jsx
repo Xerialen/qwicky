@@ -21,6 +21,7 @@ export default function DivisionResults({
   tournament,
 }) {
   const [mode, setMode] = useState('discord');
+  const [showMoreOptions, setShowMoreOptions] = useState(false);
   const [showStats, setShowStats] = useState(false);
   const [showRawMaps, setShowRawMaps] = useState(false);
   // API Fetch states
@@ -1055,7 +1056,7 @@ export default function DivisionResults({
       )}
 
       <div className="flex items-center justify-between">
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <button
             onClick={() => {
               setMode('discord');
@@ -1064,18 +1065,6 @@ export default function DivisionResults({
             className={`px-4 py-2 rounded font-body font-semibold ${mode === 'discord' ? 'bg-qw-accent text-qw-dark' : 'bg-qw-panel border border-qw-border text-qw-muted hover:text-white'}`}
           >
             🤖 Discord
-          </button>
-          <button
-            onClick={() => setMode('api')}
-            className={`px-4 py-2 rounded font-body font-semibold ${mode === 'api' ? 'bg-qw-accent text-qw-dark' : 'bg-qw-panel border border-qw-border text-qw-muted hover:text-white'}`}
-          >
-            🌐 API Fetch
-          </button>
-          <button
-            onClick={() => setMode('json')}
-            className={`px-4 py-2 rounded font-body font-semibold ${mode === 'json' ? 'bg-qw-accent text-qw-dark' : 'bg-qw-panel border border-qw-border text-qw-muted hover:text-white'}`}
-          >
-            📄 JSON Import
           </button>
           <button
             onClick={() => setMode('browse')}
@@ -1089,6 +1078,28 @@ export default function DivisionResults({
           >
             🎯 Discover
           </button>
+          <button
+            onClick={() => setShowMoreOptions((v) => !v)}
+            className={`px-4 py-2 rounded font-body font-semibold ${mode === 'api' || mode === 'json' ? 'bg-qw-accent text-qw-dark' : 'bg-qw-panel border border-qw-border text-qw-muted hover:text-white'}`}
+          >
+            {showMoreOptions ? '▲ Less' : '▼ More options'}
+          </button>
+          {showMoreOptions && (
+            <>
+              <button
+                onClick={() => setMode('api')}
+                className={`px-4 py-2 rounded font-body font-semibold ${mode === 'api' ? 'bg-qw-accent text-qw-dark' : 'bg-qw-panel border border-qw-border text-qw-muted hover:text-white'}`}
+              >
+                🌐 API Fetch
+              </button>
+              <button
+                onClick={() => setMode('json')}
+                className={`px-4 py-2 rounded font-body font-semibold ${mode === 'json' ? 'bg-qw-accent text-qw-dark' : 'bg-qw-panel border border-qw-border text-qw-muted hover:text-white'}`}
+              >
+                📄 JSON Import
+              </button>
+            </>
+          )}
         </div>
         {rawMaps.length > 0 && (
           <button onClick={handleClearResults} className="text-sm text-red-400 hover:text-red-300">
