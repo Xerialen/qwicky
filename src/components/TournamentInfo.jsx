@@ -2,7 +2,6 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import WikiSetupWizard from './WikiSetupWizard';
 import { calculateStandings } from './division/DivisionStandings';
-
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 const countryToFlag = (code) => {
