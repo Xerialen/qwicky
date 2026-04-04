@@ -1,82 +1,43 @@
 // src/hooks/useDirtyGuard.js
-// Tracks unsaved-changes state across sections and guards tab navigation.
-// Uses module-level singleton so markDirty/markClean/guardedNavigate are shared
-// across all components without prop drilling or a separate context provider.
+// Tracks unsaved-changes state per section and guards tab navigation.
+// Uses Zustand store (dirtyGuardStore) so all components share state
+// without prop drilling or module-level singletons.
+//
+// Usage:
+//   const { isDirty, markDirty, markClean, guardedNavigate } = useDirtyGuard('my-section');
+//
+// sectionId — unique string identifying this component's dirty scope.
+//   markDirty/markClean only affect this section; other sections are unaffected.
+//   guardedNavigate checks whether *any* section is dirty (not just this one).
 
-import React, { useEffect, useCallback, useReducer } from 'react';
-import ConfirmModal from '../components/ConfirmModal';
+import { useCallback } from 'react';
+import useDirtyGuardStore from '../stores/dirtyGuardStore';
 
-// ── Singleton state ───────────────────────────────────────────────────────────
+export function useDirtyGuard(sectionId) {
+  const markDirtyInStore = useDirtyGuardStore((s) => s.markDirty);
+  const markCleanInStore = useDirtyGuardStore((s) => s.markClean);
+  const setPendingNavigate = useDirtyGuardStore((s) => s.setPendingNavigate);
+  const dirtySections = useDirtyGuardStore((s) => s.dirtySections);
 
-let _isDirty = false;
-let _sectionName = '';
-let _pendingNavigate = null;
-const _listeners = new Set();
+  const isDirty = Object.keys(dirtySections).length > 0;
 
-function _notify() {
-  _listeners.forEach((fn) => fn());
-}
+  const markDirty = useCallback(
+    (sectionName = '') => markDirtyInStore(sectionId, sectionName),
+    [sectionId, markDirtyInStore]
+  );
 
-// ── Hook ─────────────────────────────────────────────────────────────────────
+  const markClean = useCallback(() => markCleanInStore(sectionId), [sectionId, markCleanInStore]);
 
-export function useDirtyGuard() {
-  // Subscribe to singleton state changes
-  const [, forceUpdate] = useReducer((x) => x + 1, 0);
+  const guardedNavigate = useCallback(
+    (navigate) => {
+      if (!isDirty) {
+        navigate();
+        return;
+      }
+      setPendingNavigate(navigate);
+    },
+    [isDirty, setPendingNavigate]
+  );
 
-  useEffect(() => {
-    _listeners.add(forceUpdate);
-    return () => _listeners.delete(forceUpdate);
-  }, []);
-
-  const markDirty = useCallback((sectionName = '') => {
-    _isDirty = true;
-    _sectionName = sectionName;
-    _notify();
-  }, []);
-
-  const markClean = useCallback(() => {
-    _isDirty = false;
-    _sectionName = '';
-    _pendingNavigate = null;
-    _notify();
-  }, []);
-
-  const guardedNavigate = useCallback((navigate) => {
-    if (!_isDirty) {
-      navigate();
-      return;
-    }
-    _pendingNavigate = navigate;
-    _notify();
-  }, []);
-
-  const DirtyModal =
-    _pendingNavigate !== null ? (
-      <ConfirmModal
-        title="You have unsaved changes. Leave anyway?"
-        body={`Your changes to ${_sectionName || 'this section'} have not been saved. If you leave now, they will be lost.`}
-        confirmLabel="Leave anyway"
-        cancelLabel="Stay"
-        onConfirm={() => {
-          const nav = _pendingNavigate;
-          _isDirty = false;
-          _sectionName = '';
-          _pendingNavigate = null;
-          _notify();
-          nav();
-        }}
-        onCancel={() => {
-          _pendingNavigate = null;
-          _notify();
-        }}
-      />
-    ) : null;
-
-  return {
-    isDirty: _isDirty,
-    markDirty,
-    markClean,
-    guardedNavigate,
-    DirtyModal,
-  };
+  return { isDirty, markDirty, markClean, guardedNavigate };
 }

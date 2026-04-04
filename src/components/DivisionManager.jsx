@@ -14,7 +14,7 @@ export default function DivisionManager({
 }) {
   const [newDivName, setNewDivName] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
-  const { markDirty, markClean } = useDirtyGuard();
+  const { markDirty, markClean } = useDirtyGuard('divisions');
 
   const handleAddDivision = (e) => {
     e.preventDefault();

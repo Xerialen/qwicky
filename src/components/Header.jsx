@@ -2,6 +2,7 @@
 import React, { useState, useRef } from 'react';
 import ConfirmModal from './ConfirmModal';
 import { useDirtyGuard } from '../hooks/useDirtyGuard';
+import useDirtyGuardStore from '../stores/dirtyGuardStore';
 
 export default function Header({
   tournament,
@@ -16,7 +17,12 @@ export default function Header({
 }) {
   const [showDivisionDropdown, setShowDivisionDropdown] = useState(false);
   const fileInputRef = useRef(null);
-  const { markClean, guardedNavigate, DirtyModal } = useDirtyGuard();
+  const { guardedNavigate } = useDirtyGuard();
+  const markAllClean = useDirtyGuardStore((s) => s.markAllClean);
+  const pendingNavigate = useDirtyGuardStore((s) => s.pendingNavigate);
+  const clearPendingNavigate = useDirtyGuardStore((s) => s.clearPendingNavigate);
+  const dirtySections = useDirtyGuardStore((s) => s.dirtySections);
+  const firstDirtySection = Object.values(dirtySections)[0] || '';
 
   // Import confirm — holds parsed data until user confirms
   const [pendingImport, setPendingImport] = useState(null);
@@ -40,7 +46,6 @@ export default function Header({
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    markClean();
   };
 
   const handleImport = (e) => {
@@ -64,7 +69,7 @@ export default function Header({
 
   const handleImportConfirm = () => {
     importTournament(pendingImport);
-    markClean();
+    markAllClean();
     setPendingImport(null);
   };
 
@@ -98,7 +103,20 @@ export default function Header({
 
   return (
     <header className="sticky top-0 z-50 border-b border-qw-border/50 bg-qw-darker/95 backdrop-blur-sm">
-      {DirtyModal}
+      {pendingNavigate && (
+        <ConfirmModal
+          title="You have unsaved changes. Leave anyway?"
+          body={`Your changes to ${firstDirtySection || 'this section'} have not been saved. If you leave now, they will be lost.`}
+          confirmLabel="Leave anyway"
+          cancelLabel="Stay"
+          onConfirm={() => {
+            const nav = pendingNavigate;
+            markAllClean();
+            nav();
+          }}
+          onCancel={clearPendingNavigate}
+        />
+      )}
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex items-center justify-between h-12">
           {/* Logo — text only */}

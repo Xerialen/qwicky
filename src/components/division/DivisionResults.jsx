@@ -63,10 +63,6 @@ export default function DivisionResults({
   const [browseError, setBrowseError] = useState(null);
   const [browseSelected, setBrowseSelected] = useState(new Set());
 
-  // Confirm modal state for destructive actions
-  const [confirmClear, setConfirmClear] = useState(false);
-  const [confirmRemoveSeries, setConfirmRemoveSeries] = useState(null);
-
   // Helper function to detect which division(s) a submission belongs to
   const detectSubmissionDivision = useCallback(
     (submission) => {
@@ -969,25 +965,29 @@ export default function DivisionResults({
   };
 
   const handleClearResults = () => {
-    setConfirmClear(true);
-  };
-
-  const executeClearResults = () => {
-    updateDivision({
-      rawMaps: [],
-      schedule: schedule.map((m) => ({ ...m, maps: [], status: '' })),
+    setPendingConfirm({
+      title: 'Clear all imported results?',
+      body: 'This will remove all map data and reset all match results. This cannot be undone.',
+      confirmLabel: 'Clear Results',
+      variant: 'danger',
+      onConfirm: () => {
+        updateDivision({
+          rawMaps: [],
+          schedule: schedule.map((m) => ({ ...m, maps: [], status: '' })),
+        });
+        setLastImported([]);
+      },
     });
-    setLastImported([]);
-    setConfirmClear(false);
   };
 
   const removeSeries = (series) => {
-    setConfirmRemoveSeries(series);
-  };
-
-  const executeRemoveSeries = (series) => {
-    doRemoveSeries(series);
-    setConfirmRemoveSeries(null);
+    setPendingConfirm({
+      title: `Remove this series?`,
+      body: `This series contains ${series.maps.length} map${series.maps.length !== 1 ? 's' : ''}. Removing it will unlink these maps from the schedule.`,
+      confirmLabel: 'Remove Series',
+      variant: 'danger',
+      onConfirm: () => doRemoveSeries(series),
+    });
   };
 
   const doRemoveSeries = (series) => {
@@ -1033,28 +1033,6 @@ export default function DivisionResults({
 
   return (
     <div className="space-y-6">
-      {confirmClear && (
-        <ConfirmModal
-          title="Clear all results?"
-          body="This will permanently remove all imported results and reset match statuses. This cannot be undone."
-          confirmLabel="Clear results"
-          cancelLabel="Cancel"
-          variant="danger"
-          onConfirm={executeClearResults}
-          onCancel={() => setConfirmClear(false)}
-        />
-      )}
-      {confirmRemoveSeries && (
-        <ConfirmModal
-          title="Remove this series?"
-          body={`Remove this series (${confirmRemoveSeries.maps.length} map${confirmRemoveSeries.maps.length !== 1 ? 's' : ''})? This cannot be undone.`}
-          confirmLabel="Remove series"
-          cancelLabel="Cancel"
-          variant="danger"
-          onConfirm={() => executeRemoveSeries(confirmRemoveSeries)}
-          onCancel={() => setConfirmRemoveSeries(null)}
-        />
-      )}
       {/* Wiki publish toast */}
       {wikiToast && (
         <div
