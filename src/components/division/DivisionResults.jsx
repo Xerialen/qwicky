@@ -969,29 +969,25 @@ export default function DivisionResults({
   };
 
   const handleClearResults = () => {
-    setPendingConfirm({
-      title: 'Clear all imported results?',
-      body: 'This will remove all map data and reset all match results. This cannot be undone.',
-      confirmLabel: 'Clear Results',
-      variant: 'danger',
-      onConfirm: () => {
-        updateDivision({
-          rawMaps: [],
-          schedule: schedule.map((m) => ({ ...m, maps: [], status: '' })),
-        });
-        setLastImported([]);
-      },
+    setConfirmClear(true);
+  };
+
+  const executeClearResults = () => {
+    updateDivision({
+      rawMaps: [],
+      schedule: schedule.map((m) => ({ ...m, maps: [], status: '' })),
     });
+    setLastImported([]);
+    setConfirmClear(false);
   };
 
   const removeSeries = (series) => {
-    setPendingConfirm({
-      title: `Remove this series?`,
-      body: `This series contains ${series.maps.length} map${series.maps.length !== 1 ? 's' : ''}. Removing it will unlink these maps from the schedule.`,
-      confirmLabel: 'Remove Series',
-      variant: 'danger',
-      onConfirm: () => doRemoveSeries(series),
-    });
+    setConfirmRemoveSeries(series);
+  };
+
+  const executeRemoveSeries = (series) => {
+    doRemoveSeries(series);
+    setConfirmRemoveSeries(null);
   };
 
   const doRemoveSeries = (series) => {
