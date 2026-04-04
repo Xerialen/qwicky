@@ -424,7 +424,16 @@ export default function DivisionTeams({
                   placeholder="Aliases (optional): old tag, old name, ..."
                   className="w-full bg-qw-dark border border-qw-border rounded px-4 py-2 text-white text-sm"
                 />
-                <button type="submit" className="qw-btn w-full">
+                <button
+                  type="submit"
+                  className="qw-btn w-full"
+                  disabled={!newTeam.name.trim() || !newTeam.tag.trim()}
+                  title={
+                    !newTeam.name.trim() || !newTeam.tag.trim()
+                      ? 'Fill in Team name and Tag to continue.'
+                      : undefined
+                  }
+                >
                   Add
                 </button>
               </div>
@@ -438,7 +447,12 @@ export default function DivisionTeams({
                   placeholder="Aliases (optional): old name, alternate spelling, ..."
                   className="w-full bg-qw-dark border border-qw-border rounded px-4 py-2 text-white text-sm"
                 />
-                <button type="submit" className="qw-btn w-full">
+                <button
+                  type="submit"
+                  className="qw-btn w-full"
+                  disabled={!newTeam.name.trim()}
+                  title={!newTeam.name.trim() ? 'Fill in Player name to continue.' : undefined}
+                >
                   Add {entityLabel}
                 </button>
               </div>

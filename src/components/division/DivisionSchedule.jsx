@@ -2,6 +2,7 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { findConflicts, getMatchConflicts } from '../../utils/scheduleValidator';
 import ConfirmModal from '../ConfirmModal';
+import EmptyState from '../EmptyState';
 
 // Polygon (circle) method: produces N-1 rounds (N even) where every team
 // plays exactly once per round. Odd team counts get a null bye placeholder.
@@ -617,10 +618,14 @@ export default function DivisionSchedule({
       )}
 
       {schedule.length === 0 ? (
-        <div className="qw-panel p-12 text-center">
-          <div className="text-6xl mb-4">📅</div>
-          <h3 className="font-display text-xl text-white mb-2">No Matches Scheduled</h3>
-          <p className="text-qw-muted">Assign teams to groups, then generate schedule</p>
+        <div className="qw-panel">
+          <EmptyState
+            icon="📅"
+            title="Schedule not generated"
+            description="Assign teams to groups, then generate a schedule. Matches will appear here once generated."
+            actionLabel="Generate Schedule"
+            onAction={generateGroupSchedule}
+          />
         </div>
       ) : (
         <>

@@ -95,7 +95,12 @@ export default function DivisionManager({
             )}
 
             <div className="flex gap-2">
-              <button type="submit" className="qw-btn" disabled={!newDivName.trim()}>
+              <button
+                type="submit"
+                className="qw-btn"
+                disabled={!newDivName.trim()}
+                title={!newDivName.trim() ? 'Fill in required fields to continue.' : undefined}
+              >
                 Create Division
               </button>
               <button
