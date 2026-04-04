@@ -173,9 +173,7 @@ export default function ResultsPendingQueue({
       {filteredSubmissions.length === 0 && !loading && tournamentId && (
         <div className="text-center py-8 text-qw-muted">
           <div className="text-4xl mb-2">🤖</div>
-          <p>
-            No {filterByDivision ? `submissions for ${division.name}` : 'pending submissions'}
-          </p>
+          <p>No {filterByDivision ? `submissions for ${division.name}` : 'pending submissions'}</p>
           <p className="text-xs mt-1">
             {filterByDivision
               ? 'Uncheck "This Division Only" to see all submissions'

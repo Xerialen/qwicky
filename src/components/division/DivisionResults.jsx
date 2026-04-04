@@ -94,7 +94,9 @@ export default function DivisionResults({
         const divTeams = div.teams || [];
         if (divTeams.length === 0) return;
         const divCtx = createTeamContext(divTeams);
-        const matchCount = gameTeams.filter((gt) => resolveTeamFull(gt, divCtx).match !== null).length;
+        const matchCount = gameTeams.filter(
+          (gt) => resolveTeamFull(gt, divCtx).match !== null
+        ).length;
         if (matchCount === gameTeams.length) matchingDivisions.push(div);
       });
       return matchingDivisions.length > 0 ? matchingDivisions : null;
@@ -175,7 +177,10 @@ export default function DivisionResults({
           candidates.forEach((m) => {
             if (m.date) {
               const dist = Math.abs(new Date(m.date + 'T00:00:00').getTime() - seriesTime);
-              if (dist < bestDist) { bestDist = dist; scheduledMatch = m; }
+              if (dist < bestDist) {
+                bestDist = dist;
+                scheduledMatch = m;
+              }
             }
           });
         }
@@ -240,12 +245,16 @@ export default function DivisionResults({
     const existingIds = new Set(tRawMaps.map((m) => m.id));
     const existingBaseIds = new Set(
       tRawMaps.map((m) =>
-        String(m.id).replace(/^browse-/, '').replace(/-[^-]+$/, '')
+        String(m.id)
+          .replace(/^browse-/, '')
+          .replace(/-[^-]+$/, '')
       )
     );
     const uniqueNewMaps = newMaps.filter((m) => {
       if (existingIds.has(m.id)) return false;
-      const baseId = String(m.id).replace(/^browse-/, '').replace(/-[^-]+$/, '');
+      const baseId = String(m.id)
+        .replace(/^browse-/, '')
+        .replace(/-[^-]+$/, '');
       if (existingBaseIds.has(baseId)) return false;
       return true;
     });
@@ -255,7 +264,9 @@ export default function DivisionResults({
       return `${(m.map || '').toLowerCase()}|${resolvedTeams.sort().join('vs')}|${m.timestamp || m.date}`;
     };
     const existingFingerprints = new Set(tRawMaps.map(makeFingerprint));
-    const trulyUniqueMaps = uniqueNewMaps.filter((m) => !existingFingerprints.has(makeFingerprint(m)));
+    const trulyUniqueMaps = uniqueNewMaps.filter(
+      (m) => !existingFingerprints.has(makeFingerprint(m))
+    );
 
     if (trulyUniqueMaps.length === 0) {
       console.log('No new unique maps to add (all duplicates)');
@@ -322,7 +333,10 @@ export default function DivisionResults({
               const m = newSchedule[idx];
               if (m.date) {
                 const dist = Math.abs(new Date(m.date + 'T00:00:00').getTime() - gameTime);
-                if (dist < bestDist) { bestDist = dist; matchIdx = idx; }
+                if (dist < bestDist) {
+                  bestDist = dist;
+                  matchIdx = idx;
+                }
               }
             });
           }
@@ -349,7 +363,10 @@ export default function DivisionResults({
                 : Infinity;
               for (const [rn, dateStr] of Object.entries(roundDates)) {
                 const dist = Math.abs(new Date(dateStr + 'T00:00:00').getTime() - gameTime);
-                if (dist < bestDist) { bestDist = dist; bestRound = Number(rn); }
+                if (dist < bestDist) {
+                  bestDist = dist;
+                  bestRound = Number(rn);
+                }
               }
               if (bestRound !== match.roundNum) {
                 match.roundNum = bestRound;
@@ -373,7 +390,8 @@ export default function DivisionResults({
             match.status = match.maps.length >= match.bestOf ? 'completed' : 'live';
           } else {
             const neededWins = Math.ceil(match.bestOf / 2);
-            let t1Wins = 0, t2Wins = 0;
+            let t1Wins = 0,
+              t2Wins = 0;
             match.maps.forEach((mp) => {
               if (mp.score1 > mp.score2) t1Wins++;
               else if (mp.score2 > mp.score1) t2Wins++;
@@ -402,9 +420,15 @@ export default function DivisionResults({
           if (ok.length > 0 && fail.length === 0) {
             setWikiToast({ type: 'success', message: `Wiki updated: ${ok.length} target(s)` });
           } else if (ok.length > 0) {
-            setWikiToast({ type: 'warn', message: `Wiki: ${ok.length} updated, ${fail.length} failed` });
+            setWikiToast({
+              type: 'warn',
+              message: `Wiki: ${ok.length} updated, ${fail.length} failed`,
+            });
           } else if (fail.length > 0) {
-            setWikiToast({ type: 'error', message: `Wiki publish failed: ${fail[0]?.error || 'unknown error'}` });
+            setWikiToast({
+              type: 'error',
+              message: `Wiki publish failed: ${fail[0]?.error || 'unknown error'}`,
+            });
           }
           setTimeout(() => setWikiToast(null), 6000);
         },
@@ -535,7 +559,8 @@ export default function DivisionResults({
         status = maps.length >= m.bestOf ? 'completed' : 'live';
       } else {
         const neededWins = Math.ceil(m.bestOf / 2);
-        let t1Wins = 0, t2Wins = 0;
+        let t1Wins = 0,
+          t2Wins = 0;
         maps.forEach((mp) => {
           if (mp.score1 > mp.score2) t1Wins++;
           else if (mp.score2 > mp.score1) t2Wins++;
@@ -549,8 +574,12 @@ export default function DivisionResults({
 
   const createMatchFromSeries = (series) => {
     const [res1, res2] = series.resolvedTeams;
-    const team1Obj = teams.find((t) => resolveTeamName(t.name).toLowerCase() === res1.toLowerCase());
-    const team2Obj = teams.find((t) => resolveTeamName(t.name).toLowerCase() === res2.toLowerCase());
+    const team1Obj = teams.find(
+      (t) => resolveTeamName(t.name).toLowerCase() === res1.toLowerCase()
+    );
+    const team2Obj = teams.find(
+      (t) => resolveTeamName(t.name).toLowerCase() === res2.toLowerCase()
+    );
     const detectedGroup =
       team1Obj?.group === team2Obj?.group && team1Obj?.group ? team1Obj.group : '';
     const newMatch = {
@@ -665,7 +694,8 @@ export default function DivisionResults({
           status = filteredMaps.length >= m.bestOf ? 'completed' : 'live';
         } else {
           const neededWins = Math.ceil(m.bestOf / 2);
-          let t1Wins = 0, t2Wins = 0;
+          let t1Wins = 0,
+            t2Wins = 0;
           filteredMaps.forEach((mp) => {
             if (mp.score1 > mp.score2) t1Wins++;
             else if (mp.score2 > mp.score1) t2Wins++;
@@ -676,15 +706,6 @@ export default function DivisionResults({
       });
     }
     updateDivision({ rawMaps: newRawMaps, schedule: newSchedule });
-  };
-
-  const handleClearResults = () => {
-    if (!window.confirm('Clear all imported results?')) return;
-    updateDivision({
-      rawMaps: [],
-      schedule: schedule.map((m) => ({ ...m, maps: [], status: '' })),
-    });
-    setLastImported([]);
   };
 
   const unlinkableMatches = schedule.filter((m) => !m.maps || m.maps.length === 0);
@@ -705,7 +726,10 @@ export default function DivisionResults({
           }`}
         >
           {wikiToast.message}
-          <button onClick={() => setWikiToast(null)} className="ml-3 text-xs opacity-60 hover:opacity-100">
+          <button
+            onClick={() => setWikiToast(null)}
+            className="ml-3 text-xs opacity-60 hover:opacity-100"
+          >
             &times;
           </button>
         </div>
@@ -754,14 +778,19 @@ export default function DivisionResults({
               </h3>
               {rawMaps.length > 0 && (
                 <button
-                  onClick={(e) => { e.stopPropagation(); handleClearResults(); }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleClearResults();
+                  }}
                   className="text-xs text-red-400 hover:text-red-300 ml-2"
                 >
                   Clear All
                 </button>
               )}
             </div>
-            <span className={`text-qw-accent transition-transform duration-200 ${showApprovedResults ? 'rotate-180' : ''}`}>
+            <span
+              className={`text-qw-accent transition-transform duration-200 ${showApprovedResults ? 'rotate-180' : ''}`}
+            >
               ▼
             </span>
           </button>
@@ -782,22 +811,35 @@ export default function DivisionResults({
                   >
                     <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
                       <div className="flex items-center gap-3 flex-wrap">
-                        <span className={`font-body font-semibold ${w1 > w2 ? 'text-qw-win' : 'text-white'}`}>{t1}</span>
+                        <span
+                          className={`font-body font-semibold ${w1 > w2 ? 'text-qw-win' : 'text-white'}`}
+                        >
+                          {t1}
+                        </span>
                         <span className="px-2 py-1 bg-qw-darker rounded font-mono">
                           <span className={w1 > w2 ? 'text-qw-win font-bold' : ''}>{w1}</span>
                           <span className="text-qw-muted mx-1">-</span>
                           <span className={w2 > w1 ? 'text-qw-win font-bold' : ''}>{w2}</span>
                         </span>
-                        <span className={`font-body font-semibold ${w2 > w1 ? 'text-qw-win' : 'text-white'}`}>{t2}</span>
+                        <span
+                          className={`font-body font-semibold ${w2 > w1 ? 'text-qw-win' : 'text-white'}`}
+                        >
+                          {t2}
+                        </span>
                         <span className="text-qw-muted text-sm">({series.maps.length} maps)</span>
-                        <span className="px-2 py-0.5 bg-qw-darker rounded text-xs font-mono" title="Total frags">
+                        <span
+                          className="px-2 py-0.5 bg-qw-darker rounded text-xs font-mono"
+                          title="Total frags"
+                        >
                           <span className={f1 > f2 ? 'text-qw-accent' : 'text-qw-muted'}>{f1}</span>
                           <span className="text-qw-muted mx-1">-</span>
                           <span className={f2 > f1 ? 'text-qw-accent' : 'text-qw-muted'}>{f2}</span>
                           <span className="text-qw-muted ml-1">frags</span>
                         </span>
                         {series.dateDisplay && (
-                          <span className="text-qw-muted text-xs bg-qw-darker px-2 py-0.5 rounded">{series.dateDisplay}</span>
+                          <span className="text-qw-muted text-xs bg-qw-darker px-2 py-0.5 rounded">
+                            {series.dateDisplay}
+                          </span>
                         )}
                       </div>
                       <div className="flex items-center gap-2">
@@ -814,13 +856,19 @@ export default function DivisionResults({
                           <div className="flex items-center gap-2">
                             {unlinkableMatches.length > 0 && (
                               <select
-                                onChange={(e) => e.target.value && linkSeriesToMatch(series, e.target.value)}
+                                onChange={(e) =>
+                                  e.target.value && linkSeriesToMatch(series, e.target.value)
+                                }
                                 className="bg-qw-darker border border-qw-border rounded px-2 py-1 text-sm text-white"
                                 defaultValue=""
                               >
-                                <option value="" disabled>Link to...</option>
+                                <option value="" disabled>
+                                  Link to...
+                                </option>
                                 {unlinkableMatches.map((m) => (
-                                  <option key={m.id} value={m.id}>{m.team1} vs {m.team2}</option>
+                                  <option key={m.id} value={m.id}>
+                                    {m.team1} vs {m.team2}
+                                  </option>
                                 ))}
                               </select>
                             )}
@@ -847,9 +895,12 @@ export default function DivisionResults({
                         const ms1 = map.scores[o1] || 0;
                         const ms2 = map.scores[o2] || 0;
                         return (
-                          <span key={map.id} className="px-2 py-1 bg-qw-darker rounded text-xs font-mono">
-                            {map.map}: <span className={ms1 > ms2 ? 'text-qw-win' : ''}>{ms1}</span>-
-                            <span className={ms2 > ms1 ? 'text-qw-win' : ''}>{ms2}</span>
+                          <span
+                            key={map.id}
+                            className="px-2 py-1 bg-qw-darker rounded text-xs font-mono"
+                          >
+                            {map.map}: <span className={ms1 > ms2 ? 'text-qw-win' : ''}>{ms1}</span>
+                            -<span className={ms2 > ms1 ? 'text-qw-win' : ''}>{ms2}</span>
                           </span>
                         );
                       })}
@@ -882,7 +933,11 @@ export default function DivisionResults({
               <h3 className="font-display text-lg text-qw-accent">PLAYER STATISTICS</h3>
               <span className="text-xs text-qw-muted">(detailed stats from imported matches)</span>
             </div>
-            <span className={`text-qw-accent transition-transform duration-200 ${showStats ? 'rotate-180' : ''}`}>▼</span>
+            <span
+              className={`text-qw-accent transition-transform duration-200 ${showStats ? 'rotate-180' : ''}`}
+            >
+              ▼
+            </span>
           </button>
           {showStats && (
             <div className="p-6">
@@ -902,7 +957,11 @@ export default function DivisionResults({
             <span className="text-xl">🗺️</span>
             <h3 className="font-display text-lg text-qw-accent">RAW MAPS ({rawMaps.length})</h3>
           </div>
-          <span className={`text-qw-accent transition-transform duration-200 ${showRawMaps ? 'rotate-180' : ''}`}>▼</span>
+          <span
+            className={`text-qw-accent transition-transform duration-200 ${showRawMaps ? 'rotate-180' : ''}`}
+          >
+            ▼
+          </span>
         </button>
         {showRawMaps && (
           <div className="p-6">
@@ -917,7 +976,10 @@ export default function DivisionResults({
                   .slice()
                   .reverse()
                   .map((map) => (
-                    <div key={map.id} className="flex items-center justify-between p-2 bg-qw-dark rounded text-sm">
+                    <div
+                      key={map.id}
+                      className="flex items-center justify-between p-2 bg-qw-dark rounded text-sm"
+                    >
                       <div className="flex items-center gap-3">
                         <span className="text-qw-muted font-mono text-xs">{map.map}</span>
                         <span className="text-white">

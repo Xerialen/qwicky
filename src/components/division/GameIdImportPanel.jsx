@@ -28,9 +28,15 @@ export default function GameIdImportPanel({ onImport }) {
     const idSet = new Set();
     rawTokens.forEach((token) => {
       const clean = token.trim();
-      if (/^\d+$/.test(clean)) { idSet.add(clean); return; }
+      if (/^\d+$/.test(clean)) {
+        idSet.add(clean);
+        return;
+      }
       const queryMatch = clean.match(/gameId=(\d+)/i);
-      if (queryMatch?.[1]) { idSet.add(queryMatch[1]); return; }
+      if (queryMatch?.[1]) {
+        idSet.add(queryMatch[1]);
+        return;
+      }
       const pathMatch = clean.match(/(?:game|match|matches|demo)\/(\d+)/i);
       if (pathMatch?.[1]) idSet.add(pathMatch[1]);
     });
@@ -168,7 +174,9 @@ export default function GameIdImportPanel({ onImport }) {
           {loading ? 'Fetching...' : 'FETCH MATCHES'}
         </button>
         {status && (
-          <div className={`text-sm font-mono ${status.includes('✓') ? 'text-qw-win' : 'text-qw-accent'}`}>
+          <div
+            className={`text-sm font-mono ${status.includes('✓') ? 'text-qw-win' : 'text-qw-accent'}`}
+          >
             {status}
           </div>
         )}

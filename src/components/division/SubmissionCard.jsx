@@ -62,16 +62,22 @@ export default function SubmissionCard({
           <div className="flex items-center gap-3 flex-wrap">
             <span className="font-body font-semibold text-white">{t1Name}</span>
             <span className="px-2 py-1 bg-qw-darker rounded font-mono text-sm">
-              <span className={(t1Frags || 0) > (t2Frags || 0) ? 'text-qw-win font-bold' : 'text-white'}>
+              <span
+                className={(t1Frags || 0) > (t2Frags || 0) ? 'text-qw-win font-bold' : 'text-white'}
+              >
                 {t1Frags ?? '?'}
               </span>
               <span className="text-qw-muted mx-1">-</span>
-              <span className={(t2Frags || 0) > (t1Frags || 0) ? 'text-qw-win font-bold' : 'text-white'}>
+              <span
+                className={(t2Frags || 0) > (t1Frags || 0) ? 'text-qw-win font-bold' : 'text-white'}
+              >
                 {t2Frags ?? '?'}
               </span>
             </span>
             <span className="font-body font-semibold text-white">{t2Name}</span>
-            <span className="text-qw-muted text-xs bg-qw-darker px-2 py-0.5 rounded">{mapName}</span>
+            <span className="text-qw-muted text-xs bg-qw-darker px-2 py-0.5 rounded">
+              {mapName}
+            </span>
             <span className="text-qw-muted text-xs bg-qw-darker px-2 py-0.5 rounded">
               {gameData.mode || '?'}
             </span>
@@ -81,11 +87,13 @@ export default function SubmissionCard({
           </div>
           <div className="text-xs text-qw-muted mt-1 flex items-center gap-2 flex-wrap">
             <span>
-              Submitted by{' '}
-              <span className="text-qw-accent">{sub.submitted_by_name}</span> &middot;{' '}
+              Submitted by <span className="text-qw-accent">{sub.submitted_by_name}</span> &middot;{' '}
               {new Date(sub.created_at).toLocaleString()} &middot; Game #{sub.game_id}
               {gameData.date && (
-                <> &middot; Match date: <span className="text-white font-mono">{gameData.date}</span></>
+                <>
+                  {' '}
+                  &middot; Match date: <span className="text-white font-mono">{gameData.date}</span>
+                </>
               )}
             </span>
             {detectedDivisions ? (

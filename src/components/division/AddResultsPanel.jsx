@@ -42,7 +42,9 @@ export default function AddResultsPanel({
             {isExpanded ? '' : '(search Discord / import by ID or file)'}
           </span>
         </div>
-        <span className={`text-qw-accent transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}>
+        <span
+          className={`text-qw-accent transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
+        >
           ▼
         </span>
       </button>
@@ -59,14 +61,18 @@ export default function AddResultsPanel({
                   className="px-4 py-3 rounded border border-qw-border bg-qw-dark hover:border-qw-accent hover:bg-qw-accent/10 text-white text-sm text-left transition-colors"
                 >
                   <div className="font-semibold mb-1">🔍 From Discord / Search</div>
-                  <div className="text-qw-muted text-xs">Browse by team tag or auto-discover via confidence model</div>
+                  <div className="text-qw-muted text-xs">
+                    Browse by team tag or auto-discover via confidence model
+                  </div>
                 </button>
                 <button
                   onClick={() => setMode('gameid')}
                   className="px-4 py-3 rounded border border-qw-border bg-qw-dark hover:border-qw-accent hover:bg-qw-accent/10 text-white text-sm text-left transition-colors"
                 >
                   <div className="font-semibold mb-1">🆔 I have a Game ID or JSON file</div>
-                  <div className="text-qw-muted text-xs">Paste Hub URLs / game IDs, or upload a .json file</div>
+                  <div className="text-qw-muted text-xs">
+                    Paste Hub URLs / game IDs, or upload a .json file
+                  </div>
                 </button>
               </div>
             </div>
@@ -96,9 +102,7 @@ export default function AddResultsPanel({
             />
           )}
 
-          {mode === 'gameid' && (
-            <GameIdImportPanel onImport={onImport} />
-          )}
+          {mode === 'gameid' && <GameIdImportPanel onImport={onImport} />}
         </div>
       )}
     </div>
