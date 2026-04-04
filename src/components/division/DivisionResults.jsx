@@ -1080,7 +1080,7 @@ export default function DivisionResults({
           </button>
           <button
             onClick={() => setShowMoreOptions((v) => !v)}
-            className={`px-4 py-2 rounded font-body font-semibold ${(mode === 'api' || mode === 'json') ? 'bg-qw-accent text-qw-dark' : 'bg-qw-panel border border-qw-border text-qw-muted hover:text-white'}`}
+            className={`px-4 py-2 rounded font-body font-semibold ${mode === 'api' || mode === 'json' ? 'bg-qw-accent text-qw-dark' : 'bg-qw-panel border border-qw-border text-qw-muted hover:text-white'}`}
           >
             {showMoreOptions ? '▲ Less' : '▼ More options'}
           </button>
