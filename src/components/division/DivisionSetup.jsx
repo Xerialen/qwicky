@@ -1,7 +1,6 @@
 // src/components/division/DivisionSetup.jsx
 import React, { useState, useEffect } from 'react';
 import { createDefaultBracket } from '../../App';
-
 const formatDisplay = (type, count) => {
   const prefix = type === 'playall' ? 'Go' : 'Bo';
   return `${prefix}${count}`;

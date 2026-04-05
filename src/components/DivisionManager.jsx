@@ -1,6 +1,7 @@
 // src/components/DivisionManager.jsx
 import React, { useState } from 'react';
 import DangerButton from './DangerButton';
+import { useDirtyGuard } from '../hooks/useDirtyGuard';
 
 export default function DivisionManager({
   divisions,
@@ -13,12 +14,14 @@ export default function DivisionManager({
 }) {
   const [newDivName, setNewDivName] = useState('');
   const [showAddForm, setShowAddForm] = useState(false);
+  const { markDirty, markClean } = useDirtyGuard('divisions');
 
   const handleAddDivision = (e) => {
     e.preventDefault();
     if (!newDivName.trim()) return;
 
     addDivision(newDivName.trim());
+    markClean();
     setNewDivName('');
     setShowAddForm(false);
   };
@@ -68,7 +71,11 @@ export default function DivisionManager({
               <input
                 type="text"
                 value={newDivName}
-                onChange={(e) => setNewDivName(e.target.value)}
+                onChange={(e) => {
+                  setNewDivName(e.target.value);
+                  if (e.target.value) markDirty('Division Manager');
+                  else markClean();
+                }}
                 placeholder="e.g., Division 1"
                 className="w-full bg-qw-dark border border-qw-border rounded px-4 py-2 text-white"
                 autoFocus
@@ -84,7 +91,10 @@ export default function DivisionManager({
                     <button
                       key={name}
                       type="button"
-                      onClick={() => setNewDivName(name)}
+                      onClick={() => {
+                        setNewDivName(name);
+                        markDirty('Division Manager');
+                      }}
                       className="px-3 py-1 bg-qw-dark border border-qw-border rounded text-sm text-qw-muted hover:text-white hover:border-qw-accent transition-colors"
                     >
                       {name}
@@ -103,6 +113,7 @@ export default function DivisionManager({
                 onClick={() => {
                   setShowAddForm(false);
                   setNewDivName('');
+                  markClean();
                 }}
                 className="px-4 py-2 rounded border border-qw-border text-qw-muted hover:text-white"
               >

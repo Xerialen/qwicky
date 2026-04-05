@@ -1,6 +1,8 @@
 // src/components/Header.jsx
 import React, { useState, useRef } from 'react';
 import ConfirmModal from './ConfirmModal';
+import { useDirtyGuard } from '../hooks/useDirtyGuard';
+import useDirtyGuardStore from '../stores/dirtyGuardStore';
 
 export default function Header({
   tournament,
@@ -15,6 +17,12 @@ export default function Header({
 }) {
   const [showDivisionDropdown, setShowDivisionDropdown] = useState(false);
   const fileInputRef = useRef(null);
+  const { guardedNavigate } = useDirtyGuard();
+  const markAllClean = useDirtyGuardStore((s) => s.markAllClean);
+  const pendingNavigate = useDirtyGuardStore((s) => s.pendingNavigate);
+  const clearPendingNavigate = useDirtyGuardStore((s) => s.clearPendingNavigate);
+  const dirtySections = useDirtyGuardStore((s) => s.dirtySections);
+  const firstDirtySection = Object.values(dirtySections)[0] || '';
 
   // Import confirm — holds parsed data until user confirms
   const [pendingImport, setPendingImport] = useState(null);
@@ -61,6 +69,7 @@ export default function Header({
 
   const handleImportConfirm = () => {
     importTournament(pendingImport);
+    markAllClean();
     setPendingImport(null);
   };
 
@@ -75,12 +84,15 @@ export default function Header({
   const handleResetStep2Confirm = () => {
     setResetStep(null);
     resetTournament();
+    markAllClean();
   };
 
   const handleSelectDivision = (divId) => {
-    setActiveDivisionId(divId);
-    setActiveTab('division');
-    setShowDivisionDropdown(false);
+    guardedNavigate(() => {
+      setActiveDivisionId(divId);
+      setActiveTab('division');
+      setShowDivisionDropdown(false);
+    });
   };
 
   const activeDivName = activeDivisionId
@@ -92,6 +104,20 @@ export default function Header({
 
   return (
     <header className="sticky top-0 z-50 border-b border-qw-border/50 bg-qw-darker/95 backdrop-blur-sm">
+      {pendingNavigate && (
+        <ConfirmModal
+          title="You have unsaved changes. Leave anyway?"
+          body={`Your changes to ${firstDirtySection || 'this section'} have not been saved. If you leave now, they will be lost.`}
+          confirmLabel="Leave anyway"
+          cancelLabel="Stay"
+          onConfirm={() => {
+            const nav = pendingNavigate;
+            markAllClean();
+            nav();
+          }}
+          onCancel={clearPendingNavigate}
+        />
+      )}
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex items-center justify-between h-12">
           {/* Logo — text only */}
@@ -107,7 +133,7 @@ export default function Header({
           {/* Nav — flat text links */}
           <nav className="flex items-center gap-1">
             <button
-              onClick={() => setActiveTab('info')}
+              onClick={() => guardedNavigate(() => setActiveTab('info'))}
               className={`px-3 py-1.5 text-xs font-medium rounded transition-colors ${
                 activeTab === 'info'
                   ? 'bg-qw-accent text-qw-darker'
@@ -118,7 +144,7 @@ export default function Header({
             </button>
 
             <button
-              onClick={() => setActiveTab('divisions')}
+              onClick={() => guardedNavigate(() => setActiveTab('divisions'))}
               className={`px-3 py-1.5 text-xs font-medium rounded transition-colors ${
                 activeTab === 'divisions'
                   ? 'bg-qw-accent text-qw-darker'
@@ -197,7 +223,7 @@ export default function Header({
           />
           <div className="flex items-center gap-2">
             <button
-              onClick={() => fileInputRef.current?.click()}
+              onClick={() => guardedNavigate(() => fileInputRef.current?.click())}
               className="text-xs text-qw-muted hover:text-white transition-colors"
               title="Load"
             >
@@ -211,7 +237,7 @@ export default function Header({
               Save
             </button>
             <button
-              onClick={handleResetClick}
+              onClick={() => guardedNavigate(handleResetClick)}
               className="text-xs text-qw-muted hover:text-red-400 transition-colors"
               title="Reset"
             >
