@@ -113,6 +113,7 @@ export default function DivisionManager({
                 onClick={() => {
                   setShowAddForm(false);
                   setNewDivName('');
+                  markClean();
                 }}
                 className="px-4 py-2 rounded border border-qw-border text-qw-muted hover:text-white"
               >

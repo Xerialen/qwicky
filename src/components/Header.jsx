@@ -84,6 +84,7 @@ export default function Header({
   const handleResetStep2Confirm = () => {
     setResetStep(null);
     resetTournament();
+    markAllClean();
   };
 
   const handleSelectDivision = (divId) => {
@@ -222,7 +223,7 @@ export default function Header({
           />
           <div className="flex items-center gap-2">
             <button
-              onClick={() => fileInputRef.current?.click()}
+              onClick={() => guardedNavigate(() => fileInputRef.current?.click())}
               className="text-xs text-qw-muted hover:text-white transition-colors"
               title="Load"
             >
@@ -236,7 +237,7 @@ export default function Header({
               Save
             </button>
             <button
-              onClick={handleResetClick}
+              onClick={() => guardedNavigate(handleResetClick)}
               className="text-xs text-qw-muted hover:text-red-400 transition-colors"
               title="Reset"
             >
