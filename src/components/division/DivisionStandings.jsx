@@ -204,7 +204,7 @@ function getTierColorClass(tierId) {
     wood: 'bg-amber-900/30',
     stone: 'bg-gray-600/20',
   };
-  return tierColors[tierId] || 'bg-qw-win/10';
+  return tierColors[tierId] || 'bg-tertiary/10';
 }
 
 // Helper function to get tier badge color
@@ -218,7 +218,7 @@ function getTierBadgeColor(tierId) {
     wood: 'bg-amber-900/50 text-amber-300',
     stone: 'bg-gray-600/40 text-gray-300',
   };
-  return tierBadgeColors[tierId] || 'bg-qw-win/30 text-qw-win';
+  return tierBadgeColors[tierId] || 'bg-tertiary/30 text-tertiary';
 }
 
 export default function DivisionStandings({ division }) {
@@ -276,14 +276,14 @@ export default function DivisionStandings({ division }) {
         {Object.entries(standingsByGroup)
           .sort()
           .map(([groupName, groupStandings]) => (
-            <div key={groupName} className="qw-panel overflow-hidden">
-              <div className="bg-qw-dark px-4 py-2 border-b border-qw-border">
-                <h3 className="font-display font-bold text-qw-accent">Group {groupName}</h3>
+            <div key={groupName} className="bg-surface-container-high overflow-hidden">
+              <div className="bg-surface-container-high px-4 py-2 border-b border-outline-variant">
+                <h3 className="font-headline font-bold text-primary">Group {groupName}</h3>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="bg-qw-dark/50 text-xs">
+                    <tr className="bg-surface-container-high/50 text-xs">
                       <th className="text-center w-10 py-2">#</th>
                       <th className="text-left py-2">Team</th>
                       <th className="text-center w-8 py-2">P</th>
@@ -322,55 +322,55 @@ export default function DivisionStandings({ division }) {
                       } else {
                         advances = idx < (division.advanceCount || 2);
                         if (advances) {
-                          rowBgClass = 'bg-qw-win/10';
-                          badgeClass = 'bg-qw-win/30 text-qw-win';
+                          rowBgClass = 'bg-tertiary/10';
+                          badgeClass = 'bg-tertiary/30 text-tertiary';
                         }
                       }
 
                       // First place always gets the accent color
                       if (idx === 0) {
-                        badgeClass = 'bg-qw-accent text-qw-dark';
+                        badgeClass = 'bg-primary-container text-background';
                       } else if (!advances) {
-                        badgeClass = 'bg-qw-border text-qw-muted';
+                        badgeClass = 'bg-outline-variant text-on-surface-variant';
                       }
 
                       return (
                         <tr
                           key={team.name}
-                          className={`border-b border-qw-border/50 ${rowBgClass} hover:bg-qw-accent/5`}
+                          className={`border-b border-outline-variant/50 ${rowBgClass} hover:bg-primary/5`}
                         >
                           <td className="text-center py-2">
                             <span
-                              className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-display font-bold ${badgeClass}`}
+                              className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-headline font-bold ${badgeClass}`}
                             >
                               {position}
                             </span>
                           </td>
                           <td className="py-2">
                             <span
-                              className={`font-body font-semibold ${idx === 0 ? 'text-qw-accent' : 'text-white'}`}
+                              className={`font-body font-semibold ${idx === 0 ? 'text-primary' : 'text-on-surface'}`}
                             >
                               {team.name}
                             </span>
                           </td>
-                          <td className="text-center text-qw-muted text-sm">{team.played}</td>
-                          <td className="text-center text-qw-win text-sm font-semibold">
+                          <td className="text-center text-on-surface-variant text-sm">{team.played}</td>
+                          <td className="text-center text-tertiary text-sm font-semibold">
                             {team.matchesWon}
                           </td>
-                          <td className="text-center text-qw-loss text-sm">{team.matchesLost}</td>
+                          <td className="text-center text-error text-sm">{team.matchesLost}</td>
                           <td className="text-center font-mono text-sm">
-                            <span className="text-qw-win">{team.mapsWon}</span>
-                            <span className="text-qw-muted">-</span>
-                            <span className="text-qw-loss">{team.mapsLost}</span>
+                            <span className="text-tertiary">{team.mapsWon}</span>
+                            <span className="text-on-surface-variant">-</span>
+                            <span className="text-error">{team.mapsLost}</span>
                           </td>
                           <td className="text-center font-mono text-sm font-semibold">
                             <span
                               className={
                                 mapDiff > 0
-                                  ? 'text-qw-win'
+                                  ? 'text-tertiary'
                                   : mapDiff < 0
-                                    ? 'text-qw-loss'
-                                    : 'text-qw-muted'
+                                    ? 'text-error'
+                                    : 'text-on-surface-variant'
                               }
                             >
                               {mapDiff > 0 ? '+' : ''}
@@ -378,18 +378,18 @@ export default function DivisionStandings({ division }) {
                             </span>
                           </td>
                           <td className="text-center font-mono text-xs">
-                            <span className="text-qw-win">{team.fragsFor}</span>
-                            <span className="text-qw-muted">-</span>
-                            <span className="text-qw-loss">{team.fragsAgainst}</span>
+                            <span className="text-tertiary">{team.fragsFor}</span>
+                            <span className="text-on-surface-variant">-</span>
+                            <span className="text-error">{team.fragsAgainst}</span>
                           </td>
                           <td className="text-center font-mono text-xs font-semibold">
                             <span
                               className={
                                 fragDiff > 0
-                                  ? 'text-qw-win'
+                                  ? 'text-tertiary'
                                   : fragDiff < 0
-                                    ? 'text-qw-loss'
-                                    : 'text-qw-muted'
+                                    ? 'text-error'
+                                    : 'text-on-surface-variant'
                               }
                             >
                               {fragDiff > 0 ? '+' : ''}
@@ -398,7 +398,7 @@ export default function DivisionStandings({ division }) {
                           </td>
                           <td className="text-center">
                             <span
-                              className={`font-display font-bold ${idx === 0 ? 'text-qw-accent' : 'text-white'}`}
+                              className={`font-headline font-bold ${idx === 0 ? 'text-primary' : 'text-on-surface'}`}
                             >
                               {team.points}
                             </span>
@@ -422,7 +422,7 @@ export default function DivisionStandings({ division }) {
             return (
               <div key={tier.id} className="flex items-center gap-2">
                 <span className={`w-4 h-4 rounded ${colorClass}`}></span>
-                <span className="text-qw-muted">
+                <span className="text-on-surface-variant">
                   {tier.name} ({tier.positions})
                 </span>
               </div>
@@ -431,35 +431,35 @@ export default function DivisionStandings({ division }) {
         ) : (
           // Show standard advancement legend
           <div className="flex items-center gap-2">
-            <span className="w-4 h-4 rounded bg-qw-win/30"></span>
-            <span className="text-qw-muted">Advances to playoffs</span>
+            <span className="w-4 h-4 rounded bg-tertiary/30"></span>
+            <span className="text-on-surface-variant">Advances to playoffs</span>
           </div>
         )}
         {isPlayAll ? (
           <>
             <div className="flex items-center gap-2">
-              <span className="text-qw-muted">Map Win = {division.pointsWin} pts</span>
+              <span className="text-on-surface-variant">Map Win = {division.pointsWin} pts</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-qw-muted">Map Loss = {division.pointsLoss} pts</span>
+              <span className="text-on-surface-variant">Map Loss = {division.pointsLoss} pts</span>
             </div>
           </>
         ) : (
           <>
             <div className="flex items-center gap-2">
-              <span className="font-display text-qw-win">W</span>
-              <span className="text-qw-muted">= {division.pointsWin} pts</span>
+              <span className="font-headline text-tertiary">W</span>
+              <span className="text-on-surface-variant">= {division.pointsWin} pts</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="font-display text-qw-loss">L</span>
-              <span className="text-qw-muted">= {division.pointsLoss} pts</span>
+              <span className="font-headline text-error">L</span>
+              <span className="text-on-surface-variant">= {division.pointsLoss} pts</span>
             </div>
           </>
         )}
       </div>
 
       {/* Tie-breaker info */}
-      <div className="text-center text-xs text-qw-muted">
+      <div className="text-center text-xs text-on-surface-variant">
         Tie-breakers: {tieBreakers.map((tb) => tieBreakerLabels[tb] || tb).join(' → ')}
       </div>
     </div>

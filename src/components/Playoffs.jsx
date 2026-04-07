@@ -36,7 +36,7 @@ function BracketMatch({ match, seriesSummary, onUpdateTeam }) {
       {/* Team 1 */}
       <div
         className={`
-        flex items-center justify-between px-3 py-2 border-b border-qw-border
+        flex items-center justify-between px-3 py-2 border-b border-outline-variant
         ${winner === match.team1 ? 'bg-qw-win/20' : ''}
         ${winner && winner !== match.team1 ? 'opacity-50' : ''}
       `}
@@ -46,12 +46,12 @@ function BracketMatch({ match, seriesSummary, onUpdateTeam }) {
           value={match.team1}
           onChange={(e) => onUpdateTeam(match.id, 'team1', e.target.value)}
           placeholder="Team 1"
-          className="bg-transparent border-none outline-none font-body font-semibold text-white w-36 placeholder:text-qw-muted/50"
+          className="bg-transparent border-none outline-none font-body font-semibold text-on-surface w-36 placeholder:text-on-surface-variant/50"
         />
         {hasResult && (
           <span
             className={`font-mono font-bold text-lg w-8 text-center
-            ${score1 > score2 ? 'text-qw-win' : score1 < score2 ? 'text-qw-loss' : 'text-white'}
+            ${score1 > score2 ? 'text-tertiary' : score1 < score2 ? 'text-error' : 'text-on-surface'}
           `}
           >
             {score1}
@@ -72,12 +72,12 @@ function BracketMatch({ match, seriesSummary, onUpdateTeam }) {
           value={match.team2}
           onChange={(e) => onUpdateTeam(match.id, 'team2', e.target.value)}
           placeholder="Team 2"
-          className="bg-transparent border-none outline-none font-body font-semibold text-white w-36 placeholder:text-qw-muted/50"
+          className="bg-transparent border-none outline-none font-body font-semibold text-on-surface w-36 placeholder:text-on-surface-variant/50"
         />
         {hasResult && (
           <span
             className={`font-mono font-bold text-lg w-8 text-center
-            ${score2 > score1 ? 'text-qw-win' : score2 < score1 ? 'text-qw-loss' : 'text-white'}
+            ${score2 > score1 ? 'text-tertiary' : score2 < score1 ? 'text-error' : 'text-on-surface'}
           `}
           >
             {score2}
@@ -92,20 +92,20 @@ function BracketConnector({ type }) {
   if (type === 'right') {
     return (
       <div className="w-8 flex flex-col">
-        <div className="flex-1 border-b-2 border-r-2 border-qw-border rounded-br"></div>
-        <div className="flex-1 border-t-2 border-r-2 border-qw-border rounded-tr"></div>
+        <div className="flex-1 border-b-2 border-r-2 border-outline-variant rounded-br"></div>
+        <div className="flex-1 border-t-2 border-r-2 border-outline-variant rounded-tr"></div>
       </div>
     );
   }
   if (type === 'left') {
     return (
       <div className="w-8 flex flex-col">
-        <div className="flex-1 border-b-2 border-l-2 border-qw-border rounded-bl"></div>
-        <div className="flex-1 border-t-2 border-l-2 border-qw-border rounded-tl"></div>
+        <div className="flex-1 border-b-2 border-l-2 border-outline-variant rounded-bl"></div>
+        <div className="flex-1 border-t-2 border-l-2 border-outline-variant rounded-tl"></div>
       </div>
     );
   }
-  return <div className="w-8 border-t-2 border-qw-border"></div>;
+  return <div className="w-8 border-t-2 border-outline-variant"></div>;
 }
 
 export default function Playoffs({ matches, bracketConfig, setBracketConfig }) {
@@ -150,19 +150,19 @@ export default function Playoffs({ matches, bracketConfig, setBracketConfig }) {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="font-display font-bold text-2xl text-white flex items-center gap-3">
-          <span className="text-qw-accent">🎯</span>
+        <h2 className="font-headline font-bold text-2xl text-on-surface flex items-center gap-3">
+          <span className="text-primary">🎯</span>
           Playoff Bracket
         </h2>
         <button
           onClick={handleResetBracket}
-          className="qw-btn-secondary px-3 py-1 text-sm rounded border border-qw-border text-qw-muted hover:text-white hover:border-qw-accent"
+          className="qw-btn-secondary px-3 py-1 text-sm rounded border border-outline-variant text-on-surface-variant hover:text-on-surface hover:border-primary"
         >
           Reset Bracket
         </button>
       </div>
 
-      <p className="text-qw-muted text-sm">
+      <p className="text-on-surface-variant text-sm">
         Enter team names in the bracket slots. Scores will automatically update when matches between
         those teams are found in the fetched matches.
       </p>
@@ -172,7 +172,7 @@ export default function Playoffs({ matches, bracketConfig, setBracketConfig }) {
         <div className="flex items-center justify-center gap-4 min-w-[900px]">
           {/* Quarter Finals */}
           <div className="flex flex-col gap-4">
-            <div className="text-center font-display text-sm text-qw-accent mb-2">
+            <div className="text-center font-headline text-sm text-primary mb-2">
               QUARTER FINALS
             </div>
             <div className="flex flex-col gap-16">
@@ -217,7 +217,7 @@ export default function Playoffs({ matches, bracketConfig, setBracketConfig }) {
 
           {/* Semi Finals */}
           <div className="flex flex-col gap-4">
-            <div className="text-center font-display text-sm text-qw-accent mb-2">SEMI FINALS</div>
+            <div className="text-center font-headline text-sm text-primary mb-2">SEMI FINALS</div>
             <div className="flex flex-col justify-around h-full" style={{ gap: '180px' }}>
               <BracketMatch
                 match={bracketConfig.semiFinals[0]}
@@ -241,7 +241,7 @@ export default function Playoffs({ matches, bracketConfig, setBracketConfig }) {
 
           {/* Final */}
           <div className="flex flex-col items-center">
-            <div className="text-center font-display text-sm text-qw-accent mb-2">FINAL</div>
+            <div className="text-center font-headline text-sm text-primary mb-2">FINAL</div>
             <div className="flex items-center justify-center" style={{ height: '380px' }}>
               <div className="relative">
                 <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 text-4xl">
@@ -260,18 +260,18 @@ export default function Playoffs({ matches, bracketConfig, setBracketConfig }) {
 
       {/* Auto-match info */}
       <div className="qw-panel p-4">
-        <h3 className="font-display text-sm text-qw-accent mb-2">AUTO-MATCH INFO</h3>
-        <p className="text-qw-muted text-sm mb-2">
+        <h3 className="font-headline text-sm text-primary mb-2">AUTO-MATCH INFO</h3>
+        <p className="text-on-surface-variant text-sm mb-2">
           The bracket automatically detects results for the following matchups:
         </p>
         <div className="flex flex-wrap gap-2">
           {Object.keys(seriesSummary).length === 0 ? (
-            <span className="text-qw-muted text-sm italic">No matches found</span>
+            <span className="text-on-surface-variant text-sm italic">No matches found</span>
           ) : (
             Object.entries(seriesSummary).map(([key, data]) => (
               <span
                 key={key}
-                className="px-2 py-1 bg-qw-dark rounded text-xs font-mono text-qw-muted"
+                className="px-2 py-1 bg-surface-container-high rounded text-xs font-mono text-on-surface-variant"
               >
                 {data.teams[0]} vs {data.teams[1]} ({data.mapWins[data.teams[0]]}-
                 {data.mapWins[data.teams[1]]})

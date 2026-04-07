@@ -237,33 +237,33 @@ export default function DivisionTeams({
     <div className="space-y-6">
       {/* Empty State with Getting Started Guide */}
       {teams.length === 0 && (
-        <div className="qw-panel p-8">
+        <div className="bg-surface-container-high p-8">
           <div className="text-center max-w-2xl mx-auto">
             <div className="text-6xl mb-4">👥</div>
-            <h3 className="font-display text-2xl text-white mb-2">No Teams Yet</h3>
-            <p className="text-qw-muted mb-6">
+            <h3 className="font-headline text-2xl text-on-surface mb-2">No Teams Yet</h3>
+            <p className="text-on-surface-variant mb-6">
               Choose the fastest way to add your {entityLabelPlural.toLowerCase()}:
             </p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-left">
-              <div className="p-4 bg-qw-dark rounded border border-qw-border">
+              <div className="p-4 bg-surface-container-high rounded border border-outline-variant">
                 <div className="text-2xl mb-2">✍️</div>
-                <h4 className="font-semibold text-white mb-1">Bulk Import</h4>
-                <p className="text-sm text-qw-muted">
+                <h4 className="font-semibold text-on-surface mb-1">Bulk Import</h4>
+                <p className="text-sm text-on-surface-variant">
                   Paste a list of teams from your signup sheet. Fastest for tournaments with many
                   teams.
                 </p>
               </div>
-              <div className="p-4 bg-qw-dark rounded border border-qw-border">
+              <div className="p-4 bg-surface-container-high rounded border border-outline-variant">
                 <div className="text-2xl mb-2">📁</div>
-                <h4 className="font-semibold text-white mb-1">Upload File</h4>
-                <p className="text-sm text-qw-muted">
+                <h4 className="font-semibold text-on-surface mb-1">Upload File</h4>
+                <p className="text-sm text-on-surface-variant">
                   Import from CSV or JSON file. Great if you have data in a spreadsheet.
                 </p>
               </div>
-              <div className="p-4 bg-qw-dark rounded border border-qw-border">
+              <div className="p-4 bg-surface-container-high rounded border border-outline-variant">
                 <div className="text-2xl mb-2">👤</div>
-                <h4 className="font-semibold text-white mb-1">Add Manually</h4>
-                <p className="text-sm text-qw-muted">
+                <h4 className="font-semibold text-on-surface mb-1">Add Manually</h4>
+                <p className="text-sm text-on-surface-variant">
                   Add teams one by one. Good for small tournaments or testing.
                 </p>
               </div>
@@ -274,12 +274,12 @@ export default function DivisionTeams({
 
       {/* 1on1 Helper Banner */}
       {is1on1 && teams.length === 0 && (
-        <div className="qw-panel p-4 bg-qw-accent/10 border-qw-accent">
+        <div className="p-4 bg-primary/10 border border-primary">
           <div className="flex items-start gap-3">
             <span className="text-2xl">💡</span>
             <div>
-              <h4 className="font-body font-semibold text-white mb-1">1on1 Tournament Tip</h4>
-              <p className="text-sm text-qw-muted">
+              <h4 className="font-body font-semibold text-on-surface mb-1">1on1 Tournament Tip</h4>
+              <p className="text-sm text-on-surface-variant">
                 For 1on1 tournaments, each "team" represents a single player. Just add the player's
                 name in the "Team Name" field. You can leave "Players" field empty or use it for
                 alternate names.
@@ -290,17 +290,17 @@ export default function DivisionTeams({
       )}
 
       {/* Add Team Form */}
-      <div className="qw-panel p-6">
+      <div className="bg-surface-container-high p-6">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h3 className="font-display text-lg text-qw-accent">ADD {entityLabel.toUpperCase()}</h3>
-            <p className="text-xs text-qw-muted mt-1">
+            <h3 className="font-headline text-lg text-primary">ADD {entityLabel.toUpperCase()}</h3>
+            <p className="text-xs text-on-surface-variant mt-1">
               {showBulkAdd ? 'Paste multiple teams at once' : 'Add one team at a time'}
             </p>
           </div>
           <button
             onClick={() => setShowBulkAdd(!showBulkAdd)}
-            className="px-3 py-1.5 rounded border border-qw-border text-sm text-qw-muted hover:text-white hover:border-qw-accent"
+            className="px-3 py-1.5 rounded border border-outline-variant text-sm text-on-surface-variant hover:text-on-surface hover:border-primary"
           >
             {showBulkAdd ? '👤 Single' : '✍️ Bulk'}
           </button>
@@ -310,36 +310,36 @@ export default function DivisionTeams({
           <div className="space-y-3">
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1">
-                <p className="text-sm text-qw-muted mb-1">
+                <p className="text-sm text-on-surface-variant mb-1">
                   One {entityLabel.toLowerCase()} per line. Supports multiple formats:
                 </p>
-                <div className="text-xs text-qw-muted space-y-0.5">
+                <div className="text-xs text-on-surface-variant space-y-0.5">
                   <div>
                     • CSV:{' '}
-                    <code className="bg-qw-dark px-1 rounded">
+                    <code className="bg-surface-container-high px-1 rounded">
                       Name, TAG, country, Group{is1on1 ? '' : ', players'}
                     </code>
                   </div>
                   <div>
                     • Natural:{' '}
-                    <code className="bg-qw-dark px-1 rounded">
+                    <code className="bg-surface-container-high px-1 rounded">
                       Team Name [TAG] 🇸🇪 - player1, player2
                     </code>
                   </div>
                   <div>
-                    • Simple: <code className="bg-qw-dark px-1 rounded">Team Name</code>
+                    • Simple: <code className="bg-surface-container-high px-1 rounded">Team Name</code>
                   </div>
                 </div>
               </div>
               <button
                 onClick={handlePasteFromClipboard}
-                className="px-3 py-1.5 rounded border border-qw-border text-sm text-qw-muted hover:text-white hover:border-qw-accent whitespace-nowrap"
+                className="px-3 py-1.5 rounded border border-outline-variant text-sm text-on-surface-variant hover:text-on-surface hover:border-primary whitespace-nowrap"
                 title="Paste from clipboard"
               >
                 📋 Paste
               </button>
             </div>
-            {clipboardFeedback && <div className="text-xs text-qw-accent">{clipboardFeedback}</div>}
+            {clipboardFeedback && <div className="text-xs text-primary">{clipboardFeedback}</div>}
             <textarea
               value={bulkInput}
               onChange={(e) => setBulkInput(e.target.value)}
@@ -349,9 +349,9 @@ export default function DivisionTeams({
                   : 'Slackers, SLK, eu, A, ParadokS Zero grisling Phrenic\nHell Xpress [hx] 🇸🇪 - Splash ok98 Shaka mm\nTeam Paradoks'
               }
               rows={6}
-              className="w-full bg-qw-dark border border-qw-border rounded px-4 py-2 font-mono text-white text-sm resize-none"
+              className="w-full bg-surface-container-high border border-outline-variant rounded px-4 py-2 font-mono text-on-surface text-sm resize-none"
             />
-            <button onClick={handleBulkAdd} className="qw-btn" disabled={!bulkInput.trim()}>
+            <button onClick={handleBulkAdd} className="heat-gradient text-on-primary-fixed px-4 py-2 font-headline text-sm uppercase tracking-wider font-bold" disabled={!bulkInput.trim()}>
               Preview & Import
             </button>
           </div>
@@ -363,26 +363,26 @@ export default function DivisionTeams({
                 value={newTeam.name}
                 onChange={(e) => setNewTeam({ ...newTeam, name: e.target.value })}
                 placeholder={is1on1 ? 'Player Name' : 'Team Name'}
-                className="flex-1 min-w-40 bg-qw-dark border border-qw-border rounded px-4 py-2 text-white"
+                className="flex-1 min-w-40 bg-surface-container-high border border-outline-variant rounded px-4 py-2 text-on-surface"
               />
               <input
                 type="text"
                 value={newTeam.tag}
                 onChange={(e) => setNewTeam({ ...newTeam, tag: e.target.value })}
                 placeholder="Tag"
-                className="w-20 bg-qw-dark border border-qw-border rounded px-4 py-2 text-white"
+                className="w-20 bg-surface-container-high border border-outline-variant rounded px-4 py-2 text-on-surface"
               />
               <input
                 type="text"
                 value={newTeam.country}
                 onChange={(e) => setNewTeam({ ...newTeam, country: e.target.value })}
                 placeholder="Country"
-                className="w-20 bg-qw-dark border border-qw-border rounded px-4 py-2 text-white"
+                className="w-20 bg-surface-container-high border border-outline-variant rounded px-4 py-2 text-on-surface"
               />
               <select
                 value={newTeam.group}
                 onChange={(e) => setNewTeam({ ...newTeam, group: e.target.value })}
-                className="w-24 bg-qw-dark border border-qw-border rounded px-2 py-2 text-white"
+                className="w-24 bg-surface-container-high border border-outline-variant rounded px-2 py-2 text-on-surface"
               >
                 <option value="">No Group</option>
                 {groups.map((g) => (
@@ -399,16 +399,16 @@ export default function DivisionTeams({
                   value={newTeam.players}
                   onChange={(e) => setNewTeam({ ...newTeam, players: e.target.value })}
                   placeholder="Players (for wiki): player1, player2, player3..."
-                  className="w-full bg-qw-dark border border-qw-border rounded px-4 py-2 text-white text-sm"
+                  className="w-full bg-surface-container-high border border-outline-variant rounded px-4 py-2 text-on-surface text-sm"
                 />
                 <input
                   type="text"
                   value={newTeam.aliases}
                   onChange={(e) => setNewTeam({ ...newTeam, aliases: e.target.value })}
                   placeholder="Aliases (optional): old tag, old name, ..."
-                  className="w-full bg-qw-dark border border-qw-border rounded px-4 py-2 text-white text-sm"
+                  className="w-full bg-surface-container-high border border-outline-variant rounded px-4 py-2 text-on-surface text-sm"
                 />
-                <button type="submit" className="qw-btn w-full">
+                <button type="submit" className="heat-gradient text-on-primary-fixed px-4 py-2 font-headline text-sm uppercase tracking-wider font-bold w-full">
                   Add
                 </button>
               </div>
@@ -420,9 +420,9 @@ export default function DivisionTeams({
                   value={newTeam.aliases}
                   onChange={(e) => setNewTeam({ ...newTeam, aliases: e.target.value })}
                   placeholder="Aliases (optional): old name, alternate spelling, ..."
-                  className="w-full bg-qw-dark border border-qw-border rounded px-4 py-2 text-white text-sm"
+                  className="w-full bg-surface-container-high border border-outline-variant rounded px-4 py-2 text-on-surface text-sm"
                 />
-                <button type="submit" className="qw-btn w-full">
+                <button type="submit" className="heat-gradient text-on-primary-fixed px-4 py-2 font-headline text-sm uppercase tracking-wider font-bold w-full">
                   Add {entityLabel}
                 </button>
               </div>
@@ -432,16 +432,16 @@ export default function DivisionTeams({
       </div>
 
       {/* File Upload */}
-      <div className="qw-panel p-6">
+      <div className="bg-surface-container-high p-6">
         <div className="mb-4">
-          <h3 className="font-display text-lg text-qw-accent">IMPORT FROM FILE</h3>
-          <p className="text-xs text-qw-muted mt-1">
+          <h3 className="font-headline text-lg text-primary">IMPORT FROM FILE</h3>
+          <p className="text-xs text-on-surface-variant mt-1">
             Upload from spreadsheet or previous tournament export
           </p>
         </div>
         <div className="space-y-3">
           <div className="flex items-center gap-3">
-            <label className="qw-btn cursor-pointer">
+            <label className="heat-gradient text-on-primary-fixed px-4 py-2 font-headline text-sm uppercase tracking-wider font-bold cursor-pointer">
               📁 Choose File
               <input
                 type="file"
@@ -450,12 +450,12 @@ export default function DivisionTeams({
                 className="hidden"
               />
             </label>
-            <span className="text-xs text-qw-muted">Supported: .csv, .json</span>
+            <span className="text-xs text-on-surface-variant">Supported: .csv, .json</span>
           </div>
-          <div className="text-xs text-qw-muted space-y-1">
+          <div className="text-xs text-on-surface-variant space-y-1">
             <div>
               • CSV format:{' '}
-              <code className="bg-qw-dark px-1 rounded">Name,Tag,Country,Group,Players</code>
+              <code className="bg-surface-container-high px-1 rounded">Name,Tag,Country,Group,Players</code>
             </div>
             <div>• JSON format: Array of team objects or full tournament export</div>
           </div>
@@ -464,10 +464,10 @@ export default function DivisionTeams({
 
       {/* Import from Another Division */}
       {allDivisions && allDivisions.length > 1 && (
-        <div className="qw-panel p-6">
+        <div className="bg-surface-container-high p-6">
           <div className="mb-4">
-            <h3 className="font-display text-lg text-qw-accent">COPY FROM ANOTHER DIVISION</h3>
-            <p className="text-xs text-qw-muted mt-1">
+            <h3 className="font-headline text-lg text-primary">COPY FROM ANOTHER DIVISION</h3>
+            <p className="text-xs text-on-surface-variant mt-1">
               Reuse teams from another division in this tournament
             </p>
           </div>
@@ -483,7 +483,7 @@ export default function DivisionTeams({
                     handleImportFromDivision(divisionId, clearGroups);
                   }
                 }}
-                className="flex-1 bg-qw-dark border border-qw-border rounded px-4 py-2 text-white"
+                className="flex-1 bg-surface-container-high border border-outline-variant rounded px-4 py-2 text-on-surface"
               >
                 <option value="">Select division...</option>
                 {allDivisions
@@ -494,11 +494,11 @@ export default function DivisionTeams({
                     </option>
                   ))}
               </select>
-              <label className="flex items-center gap-2 text-sm text-qw-muted whitespace-nowrap">
+              <label className="flex items-center gap-2 text-sm text-on-surface-variant whitespace-nowrap">
                 <input
                   type="checkbox"
                   id="clear-groups-checkbox"
-                  className="rounded border-qw-border bg-qw-dark"
+                  className="rounded border-outline-variant bg-surface-container-high"
                 />
                 Clear group assignments
               </label>
@@ -513,24 +513,24 @@ export default function DivisionTeams({
           <div className="flex gap-2">
             <button
               onClick={() => setViewMode(viewMode === 'list' ? 'groups' : 'list')}
-              className="px-3 py-1 rounded border border-qw-border text-sm text-qw-muted hover:text-white"
+              className="px-3 py-1 rounded border border-outline-variant text-sm text-on-surface-variant hover:text-on-surface"
             >
               {viewMode === 'list' ? '📊 View by Groups' : '📋 View as List'}
             </button>
             <button
               onClick={handleRandomizeGroups}
-              className="px-3 py-1 rounded border border-qw-border text-sm text-qw-muted hover:text-white"
+              className="px-3 py-1 rounded border border-outline-variant text-sm text-on-surface-variant hover:text-on-surface"
             >
               🎲 Randomize Groups
             </button>
             <button
               onClick={handleClearGroups}
-              className="px-3 py-1 rounded border border-qw-border text-sm text-qw-muted hover:text-white"
+              className="px-3 py-1 rounded border border-outline-variant text-sm text-on-surface-variant hover:text-on-surface"
             >
               ↩️ Clear Assignments
             </button>
           </div>
-          <button onClick={handleClearAll} className="text-sm text-red-400 hover:text-red-300">
+          <button onClick={handleClearAll} className="text-sm text-error hover:text-error/80">
             Clear All Teams
           </button>
         </div>
@@ -539,13 +539,13 @@ export default function DivisionTeams({
       {/* Teams Display */}
       {teams.length > 0 &&
         (viewMode === 'list' ? (
-          <div className="qw-panel p-6">
-            <h3 className="font-display text-lg text-qw-accent mb-4">TEAMS ({teams.length})</h3>
+          <div className="bg-surface-container-high p-6">
+            <h3 className="font-headline text-lg text-primary mb-4">TEAMS ({teams.length})</h3>
             <div className="space-y-2 max-h-96 overflow-y-auto">
               {teams.map((team, idx) => (
-                <div key={team.id} className="p-3 bg-qw-dark rounded border border-qw-border group">
+                <div key={team.id} className="p-3 bg-surface-container-high rounded border border-outline-variant group">
                   <div className="flex items-center gap-3">
-                    <span className="text-qw-muted font-mono text-sm w-6">{idx + 1}.</span>
+                    <span className="text-on-surface-variant font-mono text-sm w-6">{idx + 1}.</span>
 
                     {editingTeam === team.id ? (
                       <>
@@ -553,27 +553,27 @@ export default function DivisionTeams({
                           type="text"
                           value={team.name}
                           onChange={(e) => handleUpdateTeam(team.id, 'name', e.target.value)}
-                          className="flex-1 bg-qw-darker border border-qw-accent rounded px-2 py-1 text-white text-sm"
+                          className="flex-1 bg-background border border-primary rounded px-2 py-1 text-on-surface text-sm"
                           placeholder="Team Name"
                         />
                         <input
                           type="text"
                           value={team.tag}
                           onChange={(e) => handleUpdateTeam(team.id, 'tag', e.target.value)}
-                          className="w-16 bg-qw-darker border border-qw-accent rounded px-2 py-1 text-white text-sm"
+                          className="w-16 bg-background border border-primary rounded px-2 py-1 text-on-surface text-sm"
                           placeholder="Tag"
                         />
                         <input
                           type="text"
                           value={team.country}
                           onChange={(e) => handleUpdateTeam(team.id, 'country', e.target.value)}
-                          className="w-12 bg-qw-darker border border-qw-accent rounded px-2 py-1 text-white text-sm"
+                          className="w-12 bg-background border border-primary rounded px-2 py-1 text-on-surface text-sm"
                           placeholder="cc"
                         />
                         <select
                           value={team.group || ''}
                           onChange={(e) => handleUpdateTeam(team.id, 'group', e.target.value)}
-                          className="w-16 bg-qw-darker border border-qw-accent rounded px-1 py-1 text-white text-sm"
+                          className="w-16 bg-background border border-primary rounded px-1 py-1 text-on-surface text-sm"
                         >
                           <option value="">-</option>
                           {groups.map((g) => (
@@ -584,24 +584,24 @@ export default function DivisionTeams({
                         </select>
                         <button
                           onClick={() => setEditingTeam(null)}
-                          className="text-qw-win hover:text-white px-2"
+                          className="text-tertiary hover:text-on-surface px-2"
                         >
                           ✓
                         </button>
                       </>
                     ) : (
                       <>
-                        <span className="flex-1 font-body font-semibold text-white">
+                        <span className="flex-1 font-body font-semibold text-on-surface">
                           {team.name}
                         </span>
-                        <span className="text-qw-muted font-mono text-sm">[{team.tag}]</span>
+                        <span className="text-on-surface-variant font-mono text-sm">[{team.tag}]</span>
                         {team.country && (
-                          <span className="text-qw-muted text-sm uppercase">{team.country}</span>
+                          <span className="text-on-surface-variant text-sm uppercase">{team.country}</span>
                         )}
                         <select
                           value={team.group || ''}
                           onChange={(e) => handleAssignGroup(team.id, e.target.value)}
-                          className="w-20 bg-qw-dark border border-qw-border rounded px-1 py-1 text-sm text-qw-muted"
+                          className="w-20 bg-surface-container-high border border-outline-variant rounded px-1 py-1 text-sm text-on-surface-variant"
                         >
                           <option value="">-</option>
                           {groups.map((g) => (
@@ -612,13 +612,13 @@ export default function DivisionTeams({
                         </select>
                         <button
                           onClick={() => setEditingTeam(team.id)}
-                          className="opacity-0 group-hover:opacity-100 text-qw-muted hover:text-white transition-opacity"
+                          className="opacity-0 group-hover:opacity-100 text-on-surface-variant hover:text-on-surface transition-opacity"
                         >
                           ✏️
                         </button>
                         <button
                           onClick={() => handleRemoveTeam(team.id)}
-                          className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-300 transition-opacity"
+                          className="opacity-0 group-hover:opacity-100 text-error hover:text-error/80 transition-opacity"
                         >
                           ✕
                         </button>
@@ -632,7 +632,7 @@ export default function DivisionTeams({
                         type="text"
                         value={team.players || ''}
                         onChange={(e) => handleUpdateTeam(team.id, 'players', e.target.value)}
-                        className="w-full bg-qw-darker border border-qw-accent rounded px-2 py-1 text-white text-xs"
+                        className="w-full bg-background border border-primary rounded px-2 py-1 text-on-surface text-xs"
                         placeholder="Players: player1, player2, player3..."
                       />
                       <input
@@ -648,18 +648,18 @@ export default function DivisionTeams({
                               .filter(Boolean)
                           )
                         }
-                        className="w-full bg-qw-darker border border-qw-accent rounded px-2 py-1 text-white text-xs"
+                        className="w-full bg-background border border-primary rounded px-2 py-1 text-on-surface text-xs"
                         placeholder="Aliases: old tag, old name, ..."
                       />
                     </div>
                   ) : (
                     <>
                       {team.players && (
-                        <div className="mt-1 ml-9 text-xs text-qw-muted">{team.players}</div>
+                        <div className="mt-1 ml-9 text-xs text-on-surface-variant">{team.players}</div>
                       )}
                       {team.aliases && team.aliases.length > 0 && (
-                        <div className="mt-1 ml-9 text-xs text-qw-muted">
-                          <span className="text-qw-accent">Aliases:</span> {team.aliases.join(', ')}
+                        <div className="mt-1 ml-9 text-xs text-on-surface-variant">
+                          <span className="text-primary">Aliases:</span> {team.aliases.join(', ')}
                         </div>
                       )}
                     </>
@@ -672,35 +672,35 @@ export default function DivisionTeams({
           /* Group View */
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {groups.map((groupName) => (
-              <div key={groupName} className="qw-panel overflow-hidden">
-                <div className="bg-qw-dark px-4 py-2 border-b border-qw-border flex items-center justify-between">
-                  <h4 className="font-display font-bold text-qw-accent">Group {groupName}</h4>
-                  <span className="text-xs text-qw-muted">
+              <div key={groupName} className="bg-surface-container-high overflow-hidden">
+                <div className="bg-surface-container-high px-4 py-2 border-b border-outline-variant flex items-center justify-between">
+                  <h4 className="font-headline font-bold text-primary">Group {groupName}</h4>
+                  <span className="text-xs text-on-surface-variant">
                     {teamsByGroup[groupName]?.length || 0}/{division.teamsPerGroup}
                   </span>
                 </div>
                 <div className="p-3 min-h-24">
                   {teamsByGroup[groupName]?.length === 0 ? (
-                    <div className="text-center text-qw-muted text-sm py-4">No teams assigned</div>
+                    <div className="text-center text-on-surface-variant text-sm py-4">No teams assigned</div>
                   ) : (
                     <div className="space-y-1">
                       {teamsByGroup[groupName]?.map((team, idx) => (
                         <div
                           key={team.id}
-                          className="flex items-center justify-between p-2 bg-qw-dark rounded text-sm group"
+                          className="flex items-center justify-between p-2 bg-surface-container-high rounded text-sm group"
                         >
-                          <span className="font-body text-white">
+                          <span className="font-body text-on-surface">
                             {idx + 1}. {team.name}
                           </span>
                           <div className="flex items-center gap-2">
                             {team.country && (
-                              <span className="text-qw-muted uppercase text-xs">
+                              <span className="text-on-surface-variant uppercase text-xs">
                                 {team.country}
                               </span>
                             )}
                             <button
                               onClick={() => handleAssignGroup(team.id, '')}
-                              className="opacity-0 group-hover:opacity-100 text-red-400 text-xs"
+                              className="opacity-0 group-hover:opacity-100 text-error text-xs"
                             >
                               Remove
                             </button>
@@ -715,9 +715,9 @@ export default function DivisionTeams({
 
             {/* Unassigned */}
             {teamsByGroup.unassigned?.length > 0 && (
-              <div className="qw-panel overflow-hidden md:col-span-2">
-                <div className="bg-qw-dark px-4 py-2 border-b border-qw-border">
-                  <h4 className="font-display font-bold text-qw-muted">
+              <div className="bg-surface-container-high overflow-hidden md:col-span-2">
+                <div className="bg-surface-container-high px-4 py-2 border-b border-outline-variant">
+                  <h4 className="font-headline font-bold text-on-surface-variant">
                     Unassigned ({teamsByGroup.unassigned.length})
                   </h4>
                 </div>
@@ -726,13 +726,13 @@ export default function DivisionTeams({
                     {teamsByGroup.unassigned.map((team) => (
                       <div
                         key={team.id}
-                        className="flex items-center gap-2 px-3 py-1 bg-qw-dark rounded border border-qw-border"
+                        className="flex items-center gap-2 px-3 py-1 bg-surface-container-high rounded border border-outline-variant"
                       >
-                        <span className="text-white text-sm">{team.name}</span>
+                        <span className="text-on-surface text-sm">{team.name}</span>
                         <select
                           onChange={(e) => handleAssignGroup(team.id, e.target.value)}
                           value=""
-                          className="bg-transparent text-qw-accent text-xs border-none outline-none cursor-pointer"
+                          className="bg-transparent text-primary text-xs border-none outline-none cursor-pointer"
                         >
                           <option value="" disabled>
                             → Group
@@ -754,13 +754,13 @@ export default function DivisionTeams({
 
       {/* Summary */}
       {teams.length > 0 && (
-        <div className="qw-panel p-4">
+        <div className="bg-surface-container-high p-4">
           <div className="flex items-center justify-between text-sm">
-            <span className="text-qw-muted">
+            <span className="text-on-surface-variant">
               {teams.length} teams total •{teams.filter((t) => t.group).length} assigned •
               {teams.filter((t) => !t.group).length} unassigned
             </span>
-            <span className="text-qw-muted">
+            <span className="text-on-surface-variant">
               Target: {division.numGroups} groups × {division.teamsPerGroup} teams ={' '}
               {division.numGroups * division.teamsPerGroup}
             </span>

@@ -1,90 +1,94 @@
-// src/components/WizardStepIndicator.jsx
+// src/components/WizardStepIndicator.jsx — Industrial HUD vertical step indicator
 import React from 'react';
+import MaterialIcon from './ui/MaterialIcon';
 
 const STEPS = [
-  { label: 'Welcome' },
-  { label: 'Basics' },
-  { label: 'Divisions' },
-  { label: 'Teams' },
-  { label: 'Format' },
-  { label: 'Ready' },
+  { label: 'Welcome', subtitle: 'ORIENTATION' },
+  { label: 'Basics', subtitle: 'TOURNAMENT ID' },
+  { label: 'Divisions', subtitle: 'SECTOR ALLOCATION' },
+  { label: 'Format', subtitle: 'STRUCTURAL CONFIG' },
+  { label: 'Teams', subtitle: 'ROSTER VALIDATION' },
+  { label: 'Ready', subtitle: 'LAUNCH SEQUENCE' },
 ];
 
 export default function WizardStepIndicator({ currentStep, onStepClick }) {
+  const progress = Math.round(((currentStep + 1) / STEPS.length) * 100);
+
   return (
-    <div className="flex items-center justify-center gap-0 px-4 py-4">
-      {STEPS.map((step, idx) => {
-        const isCompleted = idx < currentStep;
-        const isCurrent = idx === currentStep;
-        const isFuture = idx > currentStep;
+    <div className="flex flex-col justify-between h-full">
+      <div>
+        <div className="flex items-center gap-2 mb-8">
+          <span className="w-2 h-2 bg-primary-container" />
+          <span className="font-headline font-bold uppercase tracking-tighter text-on-surface-variant text-sm">
+            Setup Wizard
+          </span>
+        </div>
 
-        return (
-          <React.Fragment key={idx}>
-            {/* Connecting line (before each step except the first) */}
-            {idx > 0 && (
-              <div
-                className={`h-0.5 flex-1 max-w-[60px] transition-colors duration-300 ${
-                  idx <= currentStep ? 'bg-qw-accent' : 'bg-qw-border'
-                }`}
-              />
-            )}
+        <div className="space-y-6">
+          {STEPS.map((step, idx) => {
+            const isCompleted = idx < currentStep;
+            const isCurrent = idx === currentStep;
+            const isFuture = idx > currentStep;
 
-            {/* Step dot + label */}
-            <button
-              type="button"
-              onClick={() => isCompleted && onStepClick?.(idx)}
-              disabled={!isCompleted}
-              className={`flex flex-col items-center gap-1.5 group ${
-                isCompleted ? 'cursor-pointer' : 'cursor-default'
-              }`}
-            >
-              {/* Dot */}
-              <div
-                className={`
-                  w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold
-                  transition-all duration-300 border-2
-                  ${
-                    isCompleted
-                      ? 'bg-qw-accent border-qw-accent text-qw-dark group-hover:bg-qw-accent-bright'
-                      : isCurrent
-                        ? 'bg-qw-accent border-qw-accent text-qw-dark'
-                        : 'bg-transparent border-qw-border text-qw-muted'
-                  }
-                `}
+            return (
+              <button
+                key={idx}
+                type="button"
+                onClick={() => isCompleted && onStepClick?.(idx)}
+                disabled={!isCompleted}
+                className={`flex items-start gap-4 w-full text-left transition-all ${
+                  isFuture ? 'opacity-30' : ''
+                } ${isCompleted ? 'cursor-pointer hover:opacity-80' : 'cursor-default'}`}
               >
-                {isCompleted ? (
-                  <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                    <path
-                      fillRule="evenodd"
-                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                ) : (
-                  <span>{idx + 1}</span>
+                <span
+                  className={`font-mono font-bold text-sm ${
+                    isCurrent ? 'text-primary' : isCompleted ? 'text-primary/50' : 'text-on-surface-variant'
+                  }`}
+                >
+                  {String(idx + 1).padStart(2, '0')}
+                </span>
+                <div>
+                  <span
+                    className={`block font-headline text-xs font-black uppercase tracking-widest ${
+                      isCurrent ? 'text-primary' : 'text-on-surface-variant'
+                    }`}
+                  >
+                    {step.label}
+                  </span>
+                  <span
+                    className={`block font-mono text-[10px] ${
+                      isCurrent ? 'text-primary/60' : 'text-on-surface-variant/40'
+                    }`}
+                  >
+                    {step.subtitle}
+                  </span>
+                </div>
+                {isCompleted && (
+                  <MaterialIcon name="check" className="text-primary/50 text-sm ml-auto" />
                 )}
-              </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
-              {/* Label — hidden on mobile */}
-              <span
-                className={`
-                  hidden sm:block text-[10px] font-semibold uppercase tracking-wider
-                  transition-colors duration-300
-                  ${
-                    isCompleted
-                      ? 'text-qw-accent group-hover:text-qw-accent-bright'
-                      : isCurrent
-                        ? 'text-white'
-                        : 'text-qw-muted'
-                  }
-                `}
-              >
-                {step.label}
-              </span>
-            </button>
-          </React.Fragment>
-        );
-      })}
+      {/* Progress bar */}
+      <div className="mt-12">
+        <span className="block font-mono text-[10px] text-secondary uppercase tracking-widest mb-1">
+          Runtime Status
+        </span>
+        <div className="flex items-center gap-2">
+          <div className="w-full h-1 bg-surface-container-lowest overflow-hidden">
+            <div
+              className="h-full bg-primary shadow-[0_0_8px_#ffc485] transition-all"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+          <span className="font-mono text-[9px] text-primary whitespace-nowrap">
+            {progress}%
+          </span>
+        </div>
+      </div>
     </div>
   );
 }

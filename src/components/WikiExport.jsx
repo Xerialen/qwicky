@@ -91,8 +91,8 @@ export default function WikiExport({ matches, bracketConfig }) {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="font-display font-bold text-2xl text-white flex items-center gap-3">
-          <span className="text-qw-accent">📝</span>
+        <h2 className="font-headline font-bold text-2xl text-on-surface flex items-center gap-3">
+          <span className="text-primary">📝</span>
           Wiki Export
         </h2>
       </div>
@@ -106,8 +106,8 @@ export default function WikiExport({ matches, bracketConfig }) {
             className={`px-4 py-2 rounded font-body font-semibold transition-all flex items-center gap-2
               ${
                 activeExport === type.id
-                  ? 'bg-qw-accent text-qw-dark'
-                  : 'bg-qw-panel border border-qw-border text-qw-muted hover:text-white hover:border-qw-accent'
+                  ? 'bg-primary text-qw-dark'
+                  : 'bg-surface-container-high border border-outline-variant text-on-surface-variant hover:text-on-surface hover:border-primary'
               }`}
           >
             <span>{type.icon}</span>
@@ -118,15 +118,15 @@ export default function WikiExport({ matches, bracketConfig }) {
 
       {/* Options Panel */}
       <div className="qw-panel p-4">
-        <h3 className="font-display text-sm text-qw-accent mb-3">EXPORT OPTIONS</h3>
+        <h3 className="font-headline text-sm text-primary mb-3">EXPORT OPTIONS</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div>
-            <label className="block text-qw-muted text-sm mb-1">Tournament Name</label>
+            <label className="block text-on-surface-variant text-sm mb-1">Tournament Name</label>
             <input
               type="text"
               value={options.tournamentName}
               onChange={(e) => setOptions({ ...options, tournamentName: e.target.value })}
-              className="w-full bg-qw-dark border border-qw-border rounded px-3 py-2 text-white font-mono text-sm"
+              className="w-full bg-surface-container-high border border-outline-variant rounded px-3 py-2 text-on-surface font-mono text-sm"
             />
           </div>
 
@@ -138,7 +138,7 @@ export default function WikiExport({ matches, bracketConfig }) {
               onChange={(e) => setOptions({ ...options, showHeaders: e.target.checked })}
               className="w-4 h-4 accent-qw-accent"
             />
-            <label htmlFor="showHeaders" className="text-qw-muted text-sm">
+            <label htmlFor="showHeaders" className="text-on-surface-variant text-sm">
               Include Headers
             </label>
           </div>
@@ -152,7 +152,7 @@ export default function WikiExport({ matches, bracketConfig }) {
                 onChange={(e) => setOptions({ ...options, groupByDate: e.target.checked })}
                 className="w-4 h-4 accent-qw-accent"
               />
-              <label htmlFor="groupByDate" className="text-qw-muted text-sm">
+              <label htmlFor="groupByDate" className="text-on-surface-variant text-sm">
                 Group by Date
               </label>
             </div>
@@ -167,7 +167,7 @@ export default function WikiExport({ matches, bracketConfig }) {
                 onChange={(e) => setOptions({ ...options, useSimpleBracket: e.target.checked })}
                 className="w-4 h-4 accent-qw-accent"
               />
-              <label htmlFor="useSimpleBracket" className="text-qw-muted text-sm">
+              <label htmlFor="useSimpleBracket" className="text-on-surface-variant text-sm">
                 Simple Table Bracket
               </label>
             </div>
@@ -177,16 +177,16 @@ export default function WikiExport({ matches, bracketConfig }) {
 
       {/* Preview */}
       <div className="qw-panel overflow-hidden">
-        <div className="flex items-center justify-between px-4 py-3 bg-qw-dark border-b border-qw-border">
-          <h3 className="font-display text-sm text-qw-accent">WIKI MARKUP PREVIEW</h3>
+        <div className="flex items-center justify-between px-4 py-3 bg-surface-container-high border-b border-outline-variant">
+          <h3 className="font-headline text-sm text-primary">WIKI MARKUP PREVIEW</h3>
           <div className="flex gap-2">
             <button
               onClick={handleCopy}
               className={`px-3 py-1 rounded text-sm font-body font-semibold transition-all flex items-center gap-2
                 ${
                   copied
-                    ? 'bg-qw-win text-white'
-                    : 'bg-qw-panel border border-qw-border text-qw-muted hover:text-white hover:border-qw-accent'
+                    ? 'bg-qw-win text-on-surface'
+                    : 'bg-surface-container-high border border-outline-variant text-on-surface-variant hover:text-on-surface hover:border-primary'
                 }`}
             >
               {copied ? (
@@ -217,7 +217,7 @@ export default function WikiExport({ matches, bracketConfig }) {
             </button>
             <button
               onClick={handleDownload}
-              className="px-3 py-1 rounded text-sm font-body font-semibold bg-qw-accent text-qw-dark hover:bg-qw-accent-dim transition-all flex items-center gap-2"
+              className="px-3 py-1 rounded text-sm font-body font-semibold bg-primary text-qw-dark hover:bg-primary-dim transition-all flex items-center gap-2"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
@@ -233,7 +233,7 @@ export default function WikiExport({ matches, bracketConfig }) {
         </div>
 
         <div className="p-4 max-h-96 overflow-auto">
-          <pre className="font-mono text-sm text-qw-text whitespace-pre-wrap break-words">
+          <pre className="font-mono text-sm text-on-surface whitespace-pre-wrap break-words">
             {wikiContent || '<!-- No content to export -->'}
           </pre>
         </div>
@@ -241,8 +241,8 @@ export default function WikiExport({ matches, bracketConfig }) {
 
       {/* Tips */}
       <div className="qw-panel p-4">
-        <h3 className="font-display text-sm text-qw-accent mb-2">WIKI EXPORT TIPS</h3>
-        <ul className="text-qw-muted text-sm space-y-1">
+        <h3 className="font-headline text-sm text-primary mb-2">WIKI EXPORT TIPS</h3>
+        <ul className="text-on-surface-variant text-sm space-y-1">
           <li>
             • <strong>Standings:</strong> Uses standard ... ... ... wikitable format with{' '}
             <code>{'{{Abbr}}'}</code> for column headers

@@ -119,8 +119,8 @@ export default function DataManager({ tournament, importTournament, resetTournam
         className="hidden"
       />
 
-      <div className="flex items-center gap-2 bg-qw-panel border border-qw-border rounded-lg p-2 shadow-lg">
-        <div className="hidden md:flex items-center gap-3 px-3 text-xs font-mono text-qw-muted border-r border-qw-border">
+      <div className="flex items-center gap-2 bg-surface-container-high border border-outline-variant  p-2 shadow-lg">
+        <div className="hidden md:flex items-center gap-3 px-3 text-xs font-mono text-on-surface-variant border-r border-outline-variant">
           <span>{stats.divisions}D</span>
           <span>{stats.teams}T</span>
           <span>{stats.matches}M</span>
@@ -128,7 +128,7 @@ export default function DataManager({ tournament, importTournament, resetTournam
 
         <button
           onClick={() => fileInputRef.current?.click()}
-          className="px-3 py-2 rounded bg-qw-dark border border-qw-border text-qw-muted hover:text-white hover:border-qw-accent transition-all flex items-center gap-2 text-sm"
+          className="px-3 py-2 rounded bg-surface-container-high border border-outline-variant text-on-surface-variant hover:text-on-surface hover:border-primary transition-all flex items-center gap-2 text-sm"
           title="Load tournament"
         >
           📂 Load
@@ -136,7 +136,7 @@ export default function DataManager({ tournament, importTournament, resetTournam
 
         <button
           onClick={handleExport}
-          className="px-3 py-2 rounded bg-qw-accent text-qw-dark font-semibold transition-all flex items-center gap-2 text-sm hover:bg-qw-accent-dim"
+          className="px-3 py-2 rounded bg-primary text-qw-dark font-semibold transition-all flex items-center gap-2 text-sm hover:bg-primary-dim"
           title="Save tournament"
         >
           💾 Save
@@ -144,7 +144,7 @@ export default function DataManager({ tournament, importTournament, resetTournam
 
         <button
           onClick={handleDedup}
-          className="px-3 py-2 rounded bg-qw-dark border border-qw-border text-qw-muted hover:text-white hover:border-qw-accent transition-all text-sm"
+          className="px-3 py-2 rounded bg-surface-container-high border border-outline-variant text-on-surface-variant hover:text-on-surface hover:border-primary transition-all text-sm"
           title="Remove duplicate maps"
         >
           {dedupResult === 'clean' ? '✓ Clean' : dedupResult ? `✓ ${dedupResult}` : 'Dedup'}

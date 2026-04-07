@@ -20,10 +20,10 @@ export default function DangerButton({ label, confirmLabel, onConfirm, className
           setConfirming(true);
         }
       }}
-      className={`px-3 py-1.5 text-sm rounded-md transition-all duration-200 ${
+      className={`px-3 py-1.5 text-sm  transition-all duration-200 ${
         confirming
-          ? 'bg-red-600 text-white ring-2 ring-red-400 ring-offset-1 ring-offset-zinc-900'
-          : 'bg-zinc-800 text-red-400 hover:bg-zinc-700'
+          ? 'bg-red-600 text-on-surface ring-2 ring-red-400 ring-offset-1 ring-offset-zinc-900'
+          : 'bg-zinc-800 text-error hover:bg-zinc-700'
       } ${className}`}
     >
       {confirming ? confirmLabel || 'Click again to confirm' : label}

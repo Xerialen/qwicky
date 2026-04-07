@@ -63,7 +63,7 @@ export default function DataControls({ matches, setMatches, bracketConfig, setBr
 
       <button
         onClick={() => fileInputRef.current?.click()}
-        className="qw-btn-secondary px-4 py-2 rounded border border-qw-border bg-qw-panel hover:border-qw-accent flex items-center gap-2"
+        className="qw-btn-secondary px-4 py-2 rounded border border-outline-variant bg-surface-container-high hover:border-primary flex items-center gap-2"
         title="Import tournament data"
       >
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -55,11 +55,11 @@ export default function DivisionStats({ division }) {
     return (
       <th
         onClick={() => handleSort(columnKey)}
-        className={`px-3 py-2 text-left text-xs font-body font-semibold text-qw-accent uppercase tracking-wider cursor-pointer hover:text-white transition-colors ${className}`}
+        className={`px-3 py-2 text-left text-xs font-body font-semibold text-primary uppercase tracking-wider cursor-pointer hover:text-on-surface transition-colors ${className}`}
       >
         <div className="flex items-center gap-1">
           {children}
-          {isSorted && <span className="text-qw-accent">{direction === 'asc' ? '▲' : '▼'}</span>}
+          {isSorted && <span className="text-primary">{direction === 'asc' ? '▲' : '▼'}</span>}
         </div>
       </th>
     );
@@ -68,9 +68,9 @@ export default function DivisionStats({ division }) {
   if (!rawMaps || rawMaps.length === 0) {
     return (
       <div className="qw-panel p-8 text-center">
-        <div className="text-qw-muted mb-4">📊</div>
-        <p className="text-qw-muted">No match data available for statistics.</p>
-        <p className="text-xs text-qw-muted mt-2">
+        <div className="text-on-surface-variant mb-4">📊</div>
+        <p className="text-on-surface-variant">No match data available for statistics.</p>
+        <p className="text-xs text-on-surface-variant mt-2">
           Import match results in the Results tab to see player stats.
         </p>
       </div>
@@ -80,9 +80,9 @@ export default function DivisionStats({ division }) {
   if (ktxstatsData.length === 0) {
     return (
       <div className="qw-panel p-8 text-center">
-        <div className="text-qw-muted mb-4">⚠️</div>
-        <p className="text-qw-muted">No detailed player statistics available.</p>
-        <p className="text-xs text-qw-muted mt-2">
+        <div className="text-on-surface-variant mb-4">⚠️</div>
+        <p className="text-on-surface-variant">No detailed player statistics available.</p>
+        <p className="text-xs text-on-surface-variant mt-2">
           The imported matches don't contain player-level data needed for stats.
           <br />
           Make sure to import ktxstats JSON files with full player statistics.
@@ -94,7 +94,7 @@ export default function DivisionStats({ division }) {
   if (Object.keys(playersDb).length === 0) {
     return (
       <div className="qw-panel p-8 text-center">
-        <p className="text-qw-muted">Processing match data...</p>
+        <p className="text-on-surface-variant">Processing match data...</p>
       </div>
     );
   }
@@ -104,22 +104,22 @@ export default function DivisionStats({ division }) {
       {/* Stats Summary */}
       <div className="grid grid-cols-4 gap-4">
         <div className="qw-panel p-4">
-          <div className="text-xs text-qw-muted uppercase font-body font-semibold">Players</div>
-          <div className="text-2xl font-display font-bold text-white mt-1">
+          <div className="text-xs text-on-surface-variant uppercase font-body font-semibold">Players</div>
+          <div className="text-2xl font-headline font-bold text-on-surface mt-1">
             {Object.keys(playersDb).length}
           </div>
         </div>
         <div className="qw-panel p-4">
-          <div className="text-xs text-qw-muted uppercase font-body font-semibold">Total Maps</div>
-          <div className="text-2xl font-display font-bold text-white mt-1">
+          <div className="text-xs text-on-surface-variant uppercase font-body font-semibold">Total Maps</div>
+          <div className="text-2xl font-headline font-bold text-on-surface mt-1">
             {ktxstatsData.length}
           </div>
         </div>
         <div className="qw-panel p-4">
-          <div className="text-xs text-qw-muted uppercase font-body font-semibold">
+          <div className="text-xs text-on-surface-variant uppercase font-body font-semibold">
             Avg Frags/Map
           </div>
-          <div className="text-2xl font-display font-bold text-white mt-1">
+          <div className="text-2xl font-headline font-bold text-on-surface mt-1">
             {ktxstatsData.length > 0
               ? (
                   Object.values(playersDb).reduce((sum, p) => sum + p.frags, 0) /
@@ -130,8 +130,8 @@ export default function DivisionStats({ division }) {
           </div>
         </div>
         <div className="qw-panel p-4">
-          <div className="text-xs text-qw-muted uppercase font-body font-semibold">Top Fragger</div>
-          <div className="text-lg font-display font-bold text-qw-accent mt-1">
+          <div className="text-xs text-on-surface-variant uppercase font-body font-semibold">Top Fragger</div>
+          <div className="text-lg font-headline font-bold text-primary mt-1">
             {sortedData[0]?.name || 'N/A'}
           </div>
         </div>
@@ -141,7 +141,7 @@ export default function DivisionStats({ division }) {
       <div className="qw-panel overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full">
-            <thead className="bg-qw-dark border-b border-qw-border">
+            <thead className="bg-surface-container-high border-b border-outline-variant">
               <tr>
                 <SortableHeader columnKey="name">Player</SortableHeader>
                 <SortableHeader columnKey="games">Games</SortableHeader>
@@ -175,97 +175,97 @@ export default function DivisionStats({ division }) {
                 <SortableHeader columnKey="sgAcc">SG %</SortableHeader>
               </tr>
             </thead>
-            <tbody className="bg-qw-panel">
+            <tbody className="bg-surface-container-high">
               {sortedData.map((player, idx) => (
                 <tr
                   key={player.name}
-                  className="border-b border-qw-border hover:bg-qw-dark/50 transition-colors"
+                  className="border-b border-outline-variant hover:bg-surface-container-high/50 transition-colors"
                   style={{
                     borderLeft: player.teamColor ? `3px solid ${player.teamColor}` : 'none',
                   }}
                 >
-                  <td className="px-3 py-2 whitespace-nowrap text-sm text-white font-body font-semibold">
+                  <td className="px-3 py-2 whitespace-nowrap text-sm text-on-surface font-body font-semibold">
                     {player.name}
                   </td>
-                  <td className="px-3 py-2 whitespace-nowrap text-sm text-qw-text">
+                  <td className="px-3 py-2 whitespace-nowrap text-sm text-on-surface">
                     {player.games}
                   </td>
-                  <td className="px-3 py-2 whitespace-nowrap text-sm text-qw-text">
+                  <td className="px-3 py-2 whitespace-nowrap text-sm text-on-surface">
                     {player.avgFrags}
                   </td>
-                  <td className="px-3 py-2 whitespace-nowrap text-sm text-qw-text">
+                  <td className="px-3 py-2 whitespace-nowrap text-sm text-on-surface">
                     {player.avgDeaths}
                   </td>
-                  <td className="px-3 py-2 whitespace-nowrap text-sm text-qw-text">
+                  <td className="px-3 py-2 whitespace-nowrap text-sm text-on-surface">
                     {player.avgDmg}
                   </td>
-                  <td className="px-3 py-2 whitespace-nowrap text-sm text-qw-text">
+                  <td className="px-3 py-2 whitespace-nowrap text-sm text-on-surface">
                     {player.avgEwep}
                   </td>
-                  <td className="px-3 py-2 whitespace-nowrap text-sm text-qw-text">
+                  <td className="px-3 py-2 whitespace-nowrap text-sm text-on-surface">
                     {player.avgToDie}
                   </td>
-                  <td className="px-3 py-2 whitespace-nowrap text-sm text-qw-text">
+                  <td className="px-3 py-2 whitespace-nowrap text-sm text-on-surface">
                     {player.effPct.toFixed(1)}%
                   </td>
-                  <td className="px-3 py-2 whitespace-nowrap text-sm text-qw-text">
+                  <td className="px-3 py-2 whitespace-nowrap text-sm text-on-surface">
                     {player.avgSpeed}
                   </td>
-                  <td className="px-3 py-2 whitespace-nowrap text-sm text-qw-text">
+                  <td className="px-3 py-2 whitespace-nowrap text-sm text-on-surface">
                     {player.maxSpeed}
                   </td>
-                  <td className="px-3 py-2 whitespace-nowrap text-sm text-qw-text">
+                  <td className="px-3 py-2 whitespace-nowrap text-sm text-on-surface">
                     {player.rlKills}
                   </td>
-                  <td className="px-3 py-2 whitespace-nowrap text-sm text-qw-text">
+                  <td className="px-3 py-2 whitespace-nowrap text-sm text-on-surface">
                     {player.rlXfer}
                   </td>
-                  <td className="px-3 py-2 whitespace-nowrap text-sm text-qw-text">
+                  <td className="px-3 py-2 whitespace-nowrap text-sm text-on-surface">
                     {player.rlHits}
                   </td>
-                  <td className="px-3 py-2 whitespace-nowrap text-sm text-qw-text">
+                  <td className="px-3 py-2 whitespace-nowrap text-sm text-on-surface">
                     {player.rlTaken}
                   </td>
-                  <td className="px-3 py-2 whitespace-nowrap text-sm text-qw-text">
+                  <td className="px-3 py-2 whitespace-nowrap text-sm text-on-surface">
                     {player.rlDrop}
                   </td>
-                  <td className="px-3 py-2 whitespace-nowrap text-sm text-qw-text">
+                  <td className="px-3 py-2 whitespace-nowrap text-sm text-on-surface">
                     {player.lgKills}
                   </td>
-                  <td className="px-3 py-2 whitespace-nowrap text-sm text-qw-text">
+                  <td className="px-3 py-2 whitespace-nowrap text-sm text-on-surface">
                     {player.lgTaken}
                   </td>
-                  <td className="px-3 py-2 whitespace-nowrap text-sm text-qw-text">
+                  <td className="px-3 py-2 whitespace-nowrap text-sm text-on-surface">
                     {player.lgDrop}
                   </td>
-                  <td className="px-3 py-2 whitespace-nowrap text-sm text-qw-text">
+                  <td className="px-3 py-2 whitespace-nowrap text-sm text-on-surface">
                     {player.glKills}
                   </td>
-                  <td className="px-3 py-2 whitespace-nowrap text-sm text-qw-text">
+                  <td className="px-3 py-2 whitespace-nowrap text-sm text-on-surface">
                     {player.ssgKills}
                   </td>
-                  <td className="px-3 py-2 whitespace-nowrap text-sm text-qw-text">
+                  <td className="px-3 py-2 whitespace-nowrap text-sm text-on-surface">
                     {player.ngKills}
                   </td>
-                  <td className="px-3 py-2 whitespace-nowrap text-sm text-qw-text">
+                  <td className="px-3 py-2 whitespace-nowrap text-sm text-on-surface">
                     {player.sngKills}
                   </td>
-                  <td className="px-3 py-2 whitespace-nowrap text-sm text-qw-text">
+                  <td className="px-3 py-2 whitespace-nowrap text-sm text-on-surface">
                     {player.quad}
                   </td>
-                  <td className="px-3 py-2 whitespace-nowrap text-sm text-qw-text">
+                  <td className="px-3 py-2 whitespace-nowrap text-sm text-on-surface">
                     {player.pent}
                   </td>
-                  <td className="px-3 py-2 whitespace-nowrap text-sm text-qw-text">
+                  <td className="px-3 py-2 whitespace-nowrap text-sm text-on-surface">
                     {player.ring}
                   </td>
-                  <td className="px-3 py-2 whitespace-nowrap text-sm text-qw-text">{player.ra}</td>
-                  <td className="px-3 py-2 whitespace-nowrap text-sm text-qw-text">{player.ya}</td>
-                  <td className="px-3 py-2 whitespace-nowrap text-sm text-qw-text">{player.mh}</td>
-                  <td className="px-3 py-2 whitespace-nowrap text-sm text-qw-text">
+                  <td className="px-3 py-2 whitespace-nowrap text-sm text-on-surface">{player.ra}</td>
+                  <td className="px-3 py-2 whitespace-nowrap text-sm text-on-surface">{player.ya}</td>
+                  <td className="px-3 py-2 whitespace-nowrap text-sm text-on-surface">{player.mh}</td>
+                  <td className="px-3 py-2 whitespace-nowrap text-sm text-on-surface">
                     {player.lgAcc.toFixed(1)}%
                   </td>
-                  <td className="px-3 py-2 whitespace-nowrap text-sm text-qw-text">
+                  <td className="px-3 py-2 whitespace-nowrap text-sm text-on-surface">
                     {player.sgAcc.toFixed(1)}%
                   </td>
                 </tr>
@@ -276,7 +276,7 @@ export default function DivisionStats({ division }) {
       </div>
 
       {/* Help text */}
-      <div className="text-xs text-qw-muted italic">
+      <div className="text-xs text-on-surface-variant italic">
         💡 Click column headers to sort. Stats are averaged per game or per opportunity
         (map-dependent items).
       </div>

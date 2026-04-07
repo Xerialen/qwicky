@@ -278,7 +278,7 @@ export default function WikiSetupWizard({ tournament, updateTournament, onClose 
 
   // ── Spinner component ───────────────────────────────────────────────────────
   const Spinner = () => (
-    <svg className="animate-spin h-4 w-4 text-qw-accent" viewBox="0 0 24 24" fill="none">
+    <svg className="animate-spin h-4 w-4 text-primary" viewBox="0 0 24 24" fill="none">
       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
       <path
         className="opacity-75"
@@ -292,22 +292,22 @@ export default function WikiSetupWizard({ tournament, updateTournament, onClose 
   return (
     <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
       <div
-        className="bg-qw-dark border border-qw-border rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+        className="bg-surface-container-high border border-outline-variant  max-w-2xl w-full max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-qw-border">
-          <h2 className="font-display text-lg text-qw-accent">WIKI SETUP</h2>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-outline-variant">
+          <h2 className="font-headline text-lg text-primary">WIKI SETUP</h2>
           <div className="flex items-center gap-4">
             <div className="flex gap-1">
               {[1, 2, 3].map((s) => (
                 <div
                   key={s}
-                  className={`w-8 h-1 rounded ${s <= step ? 'bg-qw-accent' : 'bg-qw-border'}`}
+                  className={`w-8 h-1 rounded ${s <= step ? 'bg-primary' : 'bg-outline-variant'}`}
                 />
               ))}
             </div>
-            <button onClick={onClose} className="text-qw-muted hover:text-white text-xl">
+            <button onClick={onClose} className="text-on-surface-variant hover:text-on-surface text-xl">
               &times;
             </button>
           </div>
@@ -317,8 +317,8 @@ export default function WikiSetupWizard({ tournament, updateTournament, onClose 
           {/* ── STEP 1: Find / Create ── */}
           {step === 1 && (
             <div className="space-y-4">
-              <h3 className="font-display text-sm text-white">Connect to QW Wiki</h3>
-              <p className="text-sm text-qw-muted">
+              <h3 className="font-headline text-sm text-on-surface">Connect to QW Wiki</h3>
+              <p className="text-sm text-on-surface-variant">
                 Choose how to set up your tournament's wiki pages.
               </p>
 
@@ -330,34 +330,34 @@ export default function WikiSetupWizard({ tournament, updateTournament, onClose 
                       setEntryMode('search');
                       setSearchQuery(tournament.name || '');
                     }}
-                    className="w-full text-left p-4 rounded-lg border border-qw-border bg-qw-darker hover:border-qw-accent/50 transition-colors group"
+                    className="w-full text-left p-4  border border-outline-variant bg-background hover:border-primary/50 transition-colors group"
                   >
-                    <div className="text-white font-semibold text-sm group-hover:text-qw-accent">
+                    <div className="text-on-surface font-semibold text-sm group-hover:text-primary">
                       Search existing tournaments
                     </div>
-                    <div className="text-xs text-qw-muted mt-1">
+                    <div className="text-xs text-on-surface-variant mt-1">
                       Find your tournament series on the wiki (e.g. The Big 4, EQL, NQR)
                     </div>
                   </button>
                   <button
                     onClick={() => setEntryMode('url')}
-                    className="w-full text-left p-4 rounded-lg border border-qw-border bg-qw-darker hover:border-qw-accent/50 transition-colors group"
+                    className="w-full text-left p-4  border border-outline-variant bg-background hover:border-primary/50 transition-colors group"
                   >
-                    <div className="text-white font-semibold text-sm group-hover:text-qw-accent">
+                    <div className="text-on-surface font-semibold text-sm group-hover:text-primary">
                       Enter wiki page path or URL
                     </div>
-                    <div className="text-xs text-qw-muted mt-1">
+                    <div className="text-xs text-on-surface-variant mt-1">
                       Paste the direct URL or path to your tournament's parent page
                     </div>
                   </button>
                   <button
                     onClick={() => setEntryMode('new')}
-                    className="w-full text-left p-4 rounded-lg border border-qw-border bg-qw-darker hover:border-qw-accent/50 transition-colors group"
+                    className="w-full text-left p-4  border border-outline-variant bg-background hover:border-primary/50 transition-colors group"
                   >
-                    <div className="text-white font-semibold text-sm group-hover:text-qw-accent">
+                    <div className="text-on-surface font-semibold text-sm group-hover:text-primary">
                       Create from scratch
                     </div>
-                    <div className="text-xs text-qw-muted mt-1">
+                    <div className="text-xs text-on-surface-variant mt-1">
                       First tournament ever? Set up a brand new wiki page structure
                     </div>
                   </button>
@@ -373,7 +373,7 @@ export default function WikiSetupWizard({ tournament, updateTournament, onClose 
                       setSearchResults(null);
                       setSelectedRoot('');
                     }}
-                    className="text-xs text-qw-muted hover:text-white"
+                    className="text-xs text-on-surface-variant hover:text-on-surface"
                   >
                     &larr; Back
                   </button>
@@ -388,14 +388,14 @@ export default function WikiSetupWizard({ tournament, updateTournament, onClose 
                       }}
                       placeholder="Start typing a tournament name..."
                       autoFocus
-                      className="w-full bg-qw-darker text-white p-3 rounded-lg border border-qw-border focus:border-qw-accent outline-none text-sm pr-10"
+                      className="w-full bg-background text-on-surface p-3  border border-outline-variant focus:border-primary outline-none text-sm pr-10"
                     />
                     <div className="absolute right-3 top-1/2 -translate-y-1/2">
                       {searchLoading ? (
                         <Spinner />
                       ) : (
                         searchQuery.length >= 2 && (
-                          <span className="text-xs text-qw-muted">
+                          <span className="text-xs text-on-surface-variant">
                             {searchResults?.length ?? ''}
                           </span>
                         )
@@ -407,7 +407,7 @@ export default function WikiSetupWizard({ tournament, updateTournament, onClose 
                   {searchResults !== null && !searchLoading && (
                     <div className="space-y-1 max-h-48 overflow-y-auto">
                       {searchResults.length === 0 && searchQuery.length >= 2 && (
-                        <p className="text-sm text-qw-muted py-2">
+                        <p className="text-sm text-on-surface-variant py-2">
                           No tournaments found for "{searchQuery}"
                         </p>
                       )}
@@ -417,13 +417,13 @@ export default function WikiSetupWizard({ tournament, updateTournament, onClose 
                           onClick={() => handleSelectTournament(t.root)}
                           className={`w-full text-left p-3 rounded border transition-colors ${
                             selectedRoot === t.root
-                              ? 'border-qw-accent bg-qw-accent/10'
-                              : 'border-qw-border/50 bg-qw-darker hover:border-qw-accent/50'
+                              ? 'border-primary bg-primary/10'
+                              : 'border-outline-variant/50 bg-background hover:border-primary/50'
                           }`}
                         >
                           <div className="flex items-center justify-between">
-                            <span className="text-white font-semibold text-sm">{t.root}</span>
-                            <span className="text-xs text-qw-muted">
+                            <span className="text-on-surface font-semibold text-sm">{t.root}</span>
+                            <span className="text-xs text-on-surface-variant">
                               {t.matchCount || t.pages?.length || 0} pages
                             </span>
                           </div>
@@ -434,24 +434,24 @@ export default function WikiSetupWizard({ tournament, updateTournament, onClose 
 
                   {/* Season name after selection */}
                   {selectedRoot && (
-                    <div className="p-3 bg-qw-darker rounded-lg border border-qw-accent/30 space-y-2">
+                    <div className="p-3 bg-background  border border-primary/30 space-y-2">
                       {scanLoading ? (
-                        <div className="flex items-center gap-2 text-sm text-qw-muted py-2">
+                        <div className="flex items-center gap-2 text-sm text-on-surface-variant py-2">
                           <Spinner /> Scanning existing pages...
                         </div>
                       ) : (
                         <>
-                          <label className="text-xs text-qw-muted block">Season Name</label>
+                          <label className="text-xs text-on-surface-variant block">Season Name</label>
                           <input
                             type="text"
                             value={seasonName}
                             onChange={(e) => setSeasonName(e.target.value)}
                             placeholder="Season 2"
-                            className="w-full bg-qw-dark text-white p-2 rounded border border-qw-border focus:border-qw-accent outline-none text-sm"
+                            className="w-full bg-surface-container-high text-on-surface p-2 rounded border border-outline-variant focus:border-primary outline-none text-sm"
                           />
-                          <div className="text-xs text-qw-muted">
+                          <div className="text-xs text-on-surface-variant">
                             Pages at:{' '}
-                            <span className="text-qw-accent font-mono">{seasonPage || '...'}</span>
+                            <span className="text-primary font-mono">{seasonPage || '...'}</span>
                           </div>
                         </>
                       )}
@@ -468,13 +468,13 @@ export default function WikiSetupWizard({ tournament, updateTournament, onClose 
                       setEntryMode(null);
                       setDirectPath('');
                     }}
-                    className="text-xs text-qw-muted hover:text-white"
+                    className="text-xs text-on-surface-variant hover:text-on-surface"
                   >
                     &larr; Back
                   </button>
 
                   <div>
-                    <label className="text-xs text-qw-muted block mb-1">
+                    <label className="text-xs text-on-surface-variant block mb-1">
                       Wiki page URL or path
                     </label>
                     <input
@@ -483,11 +483,11 @@ export default function WikiSetupWizard({ tournament, updateTournament, onClose 
                       onChange={(e) => setDirectPath(parseWikiPath(e.target.value))}
                       placeholder="https://quakeworld.nu/wiki/The_Big_4/Season_3 or The Big 4/Season 3"
                       autoFocus
-                      className="w-full bg-qw-darker text-white p-3 rounded-lg border border-qw-border focus:border-qw-accent outline-none text-sm"
+                      className="w-full bg-background text-on-surface p-3  border border-outline-variant focus:border-primary outline-none text-sm"
                     />
                     {directPath && (
-                      <div className="text-xs text-qw-muted mt-2">
-                        Pages at: <span className="text-qw-accent font-mono">{directPath}</span>
+                      <div className="text-xs text-on-surface-variant mt-2">
+                        Pages at: <span className="text-primary font-mono">{directPath}</span>
                       </div>
                     )}
                   </div>
@@ -502,13 +502,13 @@ export default function WikiSetupWizard({ tournament, updateTournament, onClose 
                       setEntryMode(null);
                       setSeasonName('');
                     }}
-                    className="text-xs text-qw-muted hover:text-white"
+                    className="text-xs text-on-surface-variant hover:text-on-surface"
                   >
                     &larr; Back
                   </button>
 
                   <div>
-                    <label className="text-xs text-qw-muted block mb-1">
+                    <label className="text-xs text-on-surface-variant block mb-1">
                       Full page path for your tournament
                     </label>
                     <input
@@ -517,16 +517,16 @@ export default function WikiSetupWizard({ tournament, updateTournament, onClose 
                       onChange={(e) => setSeasonName(e.target.value)}
                       placeholder="My Tournament/Season 1"
                       autoFocus
-                      className="w-full bg-qw-darker text-white p-3 rounded-lg border border-qw-border focus:border-qw-accent outline-none text-sm"
+                      className="w-full bg-background text-on-surface p-3  border border-outline-variant focus:border-primary outline-none text-sm"
                     />
-                    <p className="text-xs text-qw-muted mt-2">
+                    <p className="text-xs text-on-surface-variant mt-2">
                       Division pages, Playoffs, and Information pages will be created as sub-pages.
                     </p>
                     {seasonName && (
-                      <div className="text-xs text-qw-muted mt-1">
+                      <div className="text-xs text-on-surface-variant mt-1">
                         Example:{' '}
-                        <span className="text-qw-accent font-mono">{seasonName}/Division 1</span>,{' '}
-                        <span className="text-qw-accent font-mono">{seasonName}/Playoffs</span>
+                        <span className="text-primary font-mono">{seasonName}/Division 1</span>,{' '}
+                        <span className="text-primary font-mono">{seasonName}/Playoffs</span>
                       </div>
                     )}
                   </div>
@@ -549,35 +549,35 @@ export default function WikiSetupWizard({ tournament, updateTournament, onClose 
           {/* ── STEP 2: Metadata ── */}
           {step === 2 && (
             <div className="space-y-4">
-              <h3 className="font-display text-sm text-white">Tournament Metadata</h3>
-              <p className="text-sm text-qw-muted">
+              <h3 className="font-headline text-sm text-on-surface">Tournament Metadata</h3>
+              <p className="text-sm text-on-surface-variant">
                 These fields populate the{' '}
-                <code className="text-qw-accent">{'{{Infobox league}}'}</code> template. Format,
+                <code className="text-primary">{'{{Infobox league}}'}</code> template. Format,
                 dates, maps, and team count are auto-derived.
               </p>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs text-qw-muted block mb-1">Display Name</label>
+                  <label className="text-xs text-on-surface-variant block mb-1">Display Name</label>
                   <input
                     type="text"
                     value={infobox.name}
                     onChange={(e) => setInfobox((p) => ({ ...p, name: e.target.value }))}
-                    className="w-full bg-qw-darker text-white p-2 rounded border border-qw-border focus:border-qw-accent outline-none text-sm"
+                    className="w-full bg-background text-on-surface p-2 rounded border border-outline-variant focus:border-primary outline-none text-sm"
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-qw-muted block mb-1">Navbox Template</label>
+                  <label className="text-xs text-on-surface-variant block mb-1">Navbox Template</label>
                   <input
                     type="text"
                     value={navbox}
                     onChange={(e) => setNavbox(e.target.value)}
                     placeholder="e.g. TB4 Navbox (leave empty if none)"
-                    className="w-full bg-qw-darker text-white p-2 rounded border border-qw-border focus:border-qw-accent outline-none text-sm"
+                    className="w-full bg-background text-on-surface p-2 rounded border border-outline-variant focus:border-primary outline-none text-sm"
                   />
                 </div>
                 <div className="col-span-2">
-                  <label className="text-xs text-qw-muted block mb-1">
+                  <label className="text-xs text-on-surface-variant block mb-1">
                     Organizers (wiki markup)
                   </label>
                   <input
@@ -585,52 +585,52 @@ export default function WikiSetupWizard({ tournament, updateTournament, onClose 
                     value={infobox.organizer || ''}
                     onChange={(e) => setInfobox((p) => ({ ...p, organizer: e.target.value }))}
                     placeholder="{{player|Nas|flag=se}} {{player|peppe|flag=se}}"
-                    className="w-full bg-qw-darker text-white p-2 rounded border border-qw-border focus:border-qw-accent outline-none text-sm"
+                    className="w-full bg-background text-on-surface p-2 rounded border border-outline-variant focus:border-primary outline-none text-sm"
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-qw-muted block mb-1">Website</label>
+                  <label className="text-xs text-on-surface-variant block mb-1">Website</label>
                   <input
                     type="text"
                     value={infobox.website || ''}
                     onChange={(e) => setInfobox((p) => ({ ...p, website: e.target.value }))}
                     placeholder="thebig4.se"
-                    className="w-full bg-qw-darker text-white p-2 rounded border border-qw-border focus:border-qw-accent outline-none text-sm"
+                    className="w-full bg-background text-on-surface p-2 rounded border border-outline-variant focus:border-primary outline-none text-sm"
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-qw-muted block mb-1">Discord</label>
+                  <label className="text-xs text-on-surface-variant block mb-1">Discord</label>
                   <input
                     type="text"
                     value={infobox.discord || ''}
                     onChange={(e) => setInfobox((p) => ({ ...p, discord: e.target.value }))}
                     placeholder="http://discord.quake.world"
-                    className="w-full bg-qw-darker text-white p-2 rounded border border-qw-border focus:border-qw-accent outline-none text-sm"
+                    className="w-full bg-background text-on-surface p-2 rounded border border-outline-variant focus:border-primary outline-none text-sm"
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-qw-muted block mb-1">Image</label>
+                  <label className="text-xs text-on-surface-variant block mb-1">Image</label>
                   <input
                     type="text"
                     value={infobox.image || ''}
                     onChange={(e) => setInfobox((p) => ({ ...p, image: e.target.value }))}
                     placeholder="TB4-S2-icon.png"
-                    className="w-full bg-qw-darker text-white p-2 rounded border border-qw-border focus:border-qw-accent outline-none text-sm"
+                    className="w-full bg-background text-on-surface p-2 rounded border border-outline-variant focus:border-primary outline-none text-sm"
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-qw-muted block mb-1">Prize Pool</label>
+                  <label className="text-xs text-on-surface-variant block mb-1">Prize Pool</label>
                   <input
                     type="text"
                     value={infobox.prizepool || ''}
                     onChange={(e) => setInfobox((p) => ({ ...p, prizepool: e.target.value }))}
-                    className="w-full bg-qw-darker text-white p-2 rounded border border-qw-border focus:border-qw-accent outline-none text-sm"
+                    className="w-full bg-background text-on-surface p-2 rounded border border-outline-variant focus:border-primary outline-none text-sm"
                   />
                 </div>
               </div>
 
-              <div className="text-xs text-qw-muted bg-qw-darker p-3 rounded border border-qw-border/50">
-                <div className="font-semibold text-white mb-1">Auto-derived from QWICKY:</div>
+              <div className="text-xs text-on-surface-variant bg-background p-3 rounded border border-outline-variant/50">
+                <div className="font-semibold text-on-surface mb-1">Auto-derived from QWICKY:</div>
                 <div>
                   Format: {tournament.mode || '4on4'} | Start: {tournament.startDate || '(not set)'}{' '}
                   | Teams:{' '}
@@ -641,48 +641,48 @@ export default function WikiSetupWizard({ tournament, updateTournament, onClose 
 
               {/* Template reference */}
               <details className="text-xs">
-                <summary className="text-qw-muted cursor-pointer hover:text-white">
+                <summary className="text-on-surface-variant cursor-pointer hover:text-on-surface">
                   Wiki template reference
                 </summary>
-                <div className="mt-2 p-3 bg-qw-darker rounded border border-qw-border/50 space-y-2 text-qw-muted font-mono">
+                <div className="mt-2 p-3 bg-background rounded border border-outline-variant/50 space-y-2 text-on-surface-variant font-mono">
                   <div>
-                    <span className="text-qw-accent">{'{{Infobox league}}'}</span> — Tournament
+                    <span className="text-primary">{'{{Infobox league}}'}</span> — Tournament
                     header with metadata
                   </div>
                   <div>
-                    <span className="text-qw-accent">{'{{Tabs static}}'}</span> — Navigation tabs
+                    <span className="text-primary">{'{{Tabs static}}'}</span> — Navigation tabs
                     between pages
                   </div>
                   <div>
-                    <span className="text-qw-accent">{'{{GroupTableStart}}'}</span> — Group stage
+                    <span className="text-primary">{'{{GroupTableStart}}'}</span> — Group stage
                     standings table
                   </div>
                   <div>
-                    <span className="text-qw-accent">{'{{GroupTableSlot}}'}</span> — Team row in
+                    <span className="text-primary">{'{{GroupTableSlot}}'}</span> — Team row in
                     standings
                   </div>
                   <div>
-                    <span className="text-qw-accent">{'{{MatchList}}'}</span> — Match results
+                    <span className="text-primary">{'{{MatchList}}'}</span> — Match results
                     container
                   </div>
                   <div>
-                    <span className="text-qw-accent">{'{{MatchMaps}}'}</span> — Individual match
+                    <span className="text-primary">{'{{MatchMaps}}'}</span> — Individual match
                     with map scores
                   </div>
                   <div>
-                    <span className="text-qw-accent">{'{{4SETeamBracket}}'}</span> — 4-team single
+                    <span className="text-primary">{'{{4SETeamBracket}}'}</span> — 4-team single
                     elimination bracket
                   </div>
                   <div>
-                    <span className="text-qw-accent">{'{{8SETeamBracket}}'}</span> — 8-team single
+                    <span className="text-primary">{'{{8SETeamBracket}}'}</span> — 8-team single
                     elimination bracket
                   </div>
                   <div>
-                    <span className="text-qw-accent">{'{{player|Name|flag=xx}}'}</span> — Player
+                    <span className="text-primary">{'{{player|Name|flag=xx}}'}</span> — Player
                     link with country flag
                   </div>
                   <div>
-                    <span className="text-qw-accent">{'{{Abbr/TBD}}'}</span> — "To be determined"
+                    <span className="text-primary">{'{{Abbr/TBD}}'}</span> — "To be determined"
                     placeholder
                   </div>
                 </div>
@@ -702,7 +702,7 @@ export default function WikiSetupWizard({ tournament, updateTournament, onClose 
           {/* ── STEP 3: Create Pages ── */}
           {step === 3 && (
             <div className="space-y-4">
-              <h3 className="font-display text-sm text-white">Page Structure</h3>
+              <h3 className="font-headline text-sm text-on-surface">Page Structure</h3>
 
               {/* Safety notice */}
               <div className="flex items-start gap-2 p-3 bg-blue-900/20 border border-blue-500/30 rounded text-xs text-blue-300">
@@ -715,7 +715,7 @@ export default function WikiSetupWizard({ tournament, updateTournament, onClose 
               </div>
 
               {checkingPages && (
-                <div className="flex items-center gap-2 text-sm text-qw-muted py-2">
+                <div className="flex items-center gap-2 text-sm text-on-surface-variant py-2">
                   <Spinner /> Checking existing pages on wiki...
                 </div>
               )}
@@ -726,30 +726,30 @@ export default function WikiSetupWizard({ tournament, updateTournament, onClose 
                   return (
                     <div
                       key={page.link}
-                      className={`flex items-center gap-3 p-2 rounded text-sm ${exists ? 'bg-qw-dark/50' : 'bg-qw-darker'}`}
+                      className={`flex items-center gap-3 p-2 rounded text-sm ${exists ? 'bg-surface-container-high/50' : 'bg-background'}`}
                     >
                       <span className="font-mono w-6 text-center">
                         {existingPages === null ? (
-                          <span className="text-qw-accent">{i + 1}</span>
+                          <span className="text-primary">{i + 1}</span>
                         ) : exists ? (
-                          <span className="text-qw-muted" title="Already exists — will be skipped">
+                          <span className="text-on-surface-variant" title="Already exists — will be skipped">
                             &#10003;
                           </span>
                         ) : (
-                          <span className="text-qw-win" title="Will be created">
+                          <span className="text-tertiary" title="Will be created">
                             +
                           </span>
                         )}
                       </span>
                       <span
-                        className={`flex-1 font-mono text-xs ${exists ? 'text-qw-muted' : 'text-white'}`}
+                        className={`flex-1 font-mono text-xs ${exists ? 'text-on-surface-variant' : 'text-on-surface'}`}
                       >
                         {page.link}
                       </span>
-                      <span className="text-xs capitalize text-qw-muted">{page.type}</span>
+                      <span className="text-xs capitalize text-on-surface-variant">{page.type}</span>
                       {existingPages !== null && (
                         <span
-                          className={`text-[10px] px-1.5 py-0.5 rounded ${exists ? 'bg-zinc-700 text-zinc-400' : 'bg-qw-win/20 text-qw-win'}`}
+                          className={`text-[10px] px-1.5 py-0.5 rounded ${exists ? 'bg-zinc-700 text-zinc-400' : 'bg-qw-win/20 text-tertiary'}`}
                         >
                           {exists ? 'exists' : 'new'}
                         </span>
@@ -783,11 +783,11 @@ export default function WikiSetupWizard({ tournament, updateTournament, onClose 
                         </div>
                       ))}
                       {scaffoldResult.skipped?.map((p) => (
-                        <div key={p.title} className="text-xs mt-1 text-qw-muted">
+                        <div key={p.title} className="text-xs mt-1 text-on-surface-variant">
                           - {p.title} (exists)
                         </div>
                       ))}
-                      <div className="mt-2 text-xs text-qw-muted">
+                      <div className="mt-2 text-xs text-on-surface-variant">
                         Auto-publish targets configured. Wiki updates as you approve games.
                       </div>
                     </>
@@ -795,7 +795,7 @@ export default function WikiSetupWizard({ tournament, updateTournament, onClose 
                     <>
                       <div className="font-semibold">Some errors occurred:</div>
                       {scaffoldResult.created?.map((p) => (
-                        <div key={p.title} className="text-xs mt-1 text-green-400">
+                        <div key={p.title} className="text-xs mt-1 text-tertiary">
                           + {p.title}
                         </div>
                       ))}

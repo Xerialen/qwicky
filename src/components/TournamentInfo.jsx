@@ -46,21 +46,21 @@ function DivisionStandingsCard({ division, onNavigate }) {
     <div className="qw-panel overflow-hidden">
       <button
         onClick={() => onNavigate(division.id)}
-        className="w-full bg-qw-dark px-4 py-3 border-b border-qw-border flex items-center justify-between hover:bg-qw-dark/80 transition-colors group"
+        className="w-full bg-surface-container-high px-4 py-3 border-b border-outline-variant flex items-center justify-between hover:bg-surface-container-high/80 transition-colors group"
       >
-        <h3 className="font-display font-bold text-qw-accent group-hover:text-white transition-colors">
+        <h3 className="font-headline font-bold text-primary group-hover:text-on-surface transition-colors">
           {division.name}
         </h3>
-        <span className="text-xs text-qw-muted">{teams.length} teams</span>
+        <span className="text-xs text-on-surface-variant">{teams.length} teams</span>
       </button>
 
-      <div className={`${numGroups > 1 ? 'divide-y divide-qw-border/30' : ''}`}>
+      <div className={`${numGroups > 1 ? 'divide-y divide-outline-variant/30' : ''}`}>
         {Object.entries(standingsByGroup)
           .sort()
           .map(([groupName, groupStandings]) => (
             <div key={groupName} className="px-3 py-2">
               {numGroups > 1 && (
-                <div className="text-[10px] font-display text-qw-muted uppercase tracking-wider mb-1">
+                <div className="text-[10px] font-headline text-on-surface-variant uppercase tracking-wider mb-1">
                   Group {groupName}
                 </div>
               )}
@@ -89,11 +89,11 @@ function DivisionStandingsCard({ division, onNavigate }) {
                   }
 
                   // Badge colors
-                  let badgeClass = 'bg-qw-border text-qw-muted';
+                  let badgeClass = 'bg-outline-variant text-on-surface-variant';
                   if (idx === 0) {
-                    badgeClass = 'bg-qw-accent text-qw-dark';
+                    badgeClass = 'bg-primary text-qw-dark';
                   } else if (advances) {
-                    badgeClass = 'bg-qw-win/30 text-qw-win';
+                    badgeClass = 'bg-qw-win/30 text-tertiary';
                   }
 
                   const rowBg = advances ? tierColor || 'bg-qw-win/5' : '';
@@ -105,7 +105,7 @@ function DivisionStandingsCard({ division, onNavigate }) {
                       className={`flex items-center gap-2 px-2 py-1 rounded text-sm ${rowBg}`}
                     >
                       <span
-                        className={`inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-display font-bold flex-shrink-0 ${badgeClass}`}
+                        className={`inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-headline font-bold flex-shrink-0 ${badgeClass}`}
                       >
                         {position}
                       </span>
@@ -115,14 +115,14 @@ function DivisionStandingsCard({ division, onNavigate }) {
                         </span>
                       )}
                       <span
-                        className={`truncate font-body text-sm ${idx === 0 ? 'text-qw-accent font-semibold' : 'text-white'}`}
+                        className={`truncate font-body text-sm ${idx === 0 ? 'text-primary font-semibold' : 'text-on-surface'}`}
                       >
                         {team.name}
                       </span>
-                      <span className="ml-auto flex-shrink-0 font-mono text-xs text-qw-muted">
-                        <span className="text-qw-win">{team.matchesWon}</span>
-                        <span className="text-qw-muted">-</span>
-                        <span className="text-qw-loss">{team.matchesLost}</span>
+                      <span className="ml-auto flex-shrink-0 font-mono text-xs text-on-surface-variant">
+                        <span className="text-tertiary">{team.matchesWon}</span>
+                        <span className="text-on-surface-variant">-</span>
+                        <span className="text-error">{team.matchesLost}</span>
                       </span>
                     </div>
                   );
@@ -183,8 +183,8 @@ export default function TournamentInfo({ tournament, updateTournament, onNavigat
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="font-display font-bold text-2xl text-white flex items-center gap-3">
-          <span className="text-qw-accent">🏠</span>
+        <h2 className="font-headline font-bold text-2xl text-on-surface flex items-center gap-3">
+          <span className="text-primary">🏠</span>
           {hasDivisionsWithTeams ? 'Tournament Overview' : 'Tournament Information'}
         </h2>
       </div>
@@ -213,7 +213,7 @@ export default function TournamentInfo({ tournament, updateTournament, onNavigat
           {/* Settings toggle */}
           <button
             onClick={() => setShowSettings(!showSettings)}
-            className="flex items-center gap-2 text-sm text-qw-muted hover:text-white transition-colors"
+            className="flex items-center gap-2 text-sm text-on-surface-variant hover:text-on-surface transition-colors"
           >
             <span className={`transition-transform ${showSettings ? 'rotate-90' : ''}`}>▸</span>
             <span>{showSettings ? 'Hide Settings' : 'Show Settings'}</span>
@@ -225,24 +225,24 @@ export default function TournamentInfo({ tournament, updateTournament, onNavigat
       {(!hasDivisionsWithTeams || showSettings) && (
         <>
           <div className="qw-panel p-6">
-            <h3 className="font-display text-lg text-qw-accent mb-4">BASIC INFO</h3>
+            <h3 className="font-headline text-lg text-primary mb-4">BASIC INFO</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-qw-muted text-sm mb-1">Tournament Name</label>
+                <label className="block text-on-surface-variant text-sm mb-1">Tournament Name</label>
                 <input
                   type="text"
                   value={tournament.name || ''}
                   onChange={(e) => updateTournament({ name: e.target.value })}
                   placeholder="e.g., QW Champions League Season 5"
-                  className="w-full bg-qw-dark border border-qw-border rounded px-4 py-2 text-white"
+                  className="w-full bg-surface-container-high border border-outline-variant rounded px-4 py-2 text-on-surface"
                 />
               </div>
               <div>
-                <label className="block text-qw-muted text-sm mb-1">Game Mode</label>
+                <label className="block text-on-surface-variant text-sm mb-1">Game Mode</label>
                 <select
                   value={tournament.mode || '4on4'}
                   onChange={(e) => updateTournament({ mode: e.target.value })}
-                  className="w-full bg-qw-dark border border-qw-border rounded px-4 py-2 text-white"
+                  className="w-full bg-surface-container-high border border-outline-variant rounded px-4 py-2 text-on-surface"
                 >
                   <option value="1on1">1on1 (Duel)</option>
                   <option value="2on2">2on2</option>
@@ -251,21 +251,21 @@ export default function TournamentInfo({ tournament, updateTournament, onNavigat
                 </select>
               </div>
               <div>
-                <label className="block text-qw-muted text-sm mb-1">Start Date</label>
+                <label className="block text-on-surface-variant text-sm mb-1">Start Date</label>
                 <input
                   type="date"
                   value={tournament.startDate || ''}
                   onChange={(e) => updateTournament({ startDate: e.target.value })}
-                  className="w-full bg-qw-dark border border-qw-border rounded px-4 py-2 text-white"
+                  className="w-full bg-surface-container-high border border-outline-variant rounded px-4 py-2 text-on-surface"
                 />
               </div>
               <div>
-                <label className="block text-qw-muted text-sm mb-1">End Date</label>
+                <label className="block text-on-surface-variant text-sm mb-1">End Date</label>
                 <input
                   type="date"
                   value={tournament.endDate || ''}
                   onChange={(e) => updateTournament({ endDate: e.target.value })}
-                  className="w-full bg-qw-dark border border-qw-border rounded px-4 py-2 text-white"
+                  className="w-full bg-surface-container-high border border-outline-variant rounded px-4 py-2 text-on-surface"
                 />
               </div>
             </div>
@@ -273,20 +273,20 @@ export default function TournamentInfo({ tournament, updateTournament, onNavigat
 
           {/* Auto-Approve Settings */}
           <div className="qw-panel p-6">
-            <h3 className="font-display text-lg text-qw-accent mb-4">AUTO-APPROVE</h3>
-            <p className="text-qw-muted text-sm mb-4">
+            <h3 className="font-headline text-lg text-primary mb-4">AUTO-APPROVE</h3>
+            <p className="text-on-surface-variant text-sm mb-4">
               When the Discord bot receives a match submission, it can auto-approve if both teams
               are confidently matched to a scheduled match within the approval window.
             </p>
 
             <div className="space-y-4">
               {/* Enable toggle */}
-              <div className="flex items-center justify-between p-4 bg-qw-dark rounded border border-qw-border">
+              <div className="flex items-center justify-between p-4 bg-surface-container-high rounded border border-outline-variant">
                 <div>
-                  <label className="text-white text-sm font-display font-semibold">
+                  <label className="text-on-surface text-sm font-headline font-semibold">
                     Enable Auto-Approve
                   </label>
-                  <p className="text-qw-muted text-xs mt-0.5">
+                  <p className="text-on-surface-variant text-xs mt-0.5">
                     Automatically approve high-confidence submissions
                   </p>
                 </div>
@@ -314,12 +314,12 @@ export default function TournamentInfo({ tournament, updateTournament, onNavigat
               </div>
 
               {/* Confidence threshold */}
-              <div className="p-4 bg-qw-dark rounded border border-qw-border">
+              <div className="p-4 bg-surface-container-high rounded border border-outline-variant">
                 <div className="flex items-center justify-between mb-2">
-                  <label className="text-white text-sm font-display font-semibold">
+                  <label className="text-on-surface text-sm font-headline font-semibold">
                     Confidence Threshold
                   </label>
-                  <span className="font-mono text-sm text-qw-accent">
+                  <span className="font-mono text-sm text-primary">
                     {tournament.settings?.minAutoApproveConfidence ?? 80}%
                   </span>
                 </div>
@@ -339,7 +339,7 @@ export default function TournamentInfo({ tournament, updateTournament, onNavigat
                   }
                   className="w-full accent-qw-accent"
                 />
-                <div className="flex justify-between text-[10px] text-qw-muted font-mono mt-1">
+                <div className="flex justify-between text-[10px] text-on-surface-variant font-mono mt-1">
                   <span>50% (aggressive)</span>
                   <span>80% (default)</span>
                   <span>100% (exact only)</span>
@@ -347,12 +347,12 @@ export default function TournamentInfo({ tournament, updateTournament, onNavigat
               </div>
 
               {/* Approval window */}
-              <div className="p-4 bg-qw-dark rounded border border-qw-border">
+              <div className="p-4 bg-surface-container-high rounded border border-outline-variant">
                 <div className="flex items-center justify-between mb-2">
-                  <label className="text-white text-sm font-display font-semibold">
+                  <label className="text-on-surface text-sm font-headline font-semibold">
                     Approval Window
                   </label>
-                  <span className="font-mono text-sm text-qw-accent">
+                  <span className="font-mono text-sm text-primary">
                     {tournament.settings?.approvalWindowDays ?? 3} days
                   </span>
                 </div>
@@ -372,12 +372,12 @@ export default function TournamentInfo({ tournament, updateTournament, onNavigat
                   }
                   className="w-full accent-qw-accent"
                 />
-                <div className="flex justify-between text-[10px] text-qw-muted font-mono mt-1">
+                <div className="flex justify-between text-[10px] text-on-surface-variant font-mono mt-1">
                   <span>1 day</span>
                   <span>7 days</span>
                   <span>14 days</span>
                 </div>
-                <p className="text-qw-muted text-xs mt-2">
+                <p className="text-on-surface-variant text-xs mt-2">
                   Only match submissions to scheduled matches within this many days of the match
                   date.
                 </p>
@@ -387,8 +387,8 @@ export default function TournamentInfo({ tournament, updateTournament, onNavigat
 
           {/* Game Discovery */}
           <div className="qw-panel p-6">
-            <h3 className="font-display text-lg text-qw-accent mb-4">GAME DISCOVERY</h3>
-            <p className="text-qw-muted text-xs mb-4">
+            <h3 className="font-headline text-lg text-primary mb-4">GAME DISCOVERY</h3>
+            <p className="text-on-surface-variant text-xs mb-4">
               Automatically find tournament games from QW Stats and post candidates to Discord.
             </p>
             {(() => {
@@ -400,7 +400,7 @@ export default function TournamentInfo({ tournament, updateTournament, onNavigat
               return (
                 <div className="space-y-3">
                   {/* Enable toggle */}
-                  <div className="flex items-start gap-3 p-3 bg-qw-dark rounded border border-qw-border">
+                  <div className="flex items-start gap-3 p-3 bg-surface-container-high rounded border border-outline-variant">
                     <button
                       onClick={() => updateDisc({ enabled: !disc.enabled })}
                       className={`relative flex-shrink-0 w-11 h-6 rounded-full transition-colors mt-0.5 ${disc.enabled ? 'bg-qw-win' : 'bg-zinc-600'}`}
@@ -411,11 +411,11 @@ export default function TournamentInfo({ tournament, updateTournament, onNavigat
                     </button>
                     <div>
                       <div
-                        className={`text-sm font-semibold ${disc.enabled ? 'text-white' : 'text-qw-muted'}`}
+                        className={`text-sm font-semibold ${disc.enabled ? 'text-on-surface' : 'text-on-surface-variant'}`}
                       >
                         Enable scheduled discovery
                       </div>
-                      <div className="text-xs text-qw-muted">
+                      <div className="text-xs text-on-surface-variant">
                         Bot scans for games matching your scheduled matchups
                       </div>
                     </div>
@@ -424,12 +424,12 @@ export default function TournamentInfo({ tournament, updateTournament, onNavigat
                   {disc.enabled && (
                     <>
                       {/* Schedule */}
-                      <div className="p-3 bg-qw-dark rounded border border-qw-border">
-                        <label className="text-xs text-qw-muted block mb-1">Run schedule</label>
+                      <div className="p-3 bg-surface-container-high rounded border border-outline-variant">
+                        <label className="text-xs text-on-surface-variant block mb-1">Run schedule</label>
                         <select
                           value={disc.schedule || 'daily'}
                           onChange={(e) => updateDisc({ schedule: e.target.value })}
-                          className="w-full bg-qw-darker border border-qw-border rounded px-3 py-1.5 text-sm text-white"
+                          className="w-full bg-background border border-outline-variant rounded px-3 py-1.5 text-sm text-on-surface"
                         >
                           <option value="daily">Daily (22:00 UTC)</option>
                           <option value="twice-weekly">Twice weekly (Wed + Sun 22:00 UTC)</option>
@@ -439,10 +439,10 @@ export default function TournamentInfo({ tournament, updateTournament, onNavigat
                       </div>
 
                       {/* Threshold */}
-                      <div className="p-3 bg-qw-dark rounded border border-qw-border">
+                      <div className="p-3 bg-surface-container-high rounded border border-outline-variant">
                         <div className="flex items-center justify-between mb-1">
-                          <label className="text-xs text-qw-muted">Confidence threshold</label>
-                          <span className="text-sm font-mono text-white">
+                          <label className="text-xs text-on-surface-variant">Confidence threshold</label>
+                          <span className="text-sm font-mono text-on-surface">
                             {disc.threshold || 70}%
                           </span>
                         </div>
@@ -455,7 +455,7 @@ export default function TournamentInfo({ tournament, updateTournament, onNavigat
                           onChange={(e) => updateDisc({ threshold: parseInt(e.target.value) })}
                           className="w-full accent-qw-accent"
                         />
-                        <div className="flex justify-between text-[10px] text-qw-muted font-mono mt-1">
+                        <div className="flex justify-between text-[10px] text-on-surface-variant font-mono mt-1">
                           <span>30% (broad)</span>
                           <span>70%</span>
                           <span>95% (strict)</span>
@@ -463,8 +463,8 @@ export default function TournamentInfo({ tournament, updateTournament, onNavigat
                       </div>
 
                       {/* Tag patterns */}
-                      <div className="p-3 bg-qw-dark rounded border border-qw-border">
-                        <label className="text-xs text-qw-muted block mb-1">
+                      <div className="p-3 bg-surface-container-high rounded border border-outline-variant">
+                        <label className="text-xs text-on-surface-variant block mb-1">
                           Matchtag patterns (comma-separated)
                         </label>
                         <input
@@ -479,15 +479,15 @@ export default function TournamentInfo({ tournament, updateTournament, onNavigat
                             })
                           }
                           placeholder="e.g. eql23, s23, tb4s2"
-                          className="w-full bg-qw-darker border border-qw-border rounded px-3 py-1.5 text-sm text-white placeholder-zinc-600"
+                          className="w-full bg-background border border-outline-variant rounded px-3 py-1.5 text-sm text-on-surface placeholder-zinc-600"
                         />
-                        <p className="text-[10px] text-qw-muted mt-1">
+                        <p className="text-[10px] text-on-surface-variant mt-1">
                           Games with matching matchtags get a confidence boost
                         </p>
                       </div>
 
                       {/* Auto-import */}
-                      <div className="flex items-start gap-3 p-3 bg-qw-dark rounded border border-qw-border">
+                      <div className="flex items-start gap-3 p-3 bg-surface-container-high rounded border border-outline-variant">
                         <button
                           onClick={() => updateDisc({ autoImport: !disc.autoImport })}
                           className={`relative flex-shrink-0 w-11 h-6 rounded-full transition-colors mt-0.5 ${disc.autoImport ? 'bg-qw-win' : 'bg-zinc-600'}`}
@@ -498,11 +498,11 @@ export default function TournamentInfo({ tournament, updateTournament, onNavigat
                         </button>
                         <div>
                           <div
-                            className={`text-sm font-semibold ${disc.autoImport ? 'text-white' : 'text-qw-muted'}`}
+                            className={`text-sm font-semibold ${disc.autoImport ? 'text-on-surface' : 'text-on-surface-variant'}`}
                           >
                             Auto-import (Mode B)
                           </div>
-                          <div className="text-xs text-qw-muted">
+                          <div className="text-xs text-on-surface-variant">
                             Automatically add games above {disc.autoImportThreshold || 90}%
                             confidence
                           </div>
@@ -510,10 +510,10 @@ export default function TournamentInfo({ tournament, updateTournament, onNavigat
                       </div>
 
                       {disc.autoImport && (
-                        <div className="p-3 bg-qw-dark rounded border border-qw-border">
+                        <div className="p-3 bg-surface-container-high rounded border border-outline-variant">
                           <div className="flex items-center justify-between mb-1">
-                            <label className="text-xs text-qw-muted">Auto-import threshold</label>
-                            <span className="text-sm font-mono text-white">
+                            <label className="text-xs text-on-surface-variant">Auto-import threshold</label>
+                            <span className="text-sm font-mono text-on-surface">
                               {disc.autoImportThreshold || 90}%
                             </span>
                           </div>
@@ -568,8 +568,8 @@ export default function TournamentInfo({ tournament, updateTournament, onNavigat
 
           {/* Discord Features */}
           <div className="qw-panel p-6">
-            <h3 className="font-display text-lg text-qw-accent mb-4">DISCORD FEATURES</h3>
-            <p className="text-qw-muted text-xs mb-4">
+            <h3 className="font-headline text-lg text-primary mb-4">DISCORD FEATURES</h3>
+            <p className="text-on-surface-variant text-xs mb-4">
               Control which Discord notifications the bot sends for this tournament.
             </p>
             <div className="space-y-3">
@@ -604,7 +604,7 @@ export default function TournamentInfo({ tournament, updateTournament, onNavigat
                 return (
                   <div
                     key={key}
-                    className="flex items-start gap-3 p-3 bg-qw-dark rounded border border-qw-border"
+                    className="flex items-start gap-3 p-3 bg-surface-container-high rounded border border-outline-variant"
                   >
                     <button
                       onClick={() =>
@@ -632,11 +632,11 @@ export default function TournamentInfo({ tournament, updateTournament, onNavigat
                     </button>
                     <div>
                       <div
-                        className={`text-sm font-semibold ${isEnabled ? 'text-white' : 'text-qw-muted'}`}
+                        className={`text-sm font-semibold ${isEnabled ? 'text-on-surface' : 'text-on-surface-variant'}`}
                       >
                         {label}
                       </div>
-                      <div className="text-xs text-qw-muted">{desc}</div>
+                      <div className="text-xs text-on-surface-variant">{desc}</div>
                     </div>
                   </div>
                 );
@@ -646,22 +646,22 @@ export default function TournamentInfo({ tournament, updateTournament, onNavigat
 
           {/* Wiki Setup */}
           <div className="qw-panel p-6">
-            <h3 className="font-display text-lg text-qw-accent mb-4">WIKI INTEGRATION</h3>
+            <h3 className="font-headline text-lg text-primary mb-4">WIKI INTEGRATION</h3>
             {tournament.wikiConfig?.enabled ? (
               <div className="space-y-3">
                 <div className="flex items-center gap-2 text-sm">
                   <span className="w-2 h-2 rounded-full bg-qw-win"></span>
-                  <span className="text-white">Connected to wiki</span>
+                  <span className="text-on-surface">Connected to wiki</span>
                 </div>
-                <div className="text-xs text-qw-muted space-y-1">
+                <div className="text-xs text-on-surface-variant space-y-1">
                   <div>
                     Season page:{' '}
-                    <span className="text-white">{tournament.wikiConfig.seasonPage}</span>
+                    <span className="text-on-surface">{tournament.wikiConfig.seasonPage}</span>
                   </div>
                   {tournament.wikiConfig.navbox && (
                     <div>
                       Navbox:{' '}
-                      <span className="text-white">
+                      <span className="text-on-surface">
                         {'{{'}
                         {tournament.wikiConfig.navbox}
                         {'}}'}
@@ -670,7 +670,7 @@ export default function TournamentInfo({ tournament, updateTournament, onNavigat
                   )}
                   <div>
                     Pages:{' '}
-                    <span className="text-white">{tournament.wikiConfig.pages?.length || 0}</span>
+                    <span className="text-on-surface">{tournament.wikiConfig.pages?.length || 0}</span>
                   </div>
                 </div>
                 <button
@@ -682,7 +682,7 @@ export default function TournamentInfo({ tournament, updateTournament, onNavigat
               </div>
             ) : (
               <div className="space-y-3">
-                <p className="text-sm text-qw-muted">
+                <p className="text-sm text-on-surface-variant">
                   Connect to the QW Wiki to automatically publish standings, match results, and
                   brackets. QWICKY will create the wiki pages with proper boilerplate and
                   auto-update them as games are approved.
@@ -699,24 +699,24 @@ export default function TournamentInfo({ tournament, updateTournament, onNavigat
 
           {/* Discord Integration */}
           <div className="qw-panel p-6">
-            <h3 className="font-display text-lg text-qw-accent mb-4">DISCORD INTEGRATION</h3>
-            <p className="text-qw-muted text-sm mb-4">
+            <h3 className="font-headline text-lg text-primary mb-4">DISCORD INTEGRATION</h3>
+            <p className="text-on-surface-variant text-sm mb-4">
               Connect a Discord channel so players can submit match results by posting hub URLs.
             </p>
 
             <div className="space-y-4">
               {/* Tournament ID */}
-              <div className="p-4 bg-qw-dark rounded border border-qw-border">
-                <label className="block text-qw-muted text-sm mb-1">
+              <div className="p-4 bg-surface-container-high rounded border border-outline-variant">
+                <label className="block text-on-surface-variant text-sm mb-1">
                   Tournament ID (use this with /register)
                 </label>
                 <div className="flex items-center gap-2">
-                  <code className="flex-1 bg-qw-darker px-4 py-2 rounded font-mono text-white text-sm">
+                  <code className="flex-1 bg-background px-4 py-2 rounded font-mono text-on-surface text-sm">
                     {tournamentSlug}
                   </code>
                   <button
                     onClick={() => copyToClipboard(tournamentSlug, 'slug')}
-                    className="px-3 py-2 rounded bg-qw-accent text-qw-dark text-sm font-semibold hover:bg-qw-accent/80"
+                    className="px-3 py-2 rounded bg-primary text-qw-dark text-sm font-semibold hover:bg-primary/80"
                   >
                     {copiedField === 'slug' ? 'Copied!' : 'Copy'}
                   </button>
@@ -724,12 +724,12 @@ export default function TournamentInfo({ tournament, updateTournament, onNavigat
               </div>
 
               {/* Public Link */}
-              <div className="p-4 bg-qw-dark rounded border border-qw-border">
-                <label className="block text-qw-muted text-sm mb-1">
+              <div className="p-4 bg-surface-container-high rounded border border-outline-variant">
+                <label className="block text-on-surface-variant text-sm mb-1">
                   Public Link (read-only tournament page)
                 </label>
                 <div className="flex items-center gap-2">
-                  <code className="flex-1 bg-qw-darker px-4 py-2 rounded font-mono text-white text-sm truncate">
+                  <code className="flex-1 bg-background px-4 py-2 rounded font-mono text-on-surface text-sm truncate">
                     {window.location.origin}/#/t/{tournamentSlug}
                   </code>
                   <button
@@ -739,30 +739,30 @@ export default function TournamentInfo({ tournament, updateTournament, onNavigat
                         'public-link'
                       )
                     }
-                    className="px-3 py-2 rounded bg-qw-accent text-qw-dark text-sm font-semibold hover:bg-qw-accent/80"
+                    className="px-3 py-2 rounded bg-primary text-qw-dark text-sm font-semibold hover:bg-primary/80"
                   >
                     {copiedField === 'public-link' ? 'Copied!' : 'Copy'}
                   </button>
                 </div>
-                <p className="text-qw-muted text-xs mt-1">
+                <p className="text-on-surface-variant text-xs mt-1">
                   Share this link for read-only tournament standings
                 </p>
               </div>
 
               {/* Register command */}
-              <div className="p-4 bg-qw-dark rounded border border-qw-border">
-                <label className="block text-qw-muted text-sm mb-1">
+              <div className="p-4 bg-surface-container-high rounded border border-outline-variant">
+                <label className="block text-on-surface-variant text-sm mb-1">
                   Register command (paste in Discord)
                 </label>
                 <div className="flex items-center gap-2">
-                  <code className="flex-1 bg-qw-darker px-4 py-2 rounded font-mono text-white text-sm">
+                  <code className="flex-1 bg-background px-4 py-2 rounded font-mono text-on-surface text-sm">
                     /register tournament-id:{tournamentSlug}
                   </code>
                   <button
                     onClick={() =>
                       copyToClipboard(`/register tournament-id:${tournamentSlug}`, 'cmd')
                     }
-                    className="px-3 py-2 rounded bg-qw-accent text-qw-dark text-sm font-semibold hover:bg-qw-accent/80"
+                    className="px-3 py-2 rounded bg-primary text-qw-dark text-sm font-semibold hover:bg-primary/80"
                   >
                     {copiedField === 'cmd' ? 'Copied!' : 'Copy'}
                   </button>
@@ -770,15 +770,15 @@ export default function TournamentInfo({ tournament, updateTournament, onNavigat
               </div>
 
               {/* Bot invite */}
-              <div className="p-4 bg-qw-dark rounded border border-qw-border">
-                <label className="block text-qw-muted text-sm mb-2">Setup steps</label>
-                <ol className="text-sm text-qw-muted space-y-2 list-decimal list-inside">
+              <div className="p-4 bg-surface-container-high rounded border border-outline-variant">
+                <label className="block text-on-surface-variant text-sm mb-2">Setup steps</label>
+                <ol className="text-sm text-on-surface-variant space-y-2 list-decimal list-inside">
                   <li>
                     <a
                       href={botInviteUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-qw-accent hover:underline"
+                      className="text-primary hover:underline"
                     >
                       Invite QWICKY Bot to your Discord server
                     </a>
@@ -787,38 +787,38 @@ export default function TournamentInfo({ tournament, updateTournament, onNavigat
                   <li>Type the register command above</li>
                   <li>Players can now post hub.quakeworld.nu links and the bot will track them</li>
                   <li>
-                    Review submissions in the <span className="text-qw-accent">Results</span> tab of
+                    Review submissions in the <span className="text-primary">Results</span> tab of
                     each division
                   </li>
                 </ol>
               </div>
 
               {/* Registered Channels status */}
-              <div className="p-4 bg-qw-dark rounded border border-qw-border">
+              <div className="p-4 bg-surface-container-high rounded border border-outline-variant">
                 <div className="flex items-center justify-between mb-3">
-                  <label className="block text-qw-muted text-sm">Registered Channels</label>
+                  <label className="block text-on-surface-variant text-sm">Registered Channels</label>
                   <button
                     onClick={loadChannels}
                     disabled={channelsLoading}
-                    className="px-2 py-1 text-xs rounded bg-qw-darker border border-qw-border text-qw-muted hover:text-white hover:border-qw-accent transition-all disabled:opacity-50"
+                    className="px-2 py-1 text-xs rounded bg-background border border-outline-variant text-on-surface-variant hover:text-on-surface hover:border-primary transition-all disabled:opacity-50"
                   >
                     {channelsLoading ? 'Loading…' : 'Refresh'}
                   </button>
                 </div>
 
                 {channelsError && (
-                  <p className="text-qw-loss text-xs font-mono">Error: {channelsError}</p>
+                  <p className="text-error text-xs font-mono">Error: {channelsError}</p>
                 )}
 
                 {!channelsError && channels !== null && channels.length === 0 && (
-                  <p className="text-qw-muted text-sm italic">No channels registered yet.</p>
+                  <p className="text-on-surface-variant text-sm italic">No channels registered yet.</p>
                 )}
 
                 {!channelsError && channels !== null && channels.length > 0 && (
                   <div className="overflow-x-auto">
                     <table className="w-full text-xs font-mono">
                       <thead>
-                        <tr className="text-qw-muted border-b border-qw-border">
+                        <tr className="text-on-surface-variant border-b border-outline-variant">
                           <th className="text-left pb-2 pr-4">Tournament</th>
                           <th className="text-left pb-2 pr-4">Division</th>
                           <th className="text-left pb-2 pr-4">Channel</th>
@@ -838,12 +838,12 @@ export default function TournamentInfo({ tournament, updateTournament, onNavigat
                             : null;
                           const activityColor =
                             daysAgo === null
-                              ? 'text-qw-muted'
+                              ? 'text-on-surface-variant'
                               : daysAgo > 30
-                                ? 'text-qw-loss'
+                                ? 'text-error'
                                 : daysAgo > 14
                                   ? 'text-yellow-400'
-                                  : 'text-qw-win';
+                                  : 'text-tertiary';
                           const activityLabel =
                             daysAgo === null
                               ? 'never'
@@ -854,14 +854,14 @@ export default function TournamentInfo({ tournament, updateTournament, onNavigat
                           return (
                             <tr
                               key={ch.discord_channel_id}
-                              className={`border-b border-qw-border/20 ${isCurrent ? 'text-qw-accent' : 'text-qw-text'}`}
+                              className={`border-b border-outline-variant/20 ${isCurrent ? 'text-primary' : 'text-on-surface'}`}
                             >
                               <td className="py-1.5 pr-4">
-                                {isCurrent && <span className="text-qw-win mr-1">●</span>}
+                                {isCurrent && <span className="text-tertiary mr-1">●</span>}
                                 {ch.tournament_id}
                               </td>
-                              <td className="py-1.5 pr-4 text-qw-muted">{ch.division_id || '—'}</td>
-                              <td className="py-1.5 pr-4 text-qw-muted">
+                              <td className="py-1.5 pr-4 text-on-surface-variant">{ch.division_id || '—'}</td>
+                              <td className="py-1.5 pr-4 text-on-surface-variant">
                                 …{ch.discord_channel_id.slice(-7)}
                               </td>
                               <td className="py-1.5 pr-4">{gameDate || '—'}</td>
@@ -875,7 +875,7 @@ export default function TournamentInfo({ tournament, updateTournament, onNavigat
                 )}
 
                 {channelsLoading && channels === null && (
-                  <p className="text-qw-muted text-xs font-mono animate-pulse">
+                  <p className="text-on-surface-variant text-xs font-mono animate-pulse">
                     Fetching channels…
                   </p>
                 )}
@@ -885,71 +885,71 @@ export default function TournamentInfo({ tournament, updateTournament, onNavigat
 
           {/* Instructions */}
           <div className="qw-panel p-6">
-            <h3 className="font-display text-lg text-qw-accent mb-4">WORKFLOW</h3>
+            <h3 className="font-headline text-lg text-primary mb-4">WORKFLOW</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <div className="p-4 bg-qw-dark rounded border border-qw-border">
+              <div className="p-4 bg-surface-container-high rounded border border-outline-variant">
                 <div className="flex items-center gap-2 mb-2">
-                  <span className="w-6 h-6 rounded-full bg-qw-accent text-qw-dark flex items-center justify-center font-display font-bold text-sm">
+                  <span className="w-6 h-6 rounded-full bg-primary text-qw-dark flex items-center justify-center font-headline font-bold text-sm">
                     1
                   </span>
-                  <h4 className="font-display text-white">Create Divisions</h4>
+                  <h4 className="font-headline text-on-surface">Create Divisions</h4>
                 </div>
-                <p className="text-qw-muted text-sm">
+                <p className="text-on-surface-variant text-sm">
                   Set up divisions (e.g., Div 1, Div 2) with their own format settings.
                 </p>
               </div>
-              <div className="p-4 bg-qw-dark rounded border border-qw-border">
+              <div className="p-4 bg-surface-container-high rounded border border-outline-variant">
                 <div className="flex items-center gap-2 mb-2">
-                  <span className="w-6 h-6 rounded-full bg-qw-accent text-qw-dark flex items-center justify-center font-display font-bold text-sm">
+                  <span className="w-6 h-6 rounded-full bg-primary text-qw-dark flex items-center justify-center font-headline font-bold text-sm">
                     2
                   </span>
-                  <h4 className="font-display text-white">Add Teams</h4>
+                  <h4 className="font-headline text-on-surface">Add Teams</h4>
                 </div>
-                <p className="text-qw-muted text-sm">
+                <p className="text-on-surface-variant text-sm">
                   Add teams to each division with names and country codes.
                 </p>
               </div>
-              <div className="p-4 bg-qw-dark rounded border border-qw-border">
+              <div className="p-4 bg-surface-container-high rounded border border-outline-variant">
                 <div className="flex items-center gap-2 mb-2">
-                  <span className="w-6 h-6 rounded-full bg-qw-accent text-qw-dark flex items-center justify-center font-display font-bold text-sm">
+                  <span className="w-6 h-6 rounded-full bg-primary text-qw-dark flex items-center justify-center font-headline font-bold text-sm">
                     3
                   </span>
-                  <h4 className="font-display text-white">Generate Schedule</h4>
+                  <h4 className="font-headline text-on-surface">Generate Schedule</h4>
                 </div>
-                <p className="text-qw-muted text-sm">
+                <p className="text-on-surface-variant text-sm">
                   Auto-generate group stage matches or add manually.
                 </p>
               </div>
-              <div className="p-4 bg-qw-dark rounded border border-qw-border">
+              <div className="p-4 bg-surface-container-high rounded border border-outline-variant">
                 <div className="flex items-center gap-2 mb-2">
-                  <span className="w-6 h-6 rounded-full bg-qw-accent text-qw-dark flex items-center justify-center font-display font-bold text-sm">
+                  <span className="w-6 h-6 rounded-full bg-primary text-qw-dark flex items-center justify-center font-headline font-bold text-sm">
                     4
                   </span>
-                  <h4 className="font-display text-white">Import Results</h4>
+                  <h4 className="font-headline text-on-surface">Import Results</h4>
                 </div>
-                <p className="text-qw-muted text-sm">
+                <p className="text-on-surface-variant text-sm">
                   Fetch from API or upload JSON files with game results.
                 </p>
               </div>
-              <div className="p-4 bg-qw-dark rounded border border-qw-border">
+              <div className="p-4 bg-surface-container-high rounded border border-outline-variant">
                 <div className="flex items-center gap-2 mb-2">
-                  <span className="w-6 h-6 rounded-full bg-qw-accent text-qw-dark flex items-center justify-center font-display font-bold text-sm">
+                  <span className="w-6 h-6 rounded-full bg-primary text-qw-dark flex items-center justify-center font-headline font-bold text-sm">
                     5
                   </span>
-                  <h4 className="font-display text-white">View Standings</h4>
+                  <h4 className="font-headline text-on-surface">View Standings</h4>
                 </div>
-                <p className="text-qw-muted text-sm">
+                <p className="text-on-surface-variant text-sm">
                   See auto-calculated group standings and playoff brackets.
                 </p>
               </div>
-              <div className="p-4 bg-qw-dark rounded border border-qw-border">
+              <div className="p-4 bg-surface-container-high rounded border border-outline-variant">
                 <div className="flex items-center gap-2 mb-2">
-                  <span className="w-6 h-6 rounded-full bg-qw-accent text-qw-dark flex items-center justify-center font-display font-bold text-sm">
+                  <span className="w-6 h-6 rounded-full bg-primary text-qw-dark flex items-center justify-center font-headline font-bold text-sm">
                     6
                   </span>
-                  <h4 className="font-display text-white">Export to Wiki</h4>
+                  <h4 className="font-headline text-on-surface">Export to Wiki</h4>
                 </div>
-                <p className="text-qw-muted text-sm">
+                <p className="text-on-surface-variant text-sm">
                   Generate MediaWiki markup for Liquipedia pages.
                 </p>
               </div>
@@ -961,18 +961,18 @@ export default function TournamentInfo({ tournament, updateTournament, onNavigat
       {/* Quick Overview (only when no teams yet but divisions exist) */}
       {!hasDivisionsWithTeams && (
         <div className="qw-panel p-6">
-          <h3 className="font-display text-lg text-qw-accent mb-4">OVERVIEW</h3>
+          <h3 className="font-headline text-lg text-primary mb-4">OVERVIEW</h3>
 
           {tournament.divisions.length === 0 ? (
             <div className="text-center py-8">
               <div className="text-5xl mb-4">🚀</div>
-              <h4 className="font-display text-xl text-white mb-2">Ready to Get Started?</h4>
-              <p className="text-qw-muted mb-4">
+              <h4 className="font-headline text-xl text-on-surface mb-2">Ready to Get Started?</h4>
+              <p className="text-on-surface-variant mb-4">
                 Create divisions to organize your tournament. Each division can have its own teams,
                 format, and schedule.
               </p>
-              <p className="text-qw-muted text-sm">
-                Go to <span className="text-qw-accent">Divisions</span> tab to create your first
+              <p className="text-on-surface-variant text-sm">
+                Go to <span className="text-primary">Divisions</span> tab to create your first
                 division.
               </p>
             </div>
@@ -986,32 +986,32 @@ export default function TournamentInfo({ tournament, updateTournament, onNavigat
                   totalMatches > 0 ? Math.round((completedMatches / totalMatches) * 100) : 0;
 
                 return (
-                  <div key={div.id} className="p-4 bg-qw-dark rounded border border-qw-border">
+                  <div key={div.id} className="p-4 bg-surface-container-high rounded border border-outline-variant">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-3">
-                        <span className="w-8 h-8 rounded bg-qw-accent/20 flex items-center justify-center font-display font-bold text-qw-accent">
+                        <span className="w-8 h-8 rounded bg-primary/20 flex items-center justify-center font-headline font-bold text-primary">
                           {idx + 1}
                         </span>
                         <div>
-                          <h4 className="font-body font-semibold text-white">{div.name}</h4>
-                          <p className="text-xs text-qw-muted">
+                          <h4 className="font-body font-semibold text-on-surface">{div.name}</h4>
+                          <p className="text-xs text-on-surface-variant">
                             {div.teams?.length || 0} teams • {div.numGroups} groups • Bo
                             {div.groupStageBestOf} groups / Bo{div.playoffFinalBestOf} final
                           </p>
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="font-mono text-sm text-white">
+                        <div className="font-mono text-sm text-on-surface">
                           {completedMatches}/{totalMatches} matches
                         </div>
-                        <div className="text-xs text-qw-muted">{progress}% complete</div>
+                        <div className="text-xs text-on-surface-variant">{progress}% complete</div>
                       </div>
                     </div>
 
                     {/* Progress bar */}
-                    <div className="h-1.5 bg-qw-border rounded-full overflow-hidden">
+                    <div className="h-1.5 bg-outline-variant rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-qw-accent rounded-full transition-all"
+                        className="h-full bg-primary rounded-full transition-all"
                         style={{ width: `${progress}%` }}
                       />
                     </div>

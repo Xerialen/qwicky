@@ -29,28 +29,28 @@ export default function TeamImportPreview({
 
   return (
     <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
-      <div className="bg-qw-panel rounded-lg max-w-5xl w-full max-h-[90vh] flex flex-col">
+      <div className="bg-surface-container-high  max-w-5xl w-full max-h-[90vh] flex flex-col">
         {/* Header */}
-        <div className="px-6 py-4 border-b border-qw-border flex items-center justify-between">
+        <div className="px-6 py-4 border-b border-outline-variant flex items-center justify-between">
           <div>
-            <h2 className="font-display text-xl text-qw-accent">{title}</h2>
-            <p className="text-sm text-qw-muted mt-1">Review teams before importing</p>
+            <h2 className="font-headline text-xl text-primary">{title}</h2>
+            <p className="text-sm text-on-surface-variant mt-1">Review teams before importing</p>
           </div>
           <button
             onClick={onCancel}
-            className="text-qw-muted hover:text-white text-2xl leading-none"
+            className="text-on-surface-variant hover:text-on-surface text-2xl leading-none"
           >
             ×
           </button>
         </div>
 
         {/* Summary Banner */}
-        <div className="px-6 py-3 bg-qw-dark border-b border-qw-border">
+        <div className="px-6 py-3 bg-surface-container-high border-b border-outline-variant">
           <div className="flex items-center gap-6 text-sm">
-            <span className="text-white font-semibold">{summary.total} teams</span>
-            <span className="text-qw-win">{summary.valid} valid</span>
+            <span className="text-on-surface font-semibold">{summary.total} teams</span>
+            <span className="text-tertiary">{summary.valid} valid</span>
             {summary.errors > 0 && (
-              <span className="text-qw-loss">{summary.errors} with errors</span>
+              <span className="text-error">{summary.errors} with errors</span>
             )}
             {summary.warnings > 0 && (
               <span className="text-yellow-400">{summary.warnings} with warnings</span>
@@ -71,8 +71,8 @@ export default function TeamImportPreview({
         </div>
 
         {/* Actions */}
-        <div className="px-6 py-4 border-t border-qw-border flex items-center justify-between">
-          <div className="text-sm text-qw-muted">
+        <div className="px-6 py-4 border-t border-outline-variant flex items-center justify-between">
+          <div className="text-sm text-on-surface-variant">
             {hasErrors && (
               <span className="text-yellow-400">⚠️ Fix errors to import all teams</span>
             )}
@@ -83,14 +83,14 @@ export default function TeamImportPreview({
           <div className="flex gap-3">
             <button
               onClick={onCancel}
-              className="px-4 py-2 rounded border border-qw-border text-qw-muted hover:text-white"
+              className="px-4 py-2 rounded border border-outline-variant text-on-surface-variant hover:text-on-surface"
             >
               Cancel
             </button>
             {hasErrors && summary.valid > 0 && (
               <button
                 onClick={handleImportValid}
-                className="px-4 py-2 rounded bg-qw-dark border border-qw-accent text-qw-accent hover:bg-qw-accent hover:text-black"
+                className="px-4 py-2 rounded bg-surface-container-high border border-primary text-primary hover:bg-primary hover:text-black"
               >
                 Import {summary.valid} Valid Team{summary.valid !== 1 ? 's' : ''}
               </button>
@@ -99,7 +99,7 @@ export default function TeamImportPreview({
               onClick={handleImportAll}
               disabled={hasErrors}
               className={`px-4 py-2 rounded font-semibold ${
-                hasErrors ? 'bg-qw-dark text-qw-muted cursor-not-allowed' : 'qw-btn'
+                hasErrors ? 'bg-surface-container-high text-on-surface-variant cursor-not-allowed' : 'qw-btn'
               }`}
             >
               Import All {summary.total} Team{summary.total !== 1 ? 's' : ''}
@@ -117,12 +117,12 @@ function TeamPreviewRow({ team, index }) {
   const hasConflicts = team.conflicts?.length > 0;
 
   // Determine status color
-  let statusColor = 'text-qw-win'; // green for valid
+  let statusColor = 'text-tertiary'; // green for valid
   let statusIcon = '✓';
-  let borderColor = 'border-qw-border';
+  let borderColor = 'border-outline-variant';
 
   if (hasErrors) {
-    statusColor = 'text-qw-loss';
+    statusColor = 'text-error';
     statusIcon = '✕';
     borderColor = 'border-qw-loss/30';
   } else if (hasConflicts) {
@@ -136,7 +136,7 @@ function TeamPreviewRow({ team, index }) {
   }
 
   return (
-    <div className={`p-3 bg-qw-dark rounded border ${borderColor}`}>
+    <div className={`p-3 bg-surface-container-high rounded border ${borderColor}`}>
       <div className="flex items-start gap-3">
         {/* Status Icon */}
         <span className={`${statusColor} font-bold text-lg leading-none mt-0.5`}>{statusIcon}</span>
@@ -144,14 +144,14 @@ function TeamPreviewRow({ team, index }) {
         {/* Team Info */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-3 mb-1">
-            <span className="text-sm text-qw-muted font-mono">#{index + 1}</span>
-            <span className="font-semibold text-white">{team.name || '(empty)'}</span>
-            {team.tag && <span className="text-qw-muted font-mono text-sm">[{team.tag}]</span>}
+            <span className="text-sm text-on-surface-variant font-mono">#{index + 1}</span>
+            <span className="font-semibold text-on-surface">{team.name || '(empty)'}</span>
+            {team.tag && <span className="text-on-surface-variant font-mono text-sm">[{team.tag}]</span>}
             {team.country && (
-              <span className="text-qw-muted text-sm uppercase">{team.country}</span>
+              <span className="text-on-surface-variant text-sm uppercase">{team.country}</span>
             )}
             {team.group && (
-              <span className="px-2 py-0.5 rounded bg-qw-accent/20 text-qw-accent text-xs font-semibold">
+              <span className="px-2 py-0.5 rounded bg-primary/20 text-primary text-xs font-semibold">
                 Group {team.group}
               </span>
             )}
@@ -159,14 +159,14 @@ function TeamPreviewRow({ team, index }) {
 
           {/* Players */}
           {team.players && (
-            <div className="text-xs text-qw-muted mt-1">Players: {team.players}</div>
+            <div className="text-xs text-on-surface-variant mt-1">Players: {team.players}</div>
           )}
 
           {/* Errors */}
           {hasErrors && (
             <div className="mt-2 space-y-1">
               {team.errors.map((error, idx) => (
-                <div key={idx} className="text-xs text-qw-loss flex items-start gap-1">
+                <div key={idx} className="text-xs text-error flex items-start gap-1">
                   <span>•</span>
                   <span>{error}</span>
                 </div>

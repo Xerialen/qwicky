@@ -1,7 +1,10 @@
 // src/App.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import Header from './components/Header';
+import Sidebar from './components/Sidebar';
+import StatusBar from './components/StatusBar';
 import TournamentInfo from './components/TournamentInfo';
+import Dashboard from './components/Dashboard';
 import DivisionManager from './components/DivisionManager';
 import DivisionView from './components/DivisionView';
 import LandingScreen from './components/LandingScreen';
@@ -343,6 +346,7 @@ function App() {
 
   // UI state
   const [activeTab, setActiveTab] = useState('info'); // info, divisions, division
+  const [activeSubTab, setActiveSubTab] = useState('setup'); // section tabs in header
   const [initialSubTab, setInitialSubTab] = useState(null);
 
   // Get active division
@@ -466,9 +470,8 @@ function App() {
     switch (activeTab) {
       case 'info':
         return (
-          <TournamentInfo
+          <Dashboard
             tournament={tournament}
-            updateTournament={updateTournamentInfo}
             onNavigateToDivision={(divId, subTab) => {
               setActiveDivisionId(divId);
               setInitialSubTab(subTab || 'schedule');
@@ -491,10 +494,10 @@ function App() {
       case 'division':
         if (!activeDivision) {
           return (
-            <div className="qw-panel p-12 text-center">
-              <div className="text-6xl mb-4">📁</div>
-              <h2 className="font-display text-2xl text-white mb-2">No Division Selected</h2>
-              <p className="text-qw-muted mb-4">Select or create a division to get started</p>
+            <div className="bg-surface-container-high p-12 text-center">
+              <span className="material-symbols-outlined text-6xl text-on-surface-variant/30 mb-4 block">folder_open</span>
+              <h2 className="font-headline text-2xl text-on-surface mb-2 tracking-tighter">NO SECTOR SELECTED</h2>
+              <p className="text-on-surface-variant mb-6 text-sm">Select a division from the sidebar or create a new one</p>
               <button onClick={() => setActiveTab('divisions')} className="qw-btn">
                 Manage Divisions
               </button>
@@ -516,13 +519,14 @@ function App() {
             allDivisions={tournament.divisions}
             tournament={tournament}
             initialSubTab={initialSubTab}
+            activeSubTab={activeSubTab}
+            setActiveSubTab={setActiveSubTab}
           />
         );
       default:
         return (
-          <TournamentInfo
+          <Dashboard
             tournament={tournament}
-            updateTournament={updateTournamentInfo}
             onNavigateToDivision={(divId, subTab) => {
               setActiveDivisionId(divId);
               setInitialSubTab(subTab || 'schedule');
@@ -614,20 +618,38 @@ function App() {
 
   // ─── Full app ─────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-qw-darker">
+    <div className="h-screen flex flex-col bg-background">
       <Header
         tournament={tournament}
-        divisions={tournament.divisions}
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         activeDivisionId={activeDivisionId}
-        setActiveDivisionId={setActiveDivisionId}
         importTournament={importTournament}
         resetTournament={resetTournament}
         onGoHome={() => setAppMode('landing')}
+        activeSubTab={activeSubTab}
+        setActiveSubTab={setActiveSubTab}
       />
 
-      <main className="max-w-6xl mx-auto px-4 py-6">{renderContent()}</main>
+      <div className="flex-1 flex overflow-hidden">
+        <Sidebar
+          divisions={tournament.divisions}
+          activeDivisionId={activeDivisionId}
+          onSelectDivision={(divId) => {
+            setActiveDivisionId(divId);
+            setActiveTab('division');
+          }}
+          onAddDivision={addDivision}
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
+        />
+
+        <main className="flex-1 overflow-y-auto bg-surface-dim p-6">
+          {renderContent()}
+        </main>
+      </div>
+
+      <StatusBar />
     </div>
   );
 }

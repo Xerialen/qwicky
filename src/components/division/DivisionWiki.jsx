@@ -204,31 +204,31 @@ export default function DivisionWiki({ division, tournamentName, updateDivision 
     <div className="space-y-6">
       {/* Auto-Publish Config */}
       {updateDivision && (
-        <div className="qw-panel overflow-hidden">
+        <div className="bg-surface-container-high overflow-hidden">
           <button
             onClick={() => setShowAutoConfig(!showAutoConfig)}
-            className="w-full flex items-center justify-between px-4 py-3 bg-qw-dark border-b border-qw-border hover:bg-qw-darker transition-colors"
+            className="w-full flex items-center justify-between px-4 py-3 bg-surface-container-high border-b border-outline-variant hover:bg-background transition-colors"
           >
             <div className="flex items-center gap-3">
               <span
-                className={`w-2 h-2 rounded-full ${wikiConfig.enabled ? 'bg-qw-win' : 'bg-qw-border'}`}
+                className={`w-2 h-2 rounded-full ${wikiConfig.enabled ? 'bg-tertiary' : 'bg-outline-variant'}`}
               />
-              <h3 className="font-display text-sm text-qw-accent">AUTO-PUBLISH</h3>
-              <span className="text-xs text-qw-muted">
+              <h3 className="font-headline text-sm text-primary">AUTO-PUBLISH</h3>
+              <span className="text-xs text-on-surface-variant">
                 {wikiConfig.enabled ? `${(wikiConfig.targets || []).length} target(s)` : 'disabled'}
               </span>
             </div>
-            <span className="text-qw-muted text-xs">{showAutoConfig ? '▲' : '▼'}</span>
+            <span className="text-on-surface-variant text-xs">{showAutoConfig ? '▲' : '▼'}</span>
           </button>
 
           {showAutoConfig && (
             <div className="p-4 space-y-4">
               {/* Enable toggle */}
               <div className="flex items-center justify-between">
-                <label className="text-white text-sm">Enable auto-publish for this division</label>
+                <label className="text-on-surface text-sm">Enable auto-publish for this division</label>
                 <button
                   onClick={() => updateWikiConfig({ enabled: !wikiConfig.enabled })}
-                  className={`relative w-11 h-6 rounded-full transition-colors ${wikiConfig.enabled ? 'bg-qw-win' : 'bg-qw-border'}`}
+                  className={`relative w-11 h-6 rounded-full transition-colors ${wikiConfig.enabled ? 'bg-tertiary' : 'bg-outline-variant'}`}
                 >
                   <span
                     className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${wikiConfig.enabled ? 'translate-x-5' : 'translate-x-0.5'}`}
@@ -240,7 +240,7 @@ export default function DivisionWiki({ division, tournamentName, updateDivision 
                 <>
                   {/* Targets table */}
                   <div className="space-y-2">
-                    <label className="text-white text-sm font-semibold block">
+                    <label className="text-on-surface text-sm font-semibold block">
                       Publish Targets
                     </label>
                     {(wikiConfig.targets || []).map((target, idx) => (
@@ -248,7 +248,7 @@ export default function DivisionWiki({ division, tournamentName, updateDivision 
                         <select
                           value={target.type}
                           onChange={(e) => updateTarget(idx, 'type', e.target.value)}
-                          className="bg-qw-darker border border-qw-border rounded px-2 py-1.5 text-sm text-white w-28"
+                          className="bg-background border border-outline-variant rounded px-2 py-1.5 text-sm text-on-surface w-28"
                         >
                           <option value="standings">Standings</option>
                           <option value="matches">Matches</option>
@@ -260,18 +260,18 @@ export default function DivisionWiki({ division, tournamentName, updateDivision 
                           value={target.page}
                           onChange={(e) => updateTarget(idx, 'page', e.target.value)}
                           placeholder="Wiki page name"
-                          className="flex-1 bg-qw-darker border border-qw-border rounded px-2 py-1.5 text-sm text-white font-mono placeholder-qw-muted"
+                          className="flex-1 bg-background border border-outline-variant rounded px-2 py-1.5 text-sm text-on-surface font-mono placeholder-on-surface-variant"
                         />
                         <input
                           type="text"
                           value={target.section}
                           onChange={(e) => updateTarget(idx, 'section', e.target.value)}
                           placeholder="Section (empty = full page)"
-                          className="flex-1 bg-qw-darker border border-qw-border rounded px-2 py-1.5 text-sm text-white font-mono placeholder-qw-muted"
+                          className="flex-1 bg-background border border-outline-variant rounded px-2 py-1.5 text-sm text-on-surface font-mono placeholder-on-surface-variant"
                         />
                         <button
                           onClick={() => removeTarget(idx)}
-                          className="text-qw-loss hover:text-red-400 px-2 text-lg"
+                          className="text-error hover:text-error px-2 text-lg"
                         >
                           x
                         </button>
@@ -284,7 +284,7 @@ export default function DivisionWiki({ division, tournamentName, updateDivision 
                           <button
                             key={type}
                             onClick={() => addTarget(type)}
-                            className="qw-btn-secondary px-3 py-1 text-xs capitalize"
+                            className="bg-surface-container-high border border-outline-variant px-3 py-1 text-xs capitalize"
                           >
                             + {type}
                           </button>
@@ -294,7 +294,7 @@ export default function DivisionWiki({ division, tournamentName, updateDivision 
 
                   {/* Publish Now button */}
                   {(wikiConfig.targets || []).some((t) => t.page) && (
-                    <div className="pt-3 border-t border-qw-border/30">
+                    <div className="pt-3 border-t border-outline-variant/30">
                       <div className="flex items-center gap-3">
                         <button
                           onClick={async () => {
@@ -337,7 +337,7 @@ export default function DivisionWiki({ division, tournamentName, updateDivision 
                             );
                           }}
                           disabled={publishNowState.status === 'publishing'}
-                          className="qw-btn px-4 py-1.5 text-xs disabled:opacity-50"
+                          className="heat-gradient text-on-primary-fixed px-4 py-1.5 text-xs disabled:opacity-50"
                         >
                           {publishNowState.status === 'publishing'
                             ? 'Publishing...'
@@ -348,10 +348,10 @@ export default function DivisionWiki({ division, tournamentName, updateDivision 
                             <span
                               className={`text-xs ${
                                 publishNowState.status === 'success'
-                                  ? 'text-qw-win'
+                                  ? 'text-tertiary'
                                   : publishNowState.status === 'warn'
                                     ? 'text-amber-300'
-                                    : 'text-qw-loss'
+                                    : 'text-error'
                               }`}
                             >
                               {publishNowState.message}
@@ -372,18 +372,18 @@ export default function DivisionWiki({ division, tournamentName, updateDivision 
           <button
             key={type}
             onClick={() => setActiveExport(type)}
-            className={`px-4 py-2 rounded font-body font-semibold capitalize ${activeExport === type ? 'bg-qw-accent text-qw-dark' : 'bg-qw-panel border border-qw-border text-qw-muted hover:text-white'}`}
+            className={`px-4 py-2 rounded font-body font-semibold capitalize ${activeExport === type ? 'bg-primary-container text-background' : 'bg-surface-container-high border border-outline-variant text-on-surface-variant hover:text-on-surface'}`}
           >
             {type === 'full' ? 'Full Page' : type === 'stats' ? 'Player Stats' : type}
           </button>
         ))}
       </div>
 
-      <div className="qw-panel overflow-hidden">
-        <div className="flex items-center justify-between px-4 py-3 bg-qw-dark border-b border-qw-border">
+      <div className="bg-surface-container-high overflow-hidden">
+        <div className="flex items-center justify-between px-4 py-3 bg-surface-container-high border-b border-outline-variant">
           <div className="flex items-center gap-4">
             <div>
-              <h3 className="font-display text-sm text-qw-accent">WIKI OUTPUT</h3>
+              <h3 className="font-headline text-sm text-primary">WIKI OUTPUT</h3>
               <span className="text-xs text-zinc-500">
                 {wikiContent.split('\n').length} lines · {wikiContent.length.toLocaleString()}{' '}
                 characters
@@ -394,7 +394,7 @@ export default function DivisionWiki({ division, tournamentName, updateDivision 
                 onClick={() => setViewMode('code')}
                 className={`px-3 py-1 rounded text-xs font-semibold transition-colors ${
                   viewMode === 'code'
-                    ? 'bg-qw-accent text-qw-dark'
+                    ? 'bg-primary-container text-background'
                     : 'bg-zinc-800 text-zinc-400 hover:text-zinc-200'
                 }`}
               >
@@ -404,7 +404,7 @@ export default function DivisionWiki({ division, tournamentName, updateDivision 
                 onClick={() => setViewMode('preview')}
                 className={`px-3 py-1 rounded text-xs font-semibold transition-colors ${
                   viewMode === 'preview'
-                    ? 'bg-qw-accent text-qw-dark'
+                    ? 'bg-primary-container text-background'
                     : 'bg-zinc-800 text-zinc-400 hover:text-zinc-200'
                 }`}
               >
@@ -417,7 +417,7 @@ export default function DivisionWiki({ division, tournamentName, updateDivision 
               onClick={handleCopy}
               className={`px-3 py-1.5 rounded text-xs transition-all duration-200 ${
                 copied
-                  ? 'bg-qw-win/20 text-qw-win'
+                  ? 'bg-tertiary/20 text-tertiary'
                   : 'bg-zinc-800 text-zinc-400 hover:text-zinc-200'
               }`}
             >
@@ -425,7 +425,7 @@ export default function DivisionWiki({ division, tournamentName, updateDivision 
             </button>
             <button
               onClick={handleDownload}
-              className="px-3 py-1.5 rounded text-xs bg-qw-accent text-qw-dark hover:bg-qw-accent-dim transition-colors"
+              className="px-3 py-1.5 rounded text-xs bg-primary-container text-background hover:opacity-80 transition-colors"
             >
               ⬇ Download
             </button>
@@ -434,7 +434,7 @@ export default function DivisionWiki({ division, tournamentName, updateDivision 
                 setShowPublishModal(true);
                 setPublishState({ status: 'idle', message: '' });
               }}
-              className="px-3 py-1.5 rounded text-xs bg-blue-600 text-white hover:bg-blue-500 transition-colors"
+              className="px-3 py-1.5 rounded text-xs bg-blue-600 text-on-surface hover:bg-blue-500 transition-colors"
             >
               Publish to Wiki
             </button>
@@ -442,7 +442,7 @@ export default function DivisionWiki({ division, tournamentName, updateDivision 
         </div>
         <div className="p-4 max-h-[500px] overflow-auto">
           {viewMode === 'code' ? (
-            <pre className="font-mono text-xs text-qw-text whitespace-pre-wrap">
+            <pre className="font-mono text-xs text-on-surface whitespace-pre-wrap">
               {wikiContent || ''}
             </pre>
           ) : (
@@ -452,18 +452,18 @@ export default function DivisionWiki({ division, tournamentName, updateDivision 
       </div>
 
       {/* Help section */}
-      <div className="qw-panel p-4">
-        <h4 className="font-display text-sm text-qw-accent mb-2">TEAM PLAYERS</h4>
-        <p className="text-xs text-qw-muted mb-2">
+      <div className="bg-surface-container-high p-4">
+        <h4 className="font-headline text-sm text-primary mb-2">TEAM PLAYERS</h4>
+        <p className="text-xs text-on-surface-variant mb-2">
           To include player names in wiki output, add them to each team in the Teams tab. The wiki
           templates use the format:{' '}
-          <code className="bg-qw-dark px-1 rounded">TeamName|player1, player2, player3</code>
+          <code className="bg-surface-container-high px-1 rounded">TeamName|player1, player2, player3</code>
         </p>
         {teams.length > 0 && (
           <div className="flex flex-wrap gap-2 text-xs">
             {teams.slice(0, 4).map((t) => (
-              <span key={t.id} className="px-2 py-1 bg-qw-dark rounded">
-                {t.name}: {t.players || <span className="text-qw-muted italic">no players</span>}
+              <span key={t.id} className="px-2 py-1 bg-surface-container-high rounded">
+                {t.name}: {t.players || <span className="text-on-surface-variant italic">no players</span>}
               </span>
             ))}
           </div>
@@ -477,41 +477,41 @@ export default function DivisionWiki({ division, tournamentName, updateDivision 
           onClick={() => setShowPublishModal(false)}
         >
           <div
-            className="bg-qw-panel border border-qw-border rounded-lg w-full max-w-md p-6 space-y-4"
+            className="bg-surface-container-high border border-outline-variant w-full max-w-md p-6 space-y-4"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="font-display text-sm text-qw-accent">PUBLISH TO WIKI</h3>
+            <h3 className="font-headline text-sm text-primary">PUBLISH TO WIKI</h3>
 
             <div className="space-y-3">
               <div>
-                <label className="block text-xs text-qw-muted mb-1">Page Title *</label>
+                <label className="block text-xs text-on-surface-variant mb-1">Page Title *</label>
                 <input
                   type="text"
                   value={publishFields.pageTitle}
                   onChange={(e) => setPublishFields((f) => ({ ...f, pageTitle: e.target.value }))}
                   placeholder="QW_Champions_League/Season_5/Division_1"
-                  className="w-full bg-qw-dark border border-qw-border rounded px-3 py-2 text-sm text-qw-text placeholder-zinc-600 focus:outline-none focus:border-qw-accent"
+                  className="w-full bg-surface-container-high border border-outline-variant rounded px-3 py-2 text-sm text-on-surface placeholder-zinc-600 focus:outline-none focus:border-primary"
                 />
               </div>
 
               <div>
-                <label className="block text-xs text-qw-muted mb-1">Section (optional)</label>
+                <label className="block text-xs text-on-surface-variant mb-1">Section (optional)</label>
                 <input
                   type="text"
                   value={publishFields.section}
                   onChange={(e) => setPublishFields((f) => ({ ...f, section: e.target.value }))}
                   placeholder="Leave empty to edit entire page"
-                  className="w-full bg-qw-dark border border-qw-border rounded px-3 py-2 text-sm text-qw-text placeholder-zinc-600 focus:outline-none focus:border-qw-accent"
+                  className="w-full bg-surface-container-high border border-outline-variant rounded px-3 py-2 text-sm text-on-surface placeholder-zinc-600 focus:outline-none focus:border-primary"
                 />
               </div>
 
               <div>
-                <label className="block text-xs text-qw-muted mb-1">Edit Summary</label>
+                <label className="block text-xs text-on-surface-variant mb-1">Edit Summary</label>
                 <input
                   type="text"
                   value={publishFields.summary}
                   onChange={(e) => setPublishFields((f) => ({ ...f, summary: e.target.value }))}
-                  className="w-full bg-qw-dark border border-qw-border rounded px-3 py-2 text-sm text-qw-text placeholder-zinc-600 focus:outline-none focus:border-qw-accent"
+                  className="w-full bg-surface-container-high border border-outline-variant rounded px-3 py-2 text-sm text-on-surface placeholder-zinc-600 focus:outline-none focus:border-primary"
                 />
               </div>
 
@@ -526,8 +526,8 @@ export default function DivisionWiki({ division, tournamentName, updateDivision 
                   publishState.status === 'publishing'
                     ? 'bg-blue-900/30 text-blue-300'
                     : publishState.status === 'success'
-                      ? 'bg-qw-win/10 text-qw-win'
-                      : 'bg-qw-loss/10 text-qw-loss'
+                      ? 'bg-tertiary/10 text-tertiary'
+                      : 'bg-error/10 text-error'
                 }`}
               >
                 {publishState.message}
@@ -547,7 +547,7 @@ export default function DivisionWiki({ division, tournamentName, updateDivision 
                 className={`px-4 py-2 rounded text-xs font-semibold transition-colors ${
                   publishState.status === 'publishing'
                     ? 'bg-blue-800 text-blue-300 cursor-wait'
-                    : 'bg-blue-600 text-white hover:bg-blue-500'
+                    : 'bg-blue-600 text-on-surface hover:bg-blue-500'
                 }`}
               >
                 {publishState.status === 'publishing' ? 'Publishing...' : 'Publish'}

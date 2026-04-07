@@ -161,7 +161,7 @@ export default function LandingScreen({
   const hasTournaments = cloudTournaments?.length > 0;
 
   return (
-    <div className="min-h-screen bg-qw-darker flex flex-col items-center justify-center px-4">
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4">
       <input
         type="file"
         ref={fileInputRef}
@@ -172,8 +172,8 @@ export default function LandingScreen({
 
       {/* Branding */}
       <div className="mb-12 text-center">
-        <h1 className="font-display font-bold text-2xl text-white tracking-tight">QWICKY</h1>
-        <p className="text-xs text-qw-muted mt-1">tournament admin</p>
+        <h1 className="font-headline font-bold text-2xl text-on-surface tracking-tight">QWICKY</h1>
+        <p className="text-xs text-on-surface-variant mt-1">tournament admin</p>
       </div>
 
       <div className="w-full max-w-sm space-y-3">
@@ -190,7 +190,7 @@ export default function LandingScreen({
 
         {/* Tournament list */}
         {isLoading && (
-          <div className="flex items-center justify-center gap-2 text-qw-muted text-xs py-6">
+          <div className="flex items-center justify-center gap-2 text-on-surface-variant text-xs py-6">
             <span className="animate-spin">...</span>
             <span>Loading tournaments</span>
           </div>
@@ -198,22 +198,22 @@ export default function LandingScreen({
 
         {!isLoading && hasTournaments && (
           <>
-            <div className="text-[10px] text-qw-muted uppercase tracking-widest">
+            <div className="font-headline text-[10px] uppercase tracking-widest font-bold text-on-surface-variant">
               Your tournaments
             </div>
             {cloudTournaments.map((t) => (
               <button
                 key={t.id}
                 onClick={() => onLoadFromCloud(t.id)}
-                className="w-full p-4 rounded-lg text-left border border-qw-border hover:border-qw-accent transition-colors group"
+                className="w-full p-4 text-left border border-outline-variant hover:border-primary transition-colors group"
               >
                 <div className="flex items-center justify-between">
-                  <span className="font-display font-semibold text-white group-hover:text-qw-accent transition-colors">
+                  <span className="font-headline font-semibold text-on-surface group-hover:text-primary transition-colors">
                     {t.name}
                   </span>
-                  <span className="text-qw-muted text-xs">&rarr;</span>
+                  <span className="text-on-surface-variant text-xs">&rarr;</span>
                 </div>
-                <div className="flex gap-3 text-xs text-qw-muted mt-1.5 font-mono">
+                <div className="flex gap-3 text-xs text-on-surface-variant mt-1.5 font-mono">
                   {t.mode && <span>{t.mode}</span>}
                   {t.startDate && <span>{t.startDate}</span>}
                   {t.updatedAt && <span>updated {timeAgo(t.updatedAt)}</span>}
@@ -225,7 +225,7 @@ export default function LandingScreen({
 
         {!isLoading && !hasTournaments && (
           <div className="text-center py-6">
-            <p className="text-qw-muted text-sm">No tournaments yet</p>
+            <p className="text-on-surface-variant text-sm">No tournaments yet</p>
           </div>
         )}
 
@@ -233,24 +233,24 @@ export default function LandingScreen({
         <div className="pt-3 flex gap-2">
           <button
             onClick={handleNewTournament}
-            className={`flex-1 rounded-lg font-medium text-sm transition-colors py-2.5 ${
+            className={`flex-1 font-medium text-sm transition-colors py-2.5 ${
               hasTournaments
-                ? 'border border-qw-border text-qw-muted hover:text-white hover:border-qw-accent'
-                : 'bg-qw-accent text-qw-darker hover:bg-qw-accent-dim'
+                ? 'border border-outline-variant text-on-surface-variant hover:text-on-surface hover:border-primary'
+                : 'heat-gradient text-on-primary-fixed'
             }`}
           >
             New
           </button>
           <button
             onClick={() => fileInputRef.current?.click()}
-            className="flex-1 rounded-lg font-medium text-sm border border-qw-border text-qw-muted hover:text-white hover:border-qw-accent transition-colors py-2.5"
+            className="flex-1 font-medium text-sm border border-outline-variant text-on-surface-variant hover:text-on-surface hover:border-primary transition-colors py-2.5"
           >
             Load file
           </button>
         </div>
       </div>
 
-      <p className="mt-16 text-[10px] text-qw-muted/50 font-mono">qwicky v0.5</p>
+      <p className="mt-16 text-[10px] text-on-surface-variant/50 font-mono">qwicky v0.5</p>
     </div>
   );
 }

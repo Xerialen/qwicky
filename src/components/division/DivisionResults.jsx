@@ -1019,12 +1019,12 @@ export default function DivisionResults({
       {/* Wiki publish toast */}
       {wikiToast && (
         <div
-          className={`fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg text-sm font-semibold transition-all ${
+          className={`fixed top-4 right-4 z-50 px-4 py-3 rounded shadow-lg text-sm font-semibold transition-all ${
             wikiToast.type === 'success'
-              ? 'bg-qw-win/20 border border-qw-win/40 text-qw-win'
+              ? 'bg-tertiary/20 border border-tertiary/40 text-tertiary'
               : wikiToast.type === 'warn'
                 ? 'bg-amber-500/20 border border-amber-500/40 text-amber-300'
-                : 'bg-qw-loss/20 border border-qw-loss/40 text-qw-loss'
+                : 'bg-error/20 border border-error/40 text-error'
           }`}
         >
           {wikiToast.message}
@@ -1044,37 +1044,37 @@ export default function DivisionResults({
               setMode('discord');
               fetchSubmissions(showApproved);
             }}
-            className={`px-4 py-2 rounded font-body font-semibold ${mode === 'discord' ? 'bg-qw-accent text-qw-dark' : 'bg-qw-panel border border-qw-border text-qw-muted hover:text-white'}`}
+            className={`px-4 py-2 rounded font-body font-semibold ${mode === 'discord' ? 'bg-primary-container text-on-primary-container' : 'bg-surface-container-high border border-outline-variant text-on-surface-variant hover:text-on-surface'}`}
           >
             🤖 Discord
           </button>
           <button
             onClick={() => setMode('api')}
-            className={`px-4 py-2 rounded font-body font-semibold ${mode === 'api' ? 'bg-qw-accent text-qw-dark' : 'bg-qw-panel border border-qw-border text-qw-muted hover:text-white'}`}
+            className={`px-4 py-2 rounded font-body font-semibold ${mode === 'api' ? 'bg-primary-container text-on-primary-container' : 'bg-surface-container-high border border-outline-variant text-on-surface-variant hover:text-on-surface'}`}
           >
             🌐 API Fetch
           </button>
           <button
             onClick={() => setMode('json')}
-            className={`px-4 py-2 rounded font-body font-semibold ${mode === 'json' ? 'bg-qw-accent text-qw-dark' : 'bg-qw-panel border border-qw-border text-qw-muted hover:text-white'}`}
+            className={`px-4 py-2 rounded font-body font-semibold ${mode === 'json' ? 'bg-primary-container text-on-primary-container' : 'bg-surface-container-high border border-outline-variant text-on-surface-variant hover:text-on-surface'}`}
           >
             📄 JSON Import
           </button>
           <button
             onClick={() => setMode('browse')}
-            className={`px-4 py-2 rounded font-body font-semibold ${mode === 'browse' ? 'bg-qw-accent text-qw-dark' : 'bg-qw-panel border border-qw-border text-qw-muted hover:text-white'}`}
+            className={`px-4 py-2 rounded font-body font-semibold ${mode === 'browse' ? 'bg-primary-container text-on-primary-container' : 'bg-surface-container-high border border-outline-variant text-on-surface-variant hover:text-on-surface'}`}
           >
             🔍 Browse
           </button>
           <button
             onClick={() => setMode('discover')}
-            className={`px-4 py-2 rounded font-body font-semibold ${mode === 'discover' ? 'bg-qw-accent text-qw-dark' : 'bg-qw-panel border border-qw-border text-qw-muted hover:text-white'}`}
+            className={`px-4 py-2 rounded font-body font-semibold ${mode === 'discover' ? 'bg-primary-container text-on-primary-container' : 'bg-surface-container-high border border-outline-variant text-on-surface-variant hover:text-on-surface'}`}
           >
             🎯 Discover
           </button>
         </div>
         {rawMaps.length > 0 && (
-          <button onClick={handleClearResults} className="text-sm text-red-400 hover:text-red-300">
+          <button onClick={handleClearResults} className="text-sm text-error hover:text-red-300">
             Clear All
           </button>
         )}
@@ -1083,12 +1083,12 @@ export default function DivisionResults({
       {mode === 'discord' ? (
         <div className="qw-panel p-6 space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="font-display text-lg text-qw-accent">DISCORD SUBMISSIONS</h3>
+            <h3 className="font-headline text-lg text-primary">DISCORD SUBMISSIONS</h3>
             <div className="flex gap-2 items-center">
               {filteredSubmissions.filter((s) => s.status === 'pending').length > 1 && (
                 <button
                   onClick={handleBulkApprove}
-                  className="px-3 py-1 rounded bg-qw-win text-qw-dark text-sm font-semibold"
+                  className="px-3 py-1 rounded bg-tertiary text-on-tertiary text-sm font-semibold"
                 >
                   Approve All ({filteredSubmissions.filter((s) => s.status === 'pending').length})
                 </button>
@@ -1096,22 +1096,22 @@ export default function DivisionResults({
               {filteredSubmissions.filter((s) => s.status === 'approved').length > 1 && (
                 <button
                   onClick={handleBulkReprocess}
-                  className="px-3 py-1 rounded bg-qw-accent text-qw-dark text-sm font-semibold"
+                  className="px-3 py-1 rounded bg-primary-container text-on-primary-container text-sm font-semibold"
                 >
                   Reprocess All ({filteredSubmissions.filter((s) => s.status === 'approved').length}
                   )
                 </button>
               )}
-              <label className="flex items-center gap-1.5 text-xs text-qw-muted cursor-pointer">
+              <label className="flex items-center gap-1.5 text-xs text-on-surface-variant cursor-pointer">
                 <input
                   type="checkbox"
                   checked={filterByDivision}
                   onChange={(e) => setFilterByDivision(e.target.checked)}
-                  className="accent-qw-accent"
+                  className="accent-primary"
                 />
                 This Division Only
               </label>
-              <label className="flex items-center gap-1.5 text-xs text-qw-muted cursor-pointer">
+              <label className="flex items-center gap-1.5 text-xs text-on-surface-variant cursor-pointer">
                 <input
                   type="checkbox"
                   checked={showApproved}
@@ -1119,14 +1119,14 @@ export default function DivisionResults({
                     setShowApproved(e.target.checked);
                     fetchSubmissions(e.target.checked);
                   }}
-                  className="accent-qw-accent"
+                  className="accent-primary"
                 />
                 Show Approved
               </label>
               <button
                 onClick={() => fetchSubmissions(showApproved)}
                 disabled={submissionsLoading}
-                className="px-3 py-1 rounded border border-qw-border text-qw-muted text-sm hover:text-white disabled:opacity-50"
+                className="px-3 py-1 rounded border border-outline-variant text-on-surface-variant text-sm hover:text-on-surface disabled:opacity-50"
               >
                 {submissionsLoading ? 'Loading...' : 'Refresh'}
               </button>
@@ -1134,7 +1134,7 @@ export default function DivisionResults({
           </div>
 
           {!tournamentId && (
-            <div className="p-4 bg-qw-dark rounded border border-qw-border text-qw-muted text-sm">
+            <div className="p-4 bg-surface-container-high rounded border border-outline-variant text-on-surface-variant text-sm">
               Set a tournament name in the Info tab to enable Discord submissions.
             </div>
           )}
@@ -1146,7 +1146,7 @@ export default function DivisionResults({
           )}
 
           {filteredSubmissions.length === 0 && !submissionsLoading && tournamentId && (
-            <div className="text-center py-8 text-qw-muted">
+            <div className="text-center py-8 text-on-surface-variant">
               <div className="text-4xl mb-2">🤖</div>
               <p>
                 No {filterByDivision ? `submissions for ${division.name}` : 'pending submissions'}
@@ -1195,42 +1195,42 @@ export default function DivisionResults({
                 const isCurrentDivision = detectedDivisions?.some((d) => d.id === division.id);
 
                 return (
-                  <div key={sub.id} className="p-4 bg-qw-dark rounded border border-qw-border">
+                  <div key={sub.id} className="p-4 bg-surface-container-high rounded border border-outline-variant">
                     <div className="flex items-center justify-between flex-wrap gap-2">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-3 flex-wrap">
-                          <span className="font-body font-semibold text-white">{t1Name}</span>
-                          <span className="px-2 py-1 bg-qw-darker rounded font-mono text-sm">
+                          <span className="font-body font-semibold text-on-surface">{t1Name}</span>
+                          <span className="px-2 py-1 bg-surface-container-lowest rounded font-mono text-sm">
                             <span
                               className={
                                 (t1Frags || 0) > (t2Frags || 0)
-                                  ? 'text-qw-win font-bold'
-                                  : 'text-white'
+                                  ? 'text-tertiary font-bold'
+                                  : 'text-on-surface'
                               }
                             >
                               {t1Frags ?? '?'}
                             </span>
-                            <span className="text-qw-muted mx-1">-</span>
+                            <span className="text-on-surface-variant mx-1">-</span>
                             <span
                               className={
                                 (t2Frags || 0) > (t1Frags || 0)
-                                  ? 'text-qw-win font-bold'
-                                  : 'text-white'
+                                  ? 'text-tertiary font-bold'
+                                  : 'text-on-surface'
                               }
                             >
                               {t2Frags ?? '?'}
                             </span>
                           </span>
-                          <span className="font-body font-semibold text-white">{t2Name}</span>
-                          <span className="text-qw-muted text-xs bg-qw-darker px-2 py-0.5 rounded">
+                          <span className="font-body font-semibold text-on-surface">{t2Name}</span>
+                          <span className="text-on-surface-variant text-xs bg-surface-container-lowest px-2 py-0.5 rounded">
                             {mapName}
                           </span>
-                          <span className="text-qw-muted text-xs bg-qw-darker px-2 py-0.5 rounded">
+                          <span className="text-on-surface-variant text-xs bg-surface-container-lowest px-2 py-0.5 rounded">
                             {gameData.mode || '?'}
                           </span>
                           {sub.flags?.confidence != null && (
                             <span
-                              className={`text-xs font-semibold px-2 py-0.5 rounded bg-qw-darker ${confidenceColor(sub.flags.confidence)}`}
+                              className={`text-xs font-semibold px-2 py-0.5 rounded bg-surface-container-lowest ${confidenceColor(sub.flags.confidence)}`}
                               title={
                                 sub.flags.breakdown
                                   ? `Team: ${sub.flags.breakdown.teamMatch}/40, Schedule: ${sub.flags.breakdown.scheduleProximity}/30, BestOf: ${sub.flags.breakdown.bestOfFit}/15, Series: ${sub.flags.breakdown.seriesAffinity}/15`
@@ -1241,10 +1241,10 @@ export default function DivisionResults({
                             </span>
                           )}
                         </div>
-                        <div className="text-xs text-qw-muted mt-1 flex items-center gap-2 flex-wrap">
+                        <div className="text-xs text-on-surface-variant mt-1 flex items-center gap-2 flex-wrap">
                           <span>
                             Submitted by{' '}
-                            <span className="text-qw-accent">{sub.submitted_by_name}</span> &middot;{' '}
+                            <span className="text-primary">{sub.submitted_by_name}</span> &middot;{' '}
                             {new Date(sub.created_at).toLocaleString()} &middot; Game #{sub.game_id}
                           </span>
                           {detectedDivisions ? (
@@ -1252,7 +1252,7 @@ export default function DivisionResults({
                               <span
                                 className={`px-2 py-0.5 rounded text-xs font-semibold ${
                                   isCurrentDivision
-                                    ? 'bg-qw-win/20 border border-qw-win/50 text-qw-win'
+                                    ? 'bg-tertiary/20 border border-tertiary/50 text-tertiary'
                                     : 'bg-blue-900/30 border border-blue-500/50 text-blue-300'
                                 }`}
                                 title={`Teams belong to ${detectedDivisions[0].name}`}
@@ -1280,10 +1280,10 @@ export default function DivisionResults({
                       <div className="flex gap-2 items-center">
                         {sub.status === 'approved' ? (
                           <>
-                            <span className="text-qw-win text-xs font-semibold">Approved</span>
+                            <span className="text-tertiary text-xs font-semibold">Approved</span>
                             <button
                               onClick={() => handleReprocess(sub)}
-                              className="px-3 py-1.5 rounded bg-qw-accent text-qw-dark text-sm font-semibold hover:bg-qw-accent/80"
+                              className="px-3 py-1.5 rounded bg-primary-container text-on-primary-container text-sm font-semibold hover:bg-primary-container/80"
                             >
                               Reprocess
                             </button>
@@ -1292,13 +1292,13 @@ export default function DivisionResults({
                           <>
                             <button
                               onClick={() => handleApprove(sub)}
-                              className="px-3 py-1.5 rounded bg-qw-win text-qw-dark text-sm font-semibold hover:bg-qw-win/80"
+                              className="px-3 py-1.5 rounded bg-tertiary text-on-tertiary text-sm font-semibold hover:bg-tertiary/80"
                             >
                               Approve
                             </button>
                             <button
                               onClick={() => handleReject(sub)}
-                              className="px-3 py-1.5 rounded border border-red-500/50 text-red-400 text-sm hover:bg-red-900/30"
+                              className="px-3 py-1.5 rounded border border-red-500/50 text-error text-sm hover:bg-red-900/30"
                             >
                               Reject
                             </button>
@@ -1314,7 +1314,7 @@ export default function DivisionResults({
         </div>
       ) : mode === 'json' ? (
         <div className="qw-panel p-6 space-y-4">
-          <h3 className="font-display text-lg text-qw-accent">IMPORT JSON FILES</h3>
+          <h3 className="font-headline text-lg text-primary">IMPORT JSON FILES</h3>
           <input
             type="file"
             ref={fileInputRef}
@@ -1326,20 +1326,20 @@ export default function DivisionResults({
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={loading}
-            className="px-4 py-3 rounded border-2 border-dashed border-qw-border hover:border-qw-accent text-qw-muted hover:text-white transition-all w-full flex items-center justify-center gap-2 disabled:opacity-50"
+            className="px-4 py-3 rounded border-2 border-dashed border-outline-variant hover:border-primary text-on-surface-variant hover:text-on-surface transition-all w-full flex items-center justify-center gap-2 disabled:opacity-50"
           >
             <span className="text-2xl">?</span>
             <span>{loading ? 'Processing...' : 'Select JSON files (Ctrl+click for multiple)'}</span>
           </button>
 
           <div>
-            <label className="block text-qw-muted text-sm mb-1">Or paste JSON:</label>
+            <label className="block text-on-surface-variant text-sm mb-1">Or paste JSON:</label>
             <textarea
               value={jsonInput}
               onChange={(e) => setJsonInput(e.target.value)}
               placeholder='{"teams": [...], "players": [...]}'
               rows={4}
-              className="w-full bg-qw-dark border border-qw-border rounded px-4 py-2 font-mono text-white text-sm resize-none"
+              className="w-full bg-surface-container-high border border-outline-variant rounded px-4 py-2 font-mono text-on-surface text-sm resize-none"
             />
             <button
               onClick={handleJsonPaste}
@@ -1353,8 +1353,8 @@ export default function DivisionResults({
       ) : mode === 'discover' ? (
         // --- DISCOVER GAMES UI ---
         <div className="qw-panel p-6 space-y-4">
-          <h3 className="font-display text-lg text-qw-accent">DISCOVER GAMES</h3>
-          <p className="text-sm text-qw-muted">
+          <h3 className="font-headline text-lg text-primary">DISCOVER GAMES</h3>
+          <p className="text-sm text-on-surface-variant">
             Automatically find games for this division's scheduled matchups using the QW Stats API.
             Uses the confidence model to score each candidate (roster, schedule, matchtag, series
             format).
@@ -1445,27 +1445,27 @@ export default function DivisionResults({
             <div className="space-y-4">
               {/* Summary */}
               <div className="flex flex-wrap gap-4 text-sm">
-                <span className="text-qw-muted">
+                <span className="text-on-surface-variant">
                   Scanned:{' '}
-                  <span className="text-white font-mono">
+                  <span className="text-on-surface font-mono">
                     {discoverResults.summary?.scanned || 0}
                   </span>
                 </span>
-                <span className="text-qw-muted">
+                <span className="text-on-surface-variant">
                   Passed gates:{' '}
-                  <span className="text-qw-win font-mono">
+                  <span className="text-tertiary font-mono">
                     {discoverResults.summary?.passed || 0}
                   </span>
                 </span>
-                <span className="text-qw-muted">
+                <span className="text-on-surface-variant">
                   Rejected:{' '}
-                  <span className="text-qw-loss font-mono">
+                  <span className="text-error font-mono">
                     {discoverResults.summary?.rejected || 0}
                   </span>
                 </span>
-                <span className="text-qw-muted">
+                <span className="text-on-surface-variant">
                   Series:{' '}
-                  <span className="text-qw-accent font-mono">
+                  <span className="text-primary font-mono">
                     {discoverResults.candidates?.length || 0}
                   </span>
                 </span>
@@ -1484,7 +1484,7 @@ export default function DivisionResults({
                           setDiscoverSelected(new Set(all.map((_, i) => i)));
                         }
                       }}
-                      className="text-sm text-qw-accent hover:text-white"
+                      className="text-sm text-primary hover:text-on-surface"
                     >
                       {discoverSelected.size === (discoverResults.candidates || []).length
                         ? 'Deselect All'
@@ -1593,13 +1593,13 @@ export default function DivisionResults({
                       const isSelected = discoverSelected.has(idx);
                       const conf = series.avgConfidence || 0;
                       const confColor =
-                        conf >= 80 ? 'text-qw-win' : conf >= 50 ? 'text-amber-300' : 'text-qw-loss';
+                        conf >= 80 ? 'text-tertiary' : conf >= 50 ? 'text-amber-300' : 'text-error';
                       const confBg =
                         conf >= 80
-                          ? 'bg-qw-win/15 border-qw-win/30'
+                          ? 'bg-tertiary/15 border-tertiary/30'
                           : conf >= 50
                             ? 'bg-amber-500/15 border-amber-500/30'
-                            : 'bg-qw-loss/15 border-qw-loss/30';
+                            : 'bg-error/15 border-error/30';
                       return (
                         <div
                           key={`${series.team1}-${series.team2}-${idx}`}
@@ -1611,8 +1611,8 @@ export default function DivisionResults({
                           }}
                           className={`p-3 rounded border cursor-pointer transition-colors ${
                             isSelected
-                              ? 'bg-qw-accent/10 border-qw-accent'
-                              : 'bg-qw-dark border-qw-border hover:border-qw-muted'
+                              ? 'bg-primary/10 border-primary'
+                              : 'bg-surface-container-high border-outline-variant hover:border-on-surface-variant'
                           }`}
                         >
                           <div className="flex items-center justify-between gap-3">
@@ -1621,21 +1621,21 @@ export default function DivisionResults({
                                 type="checkbox"
                                 checked={isSelected}
                                 readOnly
-                                className="accent-qw-accent flex-shrink-0"
+                                className="accent-primary flex-shrink-0"
                               />
-                              <span className="font-body font-semibold text-white truncate">
+                              <span className="font-body font-semibold text-on-surface truncate">
                                 {series.team1}
                               </span>
-                              <span className="text-qw-muted text-xs">vs</span>
-                              <span className="font-body font-semibold text-white truncate">
+                              <span className="text-on-surface-variant text-xs">vs</span>
+                              <span className="font-body font-semibold text-on-surface truncate">
                                 {series.team2}
                               </span>
                             </div>
                             <div className="flex items-center gap-3 flex-shrink-0">
-                              <span className="text-xs text-qw-muted">
+                              <span className="text-xs text-on-surface-variant">
                                 {series.mapCount} map{series.mapCount !== 1 ? 's' : ''}
                               </span>
-                              <span className="text-xs text-qw-muted">{series.source}</span>
+                              <span className="text-xs text-on-surface-variant">{series.source}</span>
                               <span
                                 className={`px-2 py-0.5 rounded text-xs font-bold ${confBg} ${confColor}`}
                               >
@@ -1654,33 +1654,33 @@ export default function DivisionResults({
                               return (
                                 <div
                                   key={gi}
-                                  className="flex items-center gap-2 text-xs bg-qw-darker px-2 py-1 rounded"
+                                  className="flex items-center gap-2 text-xs bg-surface-container-lowest px-2 py-1 rounded"
                                 >
-                                  <span className="text-qw-accent font-mono">{game.map}</span>
+                                  <span className="text-primary font-mono">{game.map}</span>
                                   <span className="font-mono">
                                     <span
                                       className={
                                         (t1.frags ?? 0) > (t2.frags ?? 0)
-                                          ? 'text-qw-win'
-                                          : 'text-white'
+                                          ? 'text-tertiary'
+                                          : 'text-on-surface'
                                       }
                                     >
                                       {t1.frags ?? '?'}
                                     </span>
-                                    <span className="text-qw-muted">-</span>
+                                    <span className="text-on-surface-variant">-</span>
                                     <span
                                       className={
                                         (t2.frags ?? 0) > (t1.frags ?? 0)
-                                          ? 'text-qw-win'
-                                          : 'text-white'
+                                          ? 'text-tertiary'
+                                          : 'text-on-surface'
                                       }
                                     >
                                       {t2.frags ?? '?'}
                                     </span>
                                   </span>
-                                  {dateStr && <span className="text-qw-muted">{dateStr}</span>}
+                                  {dateStr && <span className="text-on-surface-variant">{dateStr}</span>}
                                   <span
-                                    className={`${game.confidence?.total >= 80 ? 'text-qw-win' : game.confidence?.total >= 50 ? 'text-amber-300' : 'text-qw-loss'}`}
+                                    className={`${game.confidence?.total >= 80 ? 'text-tertiary' : game.confidence?.total >= 50 ? 'text-amber-300' : 'text-error'}`}
                                   >
                                     {game.confidence?.total ?? '?'}
                                   </span>
@@ -1696,7 +1696,7 @@ export default function DivisionResults({
               )}
 
               {(discoverResults.candidates || []).length === 0 && (
-                <p className="text-qw-muted text-sm">
+                <p className="text-on-surface-variant text-sm">
                   No matching games found. Make sure teams are set up and the tournament date range
                   covers the period games were played.
                 </p>
@@ -1707,47 +1707,47 @@ export default function DivisionResults({
       ) : mode === 'browse' ? (
         // --- BROWSE / SEARCH UI ---
         <div className="qw-panel p-6 space-y-4">
-          <h3 className="font-display text-lg text-qw-accent">BROWSE GAMES</h3>
-          <p className="text-sm text-qw-muted">
+          <h3 className="font-headline text-lg text-primary">BROWSE GAMES</h3>
+          <p className="text-sm text-on-surface-variant">
             Search recent 4on4 games by team tag from the QW Stats API. Import basic match data
             (teams, score, map, date) directly.
           </p>
 
           <div className="flex flex-wrap gap-3 items-end">
             <div className="flex-1 min-w-[140px]">
-              <label className="block text-qw-muted text-xs mb-1">Team Tag *</label>
+              <label className="block text-on-surface-variant text-xs mb-1">Team Tag *</label>
               <input
                 type="text"
                 value={browseTeamTag}
                 onChange={(e) => setBrowseTeamTag(e.target.value)}
                 placeholder="e.g. sr, def, fi"
-                className="w-full bg-qw-darker border border-qw-border rounded px-3 py-2 text-white text-sm focus:border-qw-accent outline-none"
+                className="w-full bg-surface-container-lowest border border-outline-variant rounded px-3 py-2 text-on-surface text-sm focus:border-primary outline-none"
               />
             </div>
             <div>
-              <label className="block text-qw-muted text-xs mb-1">From</label>
+              <label className="block text-on-surface-variant text-xs mb-1">From</label>
               <input
                 type="date"
                 value={browseDateFrom}
                 onChange={(e) => setBrowseDateFrom(e.target.value)}
-                className="bg-qw-darker border border-qw-border rounded px-3 py-2 text-white text-sm focus:border-qw-accent outline-none"
+                className="bg-surface-container-lowest border border-outline-variant rounded px-3 py-2 text-on-surface text-sm focus:border-primary outline-none"
               />
             </div>
             <div>
-              <label className="block text-qw-muted text-xs mb-1">To</label>
+              <label className="block text-on-surface-variant text-xs mb-1">To</label>
               <input
                 type="date"
                 value={browseDateTo}
                 onChange={(e) => setBrowseDateTo(e.target.value)}
-                className="bg-qw-darker border border-qw-border rounded px-3 py-2 text-white text-sm focus:border-qw-accent outline-none"
+                className="bg-surface-container-lowest border border-outline-variant rounded px-3 py-2 text-on-surface text-sm focus:border-primary outline-none"
               />
             </div>
             <div>
-              <label className="block text-qw-muted text-xs mb-1">Map</label>
+              <label className="block text-on-surface-variant text-xs mb-1">Map</label>
               <select
                 value={browseMapFilter}
                 onChange={(e) => setBrowseMapFilter(e.target.value)}
-                className="bg-qw-darker border border-qw-border rounded px-3 py-2 text-white text-sm focus:border-qw-accent outline-none"
+                className="bg-surface-container-lowest border border-outline-variant rounded px-3 py-2 text-on-surface text-sm focus:border-primary outline-none"
               >
                 <option value="">All Maps</option>
                 {['dm2', 'dm3', 'dm4', 'dm6', 'e1m2', 'aerowalk', 'ztndm3', 'skull'].map((m) => (
@@ -1805,7 +1805,7 @@ export default function DivisionResults({
           {browseResults.length > 0 && (
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-qw-muted text-sm">{browseResults.length} game(s) found</span>
+                <span className="text-on-surface-variant text-sm">{browseResults.length} game(s) found</span>
                 <div className="flex items-center gap-3">
                   <button
                     onClick={() => {
@@ -1815,7 +1815,7 @@ export default function DivisionResults({
                         setBrowseSelected(new Set(browseResults.map((_, i) => i)));
                       }
                     }}
-                    className="text-sm text-qw-accent hover:text-white"
+                    className="text-sm text-primary hover:text-on-surface"
                   >
                     {browseSelected.size === browseResults.length ? 'Deselect All' : 'Select All'}
                   </button>
@@ -1884,8 +1884,8 @@ export default function DivisionResults({
                       }}
                       className={`p-3 rounded border cursor-pointer transition-colors ${
                         isSelected
-                          ? 'bg-qw-accent/10 border-qw-accent'
-                          : 'bg-qw-dark border-qw-border hover:border-qw-muted'
+                          ? 'bg-primary/10 border-primary'
+                          : 'bg-surface-container-high border-outline-variant hover:border-on-surface-variant'
                       }`}
                     >
                       <div className="flex items-center justify-between gap-3">
@@ -1894,37 +1894,37 @@ export default function DivisionResults({
                             type="checkbox"
                             checked={isSelected}
                             readOnly
-                            className="accent-qw-accent flex-shrink-0"
+                            className="accent-primary flex-shrink-0"
                           />
-                          <span className="text-qw-muted text-xs font-mono w-20 flex-shrink-0">
+                          <span className="text-on-surface-variant text-xs font-mono w-20 flex-shrink-0">
                             {dateStr}
                           </span>
-                          <span className="px-2 py-0.5 bg-qw-darker rounded text-xs font-mono text-qw-accent flex-shrink-0">
+                          <span className="px-2 py-0.5 bg-surface-container-lowest rounded text-xs font-mono text-primary flex-shrink-0">
                             {game.map || '?'}
                           </span>
-                          <span className="font-body font-semibold text-white truncate">
+                          <span className="font-body font-semibold text-on-surface truncate">
                             {browseTeamTag.trim().toLowerCase()}
                           </span>
-                          <span className="px-2 py-0.5 bg-qw-darker rounded font-mono text-sm flex-shrink-0">
-                            <span className={isWin ? 'text-qw-win font-bold' : ''}>
+                          <span className="px-2 py-0.5 bg-surface-container-lowest rounded font-mono text-sm flex-shrink-0">
+                            <span className={isWin ? 'text-tertiary font-bold' : ''}>
                               {game.teamFrags ?? '?'}
                             </span>
-                            <span className="text-qw-muted mx-1">-</span>
-                            <span className={isLoss ? 'text-qw-win font-bold' : ''}>
+                            <span className="text-on-surface-variant mx-1">-</span>
+                            <span className={isLoss ? 'text-tertiary font-bold' : ''}>
                               {game.oppFrags ?? '?'}
                             </span>
                           </span>
-                          <span className="font-body font-semibold text-white truncate">
+                          <span className="font-body font-semibold text-on-surface truncate">
                             {game.opponent || '?'}
                           </span>
                         </div>
                         <span
                           className={`text-xs font-semibold px-2 py-0.5 rounded flex-shrink-0 ${
                             isWin
-                              ? 'bg-qw-win/20 text-qw-win'
+                              ? 'bg-tertiary/20 text-tertiary'
                               : isLoss
-                                ? 'bg-qw-loss/20 text-qw-loss'
-                                : 'bg-qw-darker text-qw-muted'
+                                ? 'bg-error/20 text-error'
+                                : 'bg-surface-container-lowest text-on-surface-variant'
                           }`}
                         >
                           {isWin ? 'W' : isLoss ? 'L' : 'D'}
@@ -1938,7 +1938,7 @@ export default function DivisionResults({
           )}
 
           {browseResults.length === 0 && !browseLoading && !browseError && browseTeamTag && (
-            <p className="text-qw-muted text-sm">
+            <p className="text-on-surface-variant text-sm">
               Enter a team tag and click Search to find recent 4on4 games.
             </p>
           )}
@@ -1946,8 +1946,8 @@ export default function DivisionResults({
       ) : (
         // --- API FETCH UI (UPDATED) ---
         <div className="qw-panel p-6 space-y-4">
-          <h3 className="font-display text-lg text-qw-accent">API FETCH</h3>
-          <p className="text-sm text-qw-muted">
+          <h3 className="font-headline text-lg text-primary">API FETCH</h3>
+          <p className="text-sm text-on-surface-variant">
             Paste Game IDs or full URLs (up to 50) separated by spaces or newlines.
           </p>
 
@@ -1957,7 +1957,7 @@ export default function DivisionResults({
               onChange={(e) => setApiInput(e.target.value)}
               placeholder="e.g. 168085&#10;https://www.quakeworld.nu/matches/168086"
               rows={5}
-              className="w-full bg-qw-darker text-white p-2 rounded border border-qw-border focus:border-qw-win outline-none font-mono text-sm resize-y"
+              className="w-full bg-surface-container-lowest text-on-surface p-2 rounded border border-outline-variant focus:border-tertiary outline-none font-mono text-sm resize-y"
             />
             <button
               onClick={handleApiFetch}
@@ -1970,7 +1970,7 @@ export default function DivisionResults({
 
           {apiStatus && (
             <div
-              className={`text-sm font-mono ${apiStatus.includes('?') ? 'text-qw-win' : 'text-qw-accent'}`}
+              className={`text-sm font-mono ${apiStatus.includes('?') ? 'text-tertiary' : 'text-primary'}`}
             >
               {apiStatus}
             </div>
@@ -1985,11 +1985,11 @@ export default function DivisionResults({
       )}
 
       {lastImported.length > 0 && (
-        <div className="qw-panel p-4 border-l-4 border-qw-win">
-          <h4 className="font-display text-sm text-qw-win mb-2">
+        <div className="qw-panel p-4 border-l-4 border-tertiary">
+          <h4 className="font-headline text-sm text-tertiary mb-2">
             ? IMPORTED {lastImported.length} MAP(S)
           </h4>
-          <div className="text-sm text-qw-muted space-y-1 max-h-24 overflow-y-auto">
+          <div className="text-sm text-on-surface-variant space-y-1 max-h-24 overflow-y-auto">
             {lastImported.map((m) => (
               <div key={m.id}>
                 {resolveTeamName(m.teams[0])} {m.scores[m.teams[0]]}-{m.scores[m.teams[1]]}{' '}
@@ -2003,10 +2003,10 @@ export default function DivisionResults({
       {/* DETECTED SERIES (UNCHANGED) */}
       {detectedSeries.length > 0 && (
         <div className="qw-panel p-6">
-          <h3 className="font-display text-lg text-qw-accent mb-4">
+          <h3 className="font-headline text-lg text-primary mb-4">
             DETECTED SERIES ({detectedSeries.length})
           </h3>
-          <p className="text-sm text-qw-muted mb-4">Maps grouped by matchup and time.</p>
+          <p className="text-sm text-on-surface-variant mb-4">Maps grouped by matchup and time.</p>
 
           <div className="space-y-3">
             {detectedSeries.map((series) => {
@@ -2019,37 +2019,37 @@ export default function DivisionResults({
               return (
                 <div
                   key={series.id}
-                  className={`p-4 rounded border ${series.isLinked ? 'bg-qw-win/10 border-qw-win/50' : 'bg-qw-dark border-qw-border'}`}
+                  className={`p-4 rounded border ${series.isLinked ? 'bg-tertiary/10 border-tertiary/50' : 'bg-surface-container-high border-outline-variant'}`}
                 >
                   <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
                     <div className="flex items-center gap-3 flex-wrap">
                       <span
-                        className={`font-body font-semibold ${w1 > w2 ? 'text-qw-win' : 'text-white'}`}
+                        className={`font-body font-semibold ${w1 > w2 ? 'text-tertiary' : 'text-on-surface'}`}
                       >
                         {t1}
                       </span>
-                      <span className="px-2 py-1 bg-qw-darker rounded font-mono">
-                        <span className={w1 > w2 ? 'text-qw-win font-bold' : ''}>{w1}</span>
-                        <span className="text-qw-muted mx-1">-</span>
-                        <span className={w2 > w1 ? 'text-qw-win font-bold' : ''}>{w2}</span>
+                      <span className="px-2 py-1 bg-surface-container-lowest rounded font-mono">
+                        <span className={w1 > w2 ? 'text-tertiary font-bold' : ''}>{w1}</span>
+                        <span className="text-on-surface-variant mx-1">-</span>
+                        <span className={w2 > w1 ? 'text-tertiary font-bold' : ''}>{w2}</span>
                       </span>
                       <span
-                        className={`font-body font-semibold ${w2 > w1 ? 'text-qw-win' : 'text-white'}`}
+                        className={`font-body font-semibold ${w2 > w1 ? 'text-tertiary' : 'text-on-surface'}`}
                       >
                         {t2}
                       </span>
-                      <span className="text-qw-muted text-sm">({series.maps.length} maps)</span>
+                      <span className="text-on-surface-variant text-sm">({series.maps.length} maps)</span>
                       <span
-                        className="px-2 py-0.5 bg-qw-darker rounded text-xs font-mono"
+                        className="px-2 py-0.5 bg-surface-container-lowest rounded text-xs font-mono"
                         title="Total frags"
                       >
-                        <span className={f1 > f2 ? 'text-qw-accent' : 'text-qw-muted'}>{f1}</span>
-                        <span className="text-qw-muted mx-1">-</span>
-                        <span className={f2 > f1 ? 'text-qw-accent' : 'text-qw-muted'}>{f2}</span>
-                        <span className="text-qw-muted ml-1">frags</span>
+                        <span className={f1 > f2 ? 'text-primary' : 'text-on-surface-variant'}>{f1}</span>
+                        <span className="text-on-surface-variant mx-1">-</span>
+                        <span className={f2 > f1 ? 'text-primary' : 'text-on-surface-variant'}>{f2}</span>
+                        <span className="text-on-surface-variant ml-1">frags</span>
                       </span>
                       {series.dateDisplay && (
-                        <span className="text-qw-muted text-xs bg-qw-darker px-2 py-0.5 rounded">
+                        <span className="text-on-surface-variant text-xs bg-surface-container-lowest px-2 py-0.5 rounded">
                           {series.dateDisplay}
                         </span>
                       )}
@@ -2057,11 +2057,11 @@ export default function DivisionResults({
 
                     <div className="flex items-center gap-2">
                       {series.isLinked ? (
-                        <span className="text-qw-win text-sm">? Linked</span>
+                        <span className="text-tertiary text-sm">? Linked</span>
                       ) : series.scheduledMatch ? (
                         <button
                           onClick={() => linkSeriesToMatch(series, series.scheduledMatch.id)}
-                          className="px-3 py-1 rounded bg-qw-accent text-qw-dark text-sm font-semibold"
+                          className="px-3 py-1 rounded bg-primary-container text-on-primary-container text-sm font-semibold"
                         >
                           Link to Match
                         </button>
@@ -2072,7 +2072,7 @@ export default function DivisionResults({
                               onChange={(e) =>
                                 e.target.value && linkSeriesToMatch(series, e.target.value)
                               }
-                              className="bg-qw-darker border border-qw-border rounded px-2 py-1 text-sm text-white"
+                              className="bg-surface-container-lowest border border-outline-variant rounded px-2 py-1 text-sm text-on-surface"
                               defaultValue=""
                             >
                               <option value="" disabled>
@@ -2087,7 +2087,7 @@ export default function DivisionResults({
                           )}
                           <button
                             onClick={() => createMatchFromSeries(series)}
-                            className="px-3 py-1 rounded border border-qw-accent text-qw-accent text-sm hover:bg-qw-accent hover:text-qw-dark"
+                            className="px-3 py-1 rounded border border-primary text-primary text-sm hover:bg-primary-container hover:text-on-primary-container"
                           >
                             + Create Match
                           </button>
@@ -2095,7 +2095,7 @@ export default function DivisionResults({
                       )}
                       <button
                         onClick={() => removeSeries(series)}
-                        className="px-2 py-1 rounded text-red-400 hover:bg-red-900/30 hover:text-red-300 text-sm"
+                        className="px-2 py-1 rounded text-error hover:bg-red-900/30 hover:text-red-300 text-sm"
                         title="Remove this series"
                       >
                         🗑️
@@ -2111,10 +2111,10 @@ export default function DivisionResults({
                       return (
                         <span
                           key={map.id}
-                          className="px-2 py-1 bg-qw-darker rounded text-xs font-mono"
+                          className="px-2 py-1 bg-surface-container-lowest rounded text-xs font-mono"
                         >
-                          {map.map}: <span className={ms1 > ms2 ? 'text-qw-win' : ''}>{ms1}</span>-
-                          <span className={ms2 > ms1 ? 'text-qw-win' : ''}>{ms2}</span>
+                          {map.map}: <span className={ms1 > ms2 ? 'text-tertiary' : ''}>{ms1}</span>-
+                          <span className={ms2 > ms1 ? 'text-tertiary' : ''}>{ms2}</span>
                         </span>
                       );
                     })}
@@ -2131,15 +2131,15 @@ export default function DivisionResults({
         <div className="qw-panel overflow-hidden">
           <button
             onClick={() => setShowStats(!showStats)}
-            className="w-full flex items-center justify-between px-6 py-4 bg-qw-dark border-b border-qw-border hover:bg-qw-dark/80 transition-colors"
+            className="w-full flex items-center justify-between px-6 py-4 bg-surface-container-high border-b border-outline-variant hover:bg-surface-container-high/80 transition-colors"
           >
             <div className="flex items-center gap-3">
               <span className="text-xl">📊</span>
-              <h3 className="font-display text-lg text-qw-accent">PLAYER STATISTICS</h3>
-              <span className="text-xs text-qw-muted">(detailed stats from imported matches)</span>
+              <h3 className="font-headline text-lg text-primary">PLAYER STATISTICS</h3>
+              <span className="text-xs text-on-surface-variant">(detailed stats from imported matches)</span>
             </div>
             <span
-              className={`text-qw-accent transition-transform duration-200 ${showStats ? 'rotate-180' : ''}`}
+              className={`text-primary transition-transform duration-200 ${showStats ? 'rotate-180' : ''}`}
             >
               ▼
             </span>
@@ -2156,14 +2156,14 @@ export default function DivisionResults({
       <div className="qw-panel overflow-hidden">
         <button
           onClick={() => setShowRawMaps(!showRawMaps)}
-          className="w-full flex items-center justify-between px-6 py-4 bg-qw-dark border-b border-qw-border hover:bg-qw-dark/80 transition-colors"
+          className="w-full flex items-center justify-between px-6 py-4 bg-surface-container-high border-b border-outline-variant hover:bg-surface-container-high/80 transition-colors"
         >
           <div className="flex items-center gap-3">
             <span className="text-xl">🗺️</span>
-            <h3 className="font-display text-lg text-qw-accent">RAW MAPS ({rawMaps.length})</h3>
+            <h3 className="font-headline text-lg text-primary">RAW MAPS ({rawMaps.length})</h3>
           </div>
           <span
-            className={`text-qw-accent transition-transform duration-200 ${showRawMaps ? 'rotate-180' : ''}`}
+            className={`text-primary transition-transform duration-200 ${showRawMaps ? 'rotate-180' : ''}`}
           >
             ▼
           </span>
@@ -2171,7 +2171,7 @@ export default function DivisionResults({
         {showRawMaps && (
           <div className="p-6">
             {rawMaps.length === 0 ? (
-              <div className="text-center py-8 text-qw-muted">
+              <div className="text-center py-8 text-on-surface-variant">
                 <div className="text-4xl mb-2">?</div>
                 <p>No results imported yet</p>
               </div>
@@ -2183,19 +2183,19 @@ export default function DivisionResults({
                   .map((map) => (
                     <div
                       key={map.id}
-                      className="flex items-center justify-between p-2 bg-qw-dark rounded text-sm"
+                      className="flex items-center justify-between p-2 bg-surface-container-high rounded text-sm"
                     >
                       <div className="flex items-center gap-3">
-                        <span className="text-qw-muted font-mono text-xs">{map.map}</span>
-                        <span className="text-white">
+                        <span className="text-on-surface-variant font-mono text-xs">{map.map}</span>
+                        <span className="text-on-surface">
                           {resolveTeamName(map.teams[0])}{' '}
-                          <span className="text-qw-accent">
+                          <span className="text-primary">
                             {map.scores[map.teams[0]]}-{map.scores[map.teams[1]]}
                           </span>{' '}
                           {resolveTeamName(map.teams[1])}
                         </span>
                       </div>
-                      <span className="text-qw-muted text-xs">{map.date?.split(' ')[0]}</span>
+                      <span className="text-on-surface-variant text-xs">{map.date?.split(' ')[0]}</span>
                     </div>
                   ))}
               </div>

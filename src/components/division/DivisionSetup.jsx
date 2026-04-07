@@ -32,32 +32,32 @@ function TieBreakerConfig({ value, onChange }) {
 
   return (
     <div className="space-y-2">
-      <label className="block text-qw-muted text-sm mb-1">Tie-Breaker Priority</label>
+      <label className="font-headline text-[10px] uppercase tracking-widest font-bold text-on-surface-variant mb-1 block">Tie-Breaker Priority</label>
       <div className="space-y-1">
         {tieBreakers.map((tbId, idx) => {
           const opt = options.find((o) => o.id === tbId);
           return (
             <div
               key={tbId}
-              className="flex items-center gap-2 p-2 bg-qw-dark rounded border border-qw-border"
+              className="flex items-center gap-2 p-2 bg-surface-container-high rounded border border-outline-variant"
             >
-              <span className="text-qw-accent font-mono text-sm w-5">{idx + 1}.</span>
+              <span className="text-primary font-mono text-sm w-5">{idx + 1}.</span>
               <div className="flex-1">
-                <span className="text-white text-sm font-semibold">{opt?.label || tbId}</span>
-                <span className="text-qw-muted text-xs ml-2">({opt?.desc})</span>
+                <span className="text-on-surface text-sm font-semibold">{opt?.label || tbId}</span>
+                <span className="text-on-surface-variant text-xs ml-2">({opt?.desc})</span>
               </div>
               <div className="flex gap-1">
                 <button
                   onClick={() => moveUp(idx)}
                   disabled={idx === 0}
-                  className="px-2 py-1 text-xs bg-qw-darker rounded hover:bg-qw-border disabled:opacity-30"
+                  className="px-2 py-1 text-xs bg-background rounded hover:bg-outline-variant disabled:opacity-30"
                 >
                   ↑
                 </button>
                 <button
                   onClick={() => moveDown(idx)}
                   disabled={idx === tieBreakers.length - 1}
-                  className="px-2 py-1 text-xs bg-qw-darker rounded hover:bg-qw-border disabled:opacity-30"
+                  className="px-2 py-1 text-xs bg-background rounded hover:bg-outline-variant disabled:opacity-30"
                 >
                   ↓
                 </button>
@@ -80,12 +80,12 @@ function FormatSelect({
 }) {
   return (
     <div>
-      <label className="block text-qw-muted text-sm mb-1">{label}</label>
+      <label className="block text-on-surface-variant text-sm mb-1">{label}</label>
       <div className="flex gap-1">
         <select
           value={typeValue}
           onChange={(e) => onTypeChange(e.target.value)}
-          className="flex-1 bg-qw-dark border border-qw-border rounded px-1 py-2 text-white text-sm"
+          className="flex-1 bg-surface-container-high border border-outline-variant rounded px-1 py-2 text-on-surface text-sm"
         >
           <option value="bestof">Bo</option>
           <option value="playall">Go</option>
@@ -93,7 +93,7 @@ function FormatSelect({
         <select
           value={countValue}
           onChange={(e) => onCountChange(parseInt(e.target.value))}
-          className="w-12 bg-qw-dark border border-qw-border rounded px-1 py-2 text-white text-sm"
+          className="w-12 bg-surface-container-high border border-outline-variant rounded px-1 py-2 text-on-surface text-sm"
         >
           {counts.map((n) => (
             <option key={n} value={n}>
@@ -300,37 +300,37 @@ export default function DivisionSetup({ division, updateDivision }) {
   return (
     <div className="space-y-6">
       {/* Division Info */}
-      <div className="qw-panel p-6">
-        <h3 className="font-display text-lg text-qw-accent mb-4">DIVISION INFO</h3>
+      <div className="bg-surface-container-high p-6">
+        <h3 className="font-headline text-lg text-primary mb-4">DIVISION INFO</h3>
         <div className="space-y-4">
           <div>
-            <label className="block text-qw-muted text-sm mb-1">Division Name</label>
+            <label className="block text-on-surface-variant text-sm mb-1">Division Name</label>
             <input
               type="text"
               value={division.name}
               onChange={(e) => handleUpdate('name', e.target.value)}
-              className="w-full bg-qw-dark border border-qw-border rounded px-4 py-2 text-white"
+              className="w-full bg-surface-container-high border border-outline-variant rounded px-4 py-2 text-on-surface"
             />
           </div>
           <div>
-            <label className="block text-qw-muted text-sm mb-2">Tournament Format</label>
+            <label className="block text-on-surface-variant text-sm mb-2">Tournament Format</label>
             <div className="grid grid-cols-2 gap-3">
               {FORMAT_OPTIONS.map((opt) => (
                 <button
                   key={opt.value}
                   type="button"
                   onClick={() => handleUpdate('format', opt.value)}
-                  className={`text-left p-3 rounded-lg border-2 transition-all duration-200 ${
+                  className={`text-left p-3 border-2 transition-all duration-200 ${
                     division.format === opt.value
-                      ? 'border-qw-accent bg-qw-accent/10 text-white'
-                      : 'border-zinc-700 bg-zinc-800/50 text-zinc-400 hover:border-zinc-500'
+                      ? 'border-primary bg-primary/10 text-on-surface'
+                      : 'border-outline-variant bg-surface-container-high text-on-surface-variant hover:border-primary/50'
                   }`}
                 >
                   <div className="flex items-center gap-2 mb-1">
                     <span className="text-lg">{opt.icon}</span>
                     <span className="font-medium text-sm">{opt.label}</span>
                   </div>
-                  <p className="text-xs text-zinc-500">{opt.desc}</p>
+                  <p className="text-xs text-on-surface-variant">{opt.desc}</p>
                 </button>
               ))}
             </div>
@@ -340,15 +340,15 @@ export default function DivisionSetup({ division, updateDivision }) {
 
       {/* Group Stage Settings - Only show for formats with group stage */}
       {(division.format === 'groups' || division.format === 'multi-tier') && (
-        <div className="qw-panel p-6">
-          <h3 className="font-display text-lg text-qw-accent mb-4">GROUP STAGE SETTINGS</h3>
+        <div className="bg-surface-container-high p-6">
+          <h3 className="font-headline text-lg text-primary mb-4">GROUP STAGE SETTINGS</h3>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             <div>
-              <label className="block text-qw-muted text-sm mb-1">Number of Groups</label>
+              <label className="block text-on-surface-variant text-sm mb-1">Number of Groups</label>
               <select
                 value={division.numGroups}
                 onChange={(e) => handleUpdate('numGroups', parseInt(e.target.value))}
-                className="w-full bg-qw-dark border border-qw-border rounded px-3 py-2 text-white"
+                className="w-full bg-surface-container-high border border-outline-variant rounded px-3 py-2 text-on-surface"
               >
                 {[1, 2, 3, 4, 6, 8].map((n) => (
                   <option key={n} value={n}>
@@ -358,11 +358,11 @@ export default function DivisionSetup({ division, updateDivision }) {
               </select>
             </div>
             <div>
-              <label className="block text-qw-muted text-sm mb-1">Teams per Group</label>
+              <label className="block text-on-surface-variant text-sm mb-1">Teams per Group</label>
               <select
                 value={division.teamsPerGroup}
                 onChange={(e) => handleUpdate('teamsPerGroup', parseInt(e.target.value))}
-                className="w-full bg-qw-dark border border-qw-border rounded px-3 py-2 text-white"
+                className="w-full bg-surface-container-high border border-outline-variant rounded px-3 py-2 text-on-surface"
               >
                 {[2, 3, 4, 5, 6, 8, 10, 12].map((n) => (
                   <option key={n} value={n}>
@@ -372,11 +372,11 @@ export default function DivisionSetup({ division, updateDivision }) {
               </select>
             </div>
             <div>
-              <label className="block text-qw-muted text-sm mb-1">Meetings per Matchup</label>
+              <label className="block text-on-surface-variant text-sm mb-1">Meetings per Matchup</label>
               <select
                 value={division.groupMeetings || 1}
                 onChange={(e) => handleUpdate('groupMeetings', parseInt(e.target.value))}
-                className="w-full bg-qw-dark border border-qw-border rounded px-3 py-2 text-white"
+                className="w-full bg-surface-container-high border border-outline-variant rounded px-3 py-2 text-on-surface"
               >
                 <option value={1}>Once (single round-robin)</option>
                 <option value={2}>Twice (double round-robin)</option>
@@ -385,12 +385,12 @@ export default function DivisionSetup({ division, updateDivision }) {
               </select>
             </div>
             <div className="col-span-2 md:col-span-1">
-              <label className="block text-qw-muted text-sm mb-1">Series Format</label>
+              <label className="block text-on-surface-variant text-sm mb-1">Series Format</label>
               <div className="flex gap-2">
                 <select
                   value={division.groupStageType || 'bestof'}
                   onChange={(e) => handleUpdate('groupStageType', e.target.value)}
-                  className="flex-1 bg-qw-dark border border-qw-border rounded px-2 py-2 text-white"
+                  className="flex-1 bg-surface-container-high border border-outline-variant rounded px-2 py-2 text-on-surface"
                 >
                   <option value="bestof">Best Of (Bo)</option>
                   <option value="playall">Play All (Go)</option>
@@ -398,7 +398,7 @@ export default function DivisionSetup({ division, updateDivision }) {
                 <select
                   value={division.groupStageBestOf}
                   onChange={(e) => handleUpdate('groupStageBestOf', parseInt(e.target.value))}
-                  className="w-16 bg-qw-dark border border-qw-border rounded px-2 py-2 text-white"
+                  className="w-16 bg-surface-container-high border border-outline-variant rounded px-2 py-2 text-on-surface"
                 >
                   {[1, 2, 3, 5, 7].map((n) => (
                     <option key={n} value={n}>
@@ -409,17 +409,17 @@ export default function DivisionSetup({ division, updateDivision }) {
               </div>
             </div>
             <div>
-              <label className="block text-qw-muted text-sm mb-1">Advance to Playoffs</label>
+              <label className="block text-on-surface-variant text-sm mb-1">Advance to Playoffs</label>
               {isMultiTier ? (
-                <div className="w-full bg-qw-dark border border-qw-border rounded px-3 py-2 text-qw-muted flex items-center justify-between">
+                <div className="w-full bg-surface-container-high border border-outline-variant rounded px-3 py-2 text-on-surface-variant flex items-center justify-between">
                   <span>Set per tier</span>
-                  <span className="text-xs text-qw-accent">Locked by format</span>
+                  <span className="text-xs text-primary">Locked by format</span>
                 </div>
               ) : (
                 <select
                   value={division.advanceCount}
                   onChange={(e) => handleUpdate('advanceCount', parseInt(e.target.value))}
-                  className="w-full bg-qw-dark border border-qw-border rounded px-3 py-2 text-white"
+                  className="w-full bg-surface-container-high border border-outline-variant rounded px-3 py-2 text-on-surface"
                 >
                   {[1, 2, 3, 4, 5, 6, 8].map((n) => (
                     <option key={n} value={n}>
@@ -430,11 +430,11 @@ export default function DivisionSetup({ division, updateDivision }) {
               )}
             </div>
             <div>
-              <label className="block text-qw-muted text-sm mb-1">Expected Pace</label>
+              <label className="block text-on-surface-variant text-sm mb-1">Expected Pace</label>
               <select
                 value={division.matchPace || 'weekly'}
                 onChange={(e) => handleUpdate('matchPace', e.target.value)}
-                className="w-full bg-qw-dark border border-qw-border rounded px-3 py-2 text-white"
+                className="w-full bg-surface-container-high border border-outline-variant rounded px-3 py-2 text-on-surface"
               >
                 <option value="daily">Daily</option>
                 <option value="twice-weekly">2 games/week</option>
@@ -445,26 +445,26 @@ export default function DivisionSetup({ division, updateDivision }) {
             </div>
           </div>
 
-          <div className="mt-4 p-3 bg-qw-dark rounded border border-qw-border">
-            <div className="text-sm text-qw-muted">
-              <span className="text-white font-semibold">
+          <div className="mt-4 p-3 bg-surface-container-high rounded border border-outline-variant">
+            <div className="text-sm text-on-surface-variant">
+              <span className="text-on-surface font-semibold">
                 {division.numGroups} group{division.numGroups > 1 ? 's' : ''} ×{' '}
                 {division.teamsPerGroup} teams
               </span>
               {' = '}
-              <span className="text-qw-accent">
+              <span className="text-primary">
                 {((division.teamsPerGroup * (division.teamsPerGroup - 1)) / 2) *
                   (division.groupMeetings || 1) *
                   division.numGroups}{' '}
                 group stage matches
               </span>
               {' • '}
-              <span className="text-white">
+              <span className="text-on-surface">
                 {formatDisplay(division.groupStageType || 'bestof', division.groupStageBestOf)}
               </span>
             </div>
             {isPlayAll && (
-              <div className="text-xs text-qw-accent mt-1">
+              <div className="text-xs text-primary mt-1">
                 ⚠️ Play All mode: All maps played, points per map.
               </div>
             )}
@@ -474,9 +474,9 @@ export default function DivisionSetup({ division, updateDivision }) {
 
       {/* Multi-Tier Playoff Configuration - Only for multi-tier format */}
       {isMultiTier && (
-        <div className="qw-panel p-6">
-          <h3 className="font-display text-lg text-qw-accent mb-4">TIER CONFIGURATION</h3>
-          <p className="text-sm text-qw-muted mb-4">
+        <div className="bg-surface-container-high p-6">
+          <h3 className="font-headline text-lg text-primary mb-4">TIER CONFIGURATION</h3>
+          <p className="text-sm text-on-surface-variant mb-4">
             Configure multiple independent playoff brackets for different tier ranges
             (Gold/Silver/Bronze).
           </p>
@@ -486,7 +486,7 @@ export default function DivisionSetup({ division, updateDivision }) {
             {(division.playoffTiers || []).map((tier, index) => {
               const tierIsDoubleElim = tier.type === 'double';
               return (
-                <div key={tier.id} className="bg-qw-dark rounded border border-qw-border p-4">
+                <div key={tier.id} className="bg-surface-container-high rounded border border-outline-variant p-4">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2">
                       <span className="text-lg">
@@ -502,13 +502,13 @@ export default function DivisionSetup({ division, updateDivision }) {
                         type="text"
                         value={tier.name}
                         onChange={(e) => handleUpdateTier(tier.id, 'name', e.target.value)}
-                        className="bg-transparent border-b border-qw-border text-white font-semibold px-1"
+                        className="bg-transparent border-b border-outline-variant text-on-surface font-semibold px-1"
                       />
                     </div>
                     {index > 0 && (
                       <button
                         onClick={() => handleRemoveTier(tier.id)}
-                        className="text-red-400 hover:text-red-300 text-sm"
+                        className="text-error hover:text-error/80 text-sm"
                       >
                         Remove
                       </button>
@@ -517,34 +517,34 @@ export default function DivisionSetup({ division, updateDivision }) {
 
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div>
-                      <label className="block text-qw-muted text-xs mb-1">Positions</label>
+                      <label className="block text-on-surface-variant text-xs mb-1">Positions</label>
                       <input
                         type="text"
                         value={tier.positions}
                         onChange={(e) => handleUpdateTier(tier.id, 'positions', e.target.value)}
                         placeholder="e.g., 1-4"
-                        className="w-full bg-qw-darker border border-qw-border rounded px-2 py-1.5 text-white text-sm"
+                        className="w-full bg-background border border-outline-variant rounded px-2 py-1.5 text-on-surface text-sm"
                       />
                     </div>
                     <div>
-                      <label className="block text-qw-muted text-xs mb-1">Bracket Type</label>
+                      <label className="block text-on-surface-variant text-xs mb-1">Bracket Type</label>
                       <select
                         value={tier.type}
                         onChange={(e) => handleUpdateTier(tier.id, 'type', e.target.value)}
-                        className="w-full bg-qw-darker border border-qw-border rounded px-2 py-1.5 text-white text-sm"
+                        className="w-full bg-background border border-outline-variant rounded px-2 py-1.5 text-on-surface text-sm"
                       >
                         <option value="single">Single Elimination</option>
                         <option value="double">Double Elimination</option>
                       </select>
                     </div>
                     <div>
-                      <label className="block text-qw-muted text-xs mb-1">Teams</label>
+                      <label className="block text-on-surface-variant text-xs mb-1">Teams</label>
                       <select
                         value={tier.teams}
                         onChange={(e) =>
                           handleUpdateTier(tier.id, 'teams', parseInt(e.target.value))
                         }
-                        className="w-full bg-qw-darker border border-qw-border rounded px-2 py-1.5 text-white text-sm"
+                        className="w-full bg-background border border-outline-variant rounded px-2 py-1.5 text-on-surface text-sm"
                       >
                         <option value={4}>4 Teams</option>
                         <option value={8}>8 Teams</option>
@@ -552,12 +552,12 @@ export default function DivisionSetup({ division, updateDivision }) {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-qw-muted text-xs mb-1">Series Format</label>
+                      <label className="block text-on-surface-variant text-xs mb-1">Series Format</label>
                       <div className="flex gap-1">
                         <select
                           value={tier.seriesType || 'bestof'}
                           onChange={(e) => handleUpdateTier(tier.id, 'seriesType', e.target.value)}
-                          className="flex-1 bg-qw-darker border border-qw-border rounded px-1 py-1.5 text-white text-sm"
+                          className="flex-1 bg-background border border-outline-variant rounded px-1 py-1.5 text-on-surface text-sm"
                         >
                           <option value="bestof">Bo</option>
                           <option value="playall">Go</option>
@@ -567,7 +567,7 @@ export default function DivisionSetup({ division, updateDivision }) {
                           onChange={(e) =>
                             handleUpdateTier(tier.id, 'seriesCount', parseInt(e.target.value))
                           }
-                          className="w-12 bg-qw-darker border border-qw-border rounded px-1 py-1.5 text-white text-sm"
+                          className="w-12 bg-background border border-outline-variant rounded px-1 py-1.5 text-on-surface text-sm"
                         >
                           {[1, 3, 5, 7].map((n) => (
                             <option key={n} value={n}>
@@ -581,16 +581,16 @@ export default function DivisionSetup({ division, updateDivision }) {
 
                   {/* Double Elim specific options */}
                   {tierIsDoubleElim && (
-                    <div className="mt-4 pt-4 border-t border-qw-border/50">
+                    <div className="mt-4 pt-4 border-t border-outline-variant/50">
                       <div className="grid grid-cols-3 gap-4">
                         <div>
-                          <label className="block text-qw-muted text-xs mb-1">Losers Bo</label>
+                          <label className="block text-on-surface-variant text-xs mb-1">Losers Bo</label>
                           <select
                             value={tier.losersBo || 3}
                             onChange={(e) =>
                               handleUpdateTier(tier.id, 'losersBo', parseInt(e.target.value))
                             }
-                            className="w-full bg-qw-darker border border-qw-border rounded px-2 py-1.5 text-white text-sm"
+                            className="w-full bg-background border border-outline-variant rounded px-2 py-1.5 text-on-surface text-sm"
                           >
                             {[1, 3, 5].map((n) => (
                               <option key={n} value={n}>
@@ -600,13 +600,13 @@ export default function DivisionSetup({ division, updateDivision }) {
                           </select>
                         </div>
                         <div>
-                          <label className="block text-qw-muted text-xs mb-1">Grand Final</label>
+                          <label className="block text-on-surface-variant text-xs mb-1">Grand Final</label>
                           <select
                             value={tier.grandFinalBo || 5}
                             onChange={(e) =>
                               handleUpdateTier(tier.id, 'grandFinalBo', parseInt(e.target.value))
                             }
-                            className="w-full bg-qw-darker border border-qw-border rounded px-2 py-1.5 text-white text-sm"
+                            className="w-full bg-background border border-outline-variant rounded px-2 py-1.5 text-on-surface text-sm"
                           >
                             {[3, 5, 7].map((n) => (
                               <option key={n} value={n}>
@@ -616,14 +616,14 @@ export default function DivisionSetup({ division, updateDivision }) {
                           </select>
                         </div>
                         <div className="flex items-end">
-                          <label className="flex items-center gap-2 text-qw-muted text-sm">
+                          <label className="flex items-center gap-2 text-on-surface-variant text-sm">
                             <input
                               type="checkbox"
                               checked={tier.bracketReset !== false}
                               onChange={(e) =>
                                 handleUpdateTier(tier.id, 'bracketReset', e.target.checked)
                               }
-                              className="accent-qw-accent"
+                              className="accent-primary"
                             />
                             Bracket Reset
                           </label>
@@ -633,7 +633,7 @@ export default function DivisionSetup({ division, updateDivision }) {
                   )}
 
                   {/* Tier Summary */}
-                  <div className="mt-3 p-2 bg-qw-darker/50 rounded text-xs text-qw-muted">
+                  <div className="mt-3 p-2 bg-background/50 rounded text-xs text-on-surface-variant">
                     {tierIsDoubleElim ? (
                       <span>
                         Double Elim: {tier.teams} teams •{' '}
@@ -655,23 +655,23 @@ export default function DivisionSetup({ division, updateDivision }) {
           {/* Add Tier Button */}
           <button
             onClick={handleAddTier}
-            className="mt-4 w-full py-2 border-2 border-dashed border-qw-border rounded text-qw-muted hover:text-white hover:border-qw-accent transition-colors"
+            className="mt-4 w-full py-2 border-2 border-dashed border-outline-variant rounded text-on-surface-variant hover:text-on-surface hover:border-primary transition-colors"
           >
             + Add Another Tier (Bronze/Copper/etc.)
           </button>
 
           {/* Multi-Tier Summary */}
-          <div className="mt-4 p-3 bg-qw-dark rounded border border-qw-border">
-            <div className="text-sm text-qw-muted">
-              <span className="text-qw-accent font-semibold">
+          <div className="mt-4 p-3 bg-surface-container-high rounded border border-outline-variant">
+            <div className="text-sm text-on-surface-variant">
+              <span className="text-primary font-semibold">
                 {(division.playoffTiers || []).length} tiers
               </span>
               {' → '}
               {(division.playoffTiers || []).map((t, i) => (
                 <span key={t.id}>
                   {i > 0 && ' | '}
-                  <span className="text-white">{t.name}</span>
-                  <span className="text-qw-muted"> (Pos {t.positions})</span>
+                  <span className="text-on-surface">{t.name}</span>
+                  <span className="text-on-surface-variant"> (Pos {t.positions})</span>
                 </span>
               ))}
             </div>
@@ -681,27 +681,27 @@ export default function DivisionSetup({ division, updateDivision }) {
 
       {/* Playoff Settings - For single-elim, double-elim, and groups format */}
       {!isMultiTier && (
-        <div className="qw-panel p-6">
-          <h3 className="font-display text-lg text-qw-accent mb-4">PLAYOFF SETTINGS</h3>
+        <div className="bg-surface-container-high p-6">
+          <h3 className="font-headline text-lg text-primary mb-4">PLAYOFF SETTINGS</h3>
 
           {/* Format Selection */}
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6 pb-6 border-b border-qw-border">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6 pb-6 border-b border-outline-variant">
             <div>
-              <label className="block text-qw-muted text-sm mb-1">Elimination Format</label>
+              <label className="block text-on-surface-variant text-sm mb-1">Elimination Format</label>
               {isPlayoffFormatLocked ? (
-                <div className="w-full bg-qw-dark border border-qw-border rounded px-3 py-2 text-qw-muted flex items-center justify-between">
+                <div className="w-full bg-surface-container-high border border-outline-variant rounded px-3 py-2 text-on-surface-variant flex items-center justify-between">
                   <span>
                     {effectivePlayoffFormat === 'single'
                       ? 'Single Elimination'
                       : 'Double Elimination'}
                   </span>
-                  <span className="text-xs text-qw-accent">Locked by format</span>
+                  <span className="text-xs text-primary">Locked by format</span>
                 </div>
               ) : (
                 <select
                   value={division.playoffFormat || 'single'}
                   onChange={(e) => handlePlayoffFormatChange(e.target.value)}
-                  className="w-full bg-qw-dark border border-qw-border rounded px-3 py-2 text-white"
+                  className="w-full bg-surface-container-high border border-outline-variant rounded px-3 py-2 text-on-surface"
                 >
                   <option value="single">Single Elimination</option>
                   <option value="double">Double Elimination</option>
@@ -709,11 +709,11 @@ export default function DivisionSetup({ division, updateDivision }) {
               )}
             </div>
             <div>
-              <label className="block text-qw-muted text-sm mb-1">Playoff Teams</label>
+              <label className="block text-on-surface-variant text-sm mb-1">Playoff Teams</label>
               <select
                 value={playoffTeams}
                 onChange={(e) => handlePlayoffTeamsChange(parseInt(e.target.value))}
-                className="w-full bg-qw-dark border border-qw-border rounded px-3 py-2 text-white"
+                className="w-full bg-surface-container-high border border-outline-variant rounded px-3 py-2 text-on-surface"
               >
                 <option value={4}>4 Teams</option>
                 <option value={8}>8 Teams</option>
@@ -729,9 +729,9 @@ export default function DivisionSetup({ division, updateDivision }) {
                   id="bracketReset"
                   checked={division.playoffBracketReset !== false}
                   onChange={(e) => handleUpdate('playoffBracketReset', e.target.checked)}
-                  className="accent-qw-accent"
+                  className="accent-primary"
                 />
-                <label htmlFor="bracketReset" className="text-qw-muted text-sm">
+                <label htmlFor="bracketReset" className="text-on-surface-variant text-sm">
                   Allow Bracket Reset
                 </label>
               </div>
@@ -742,14 +742,14 @@ export default function DivisionSetup({ division, updateDivision }) {
           <div className="mb-6">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div>
-                <label className="block text-qw-muted text-sm mb-1">All Rounds</label>
+                <label className="block text-on-surface-variant text-sm mb-1">All Rounds</label>
                 <div className="flex gap-1">
                   <select
                     value={division.playoffSFType || 'bestof'}
                     onChange={(e) =>
                       handleBulkRoundFormat(e.target.value, division.playoffSFBestOf || 3)
                     }
-                    className="flex-1 bg-qw-dark border border-qw-border rounded px-1 py-2 text-white text-sm"
+                    className="flex-1 bg-surface-container-high border border-outline-variant rounded px-1 py-2 text-on-surface text-sm"
                   >
                     <option value="bestof">Bo</option>
                     <option value="playall">Go</option>
@@ -762,7 +762,7 @@ export default function DivisionSetup({ division, updateDivision }) {
                         parseInt(e.target.value)
                       )
                     }
-                    className="w-12 bg-qw-dark border border-qw-border rounded px-1 py-2 text-white text-sm"
+                    className="w-12 bg-surface-container-high border border-outline-variant rounded px-1 py-2 text-on-surface text-sm"
                   >
                     {[1, 3, 5, 7].map((n) => (
                       <option key={n} value={n}>
@@ -790,7 +790,7 @@ export default function DivisionSetup({ division, updateDivision }) {
               )}
               {!isDoubleElim && (
                 <div>
-                  <label className="block text-qw-muted text-sm mb-1">3rd Place Match</label>
+                  <label className="block text-on-surface-variant text-sm mb-1">3rd Place Match</label>
                   <div className="flex gap-1">
                     <select
                       value={
@@ -805,7 +805,7 @@ export default function DivisionSetup({ division, updateDivision }) {
                           if (division.playoff3rdBestOf === 0) handleUpdate('playoff3rdBestOf', 3);
                         }
                       }}
-                      className="flex-1 bg-qw-dark border border-qw-border rounded px-1 py-2 text-white text-sm"
+                      className="flex-1 bg-surface-container-high border border-outline-variant rounded px-1 py-2 text-on-surface text-sm"
                     >
                       <option value="skip">Skip</option>
                       <option value="bestof">Bo</option>
@@ -815,7 +815,7 @@ export default function DivisionSetup({ division, updateDivision }) {
                       <select
                         value={division.playoff3rdBestOf}
                         onChange={(e) => handleUpdate('playoff3rdBestOf', parseInt(e.target.value))}
-                        className="w-12 bg-qw-dark border border-qw-border rounded px-1 py-2 text-white text-sm"
+                        className="w-12 bg-surface-container-high border border-outline-variant rounded px-1 py-2 text-on-surface text-sm"
                       >
                         {[1, 3, 5].map((n) => (
                           <option key={n} value={n}>
@@ -834,22 +834,22 @@ export default function DivisionSetup({ division, updateDivision }) {
               <button
                 type="button"
                 onClick={() => setShowCustomRounds(!showCustomRounds)}
-                className="text-sm text-qw-muted hover:text-white transition-colors flex items-center gap-1"
+                className="text-sm text-on-surface-variant hover:text-on-surface transition-colors flex items-center gap-1"
               >
                 <span className={`transition-transform ${showCustomRounds ? 'rotate-90' : ''}`}>
                   &#9656;
                 </span>
                 Customize per round
                 {roundsAreCustomized && !showCustomRounds && (
-                  <span className="ml-1 px-1.5 py-0.5 bg-qw-accent/20 text-qw-accent text-xs rounded">
+                  <span className="ml-1 px-1.5 py-0.5 bg-primary/20 text-primary text-xs rounded">
                     customized
                   </span>
                 )}
               </button>
               {showCustomRounds && (
-                <div className="mt-3 pt-3 border-t border-qw-border/50 space-y-4">
+                <div className="mt-3 pt-3 border-t border-outline-variant/50 space-y-4">
                   <div>
-                    <h4 className="text-sm font-semibold text-white mb-3">
+                    <h4 className="text-sm font-semibold text-on-surface mb-3">
                       {isDoubleElim ? '🏆 Winners Bracket' : 'Bracket Rounds'}
                     </h4>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -891,7 +891,7 @@ export default function DivisionSetup({ division, updateDivision }) {
                   </div>
                   {isDoubleElim && (
                     <div>
-                      <h4 className="text-sm font-semibold text-white mb-3">💀 Losers Bracket</h4>
+                      <h4 className="text-sm font-semibold text-on-surface mb-3">💀 Losers Bracket</h4>
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         <FormatSelect
                           label="Losers Rounds"
@@ -909,12 +909,12 @@ export default function DivisionSetup({ division, updateDivision }) {
           </div>
 
           {/* Structure Preview */}
-          <div className="p-3 bg-qw-dark rounded border border-qw-border">
-            <div className="text-sm text-qw-muted">
+          <div className="p-3 bg-surface-container-high rounded border border-outline-variant">
+            <div className="text-sm text-on-surface-variant">
               {isDoubleElim ? (
                 <>
                   <div className="mb-1">
-                    <span className="text-qw-accent">Winners:</span>{' '}
+                    <span className="text-primary">Winners:</span>{' '}
                     {playoffTeams >= 32 &&
                       `R32 (${formatDisplay(division.playoffR32Type || 'bestof', division.playoffR32BestOf || 3)}) → `}
                     {playoffTeams >= 16 &&
@@ -934,7 +934,7 @@ export default function DivisionSetup({ division, updateDivision }) {
                     )
                   </div>
                   <div className="mb-1">
-                    <span className="text-qw-accent">Losers:</span>{' '}
+                    <span className="text-primary">Losers:</span>{' '}
                     {playoffTeams >= 32 && '6 rounds'}
                     {playoffTeams >= 16 && playoffTeams < 32 && '4 rounds'}
                     {playoffTeams >= 8 && playoffTeams < 16 && '3 rounds'}
@@ -946,7 +946,7 @@ export default function DivisionSetup({ division, updateDivision }) {
                     )
                   </div>
                   <div>
-                    <span className="text-qw-accent">Grand Final:</span>{' '}
+                    <span className="text-primary">Grand Final:</span>{' '}
                     {formatDisplay(
                       division.playoffGrandFinalType || 'bestof',
                       division.playoffGrandFinalBestOf || 5
@@ -955,7 +955,7 @@ export default function DivisionSetup({ division, updateDivision }) {
                   </div>
                 </>
               ) : (
-                <span className="text-white">
+                <span className="text-on-surface">
                   {playoffTeams >= 32 &&
                     `R32 (${formatDisplay(division.playoffR32Type || 'bestof', division.playoffR32BestOf || 3)}) → `}
                   {playoffTeams >= 16 &&
@@ -980,16 +980,16 @@ export default function DivisionSetup({ division, updateDivision }) {
       )}
 
       {/* Advanced Settings — collapsed by default */}
-      <div className="qw-panel overflow-hidden">
+      <div className="bg-surface-container-high overflow-hidden">
         <button
           type="button"
           onClick={() => setShowAdvanced(!showAdvanced)}
-          className="w-full px-6 py-4 flex items-center justify-between hover:bg-qw-dark/30 transition-colors"
+          className="w-full px-6 py-4 flex items-center justify-between hover:bg-surface-container-high/30 transition-colors"
         >
           <div>
-            <h3 className="font-display text-lg text-qw-accent text-left">ADVANCED SETTINGS</h3>
+            <h3 className="font-headline text-lg text-primary text-left">ADVANCED SETTINGS</h3>
             {!showAdvanced && (
-              <p className="text-sm text-qw-muted mt-1 text-left">
+              <p className="text-sm text-on-surface-variant mt-1 text-left">
                 Win: {division.pointsWin} pts, Loss: {division.pointsLoss} pts
                 {(division.format === 'groups' || division.format === 'multi-tier') && (
                   <span>
@@ -1010,49 +1010,49 @@ export default function DivisionSetup({ division, updateDivision }) {
             )}
           </div>
           <span
-            className={`text-qw-muted text-lg transition-transform ${showAdvanced ? 'rotate-90' : ''}`}
+            className={`text-on-surface-variant text-lg transition-transform ${showAdvanced ? 'rotate-90' : ''}`}
           >
             &#9656;
           </span>
         </button>
         {showAdvanced && (
-          <div className="px-6 pb-6 space-y-6 border-t border-qw-border">
+          <div className="px-6 pb-6 space-y-6 border-t border-outline-variant">
             {/* Points System */}
             <div className="pt-6">
-              <h4 className="text-sm font-semibold text-white mb-3">Points System</h4>
-              <div className="mb-4 p-3 bg-qw-dark rounded border border-qw-border text-sm">
+              <h4 className="text-sm font-semibold text-on-surface mb-3">Points System</h4>
+              <div className="mb-4 p-3 bg-surface-container-high rounded border border-outline-variant text-sm">
                 {isPlayAll ? (
-                  <div className="text-qw-accent">
+                  <div className="text-primary">
                     <strong>Play All (Go) Mode:</strong> Points awarded per map.
                   </div>
                 ) : (
-                  <div className="text-qw-muted">
+                  <div className="text-on-surface-variant">
                     <strong>Best Of Mode:</strong> Points awarded per series.
                   </div>
                 )}
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-qw-muted text-sm mb-1">
+                  <label className="block text-on-surface-variant text-sm mb-1">
                     {isPlayAll ? 'Points per Map Win' : 'Points for Series Win'}
                   </label>
                   <input
                     type="number"
                     value={division.pointsWin}
                     onChange={(e) => handleUpdate('pointsWin', parseInt(e.target.value) || 0)}
-                    className="w-full bg-qw-dark border border-qw-border rounded px-3 py-2 text-white"
+                    className="w-full bg-surface-container-high border border-outline-variant rounded px-3 py-2 text-on-surface"
                     min={0}
                   />
                 </div>
                 <div>
-                  <label className="block text-qw-muted text-sm mb-1">
+                  <label className="block text-on-surface-variant text-sm mb-1">
                     {isPlayAll ? 'Points per Map Loss' : 'Points for Series Loss'}
                   </label>
                   <input
                     type="number"
                     value={division.pointsLoss}
                     onChange={(e) => handleUpdate('pointsLoss', parseInt(e.target.value) || 0)}
-                    className="w-full bg-qw-dark border border-qw-border rounded px-3 py-2 text-white"
+                    className="w-full bg-surface-container-high border border-outline-variant rounded px-3 py-2 text-on-surface"
                     min={0}
                   />
                 </div>
@@ -1062,8 +1062,8 @@ export default function DivisionSetup({ division, updateDivision }) {
             {/* Tie-Breakers - Only for formats with group stage */}
             {(division.format === 'groups' || division.format === 'multi-tier') && (
               <div>
-                <h4 className="text-sm font-semibold text-white mb-3">Tie-Breaker Priority</h4>
-                <p className="text-sm text-qw-muted mb-4">When teams have equal points:</p>
+                <h4 className="text-sm font-semibold text-on-surface mb-3">Tie-Breaker Priority</h4>
+                <p className="text-sm text-on-surface-variant mb-4">When teams have equal points:</p>
                 <TieBreakerConfig
                   value={division.tieBreakers}
                   onChange={(newOrder) => handleUpdate('tieBreakers', newOrder)}

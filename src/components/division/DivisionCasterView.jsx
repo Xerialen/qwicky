@@ -22,7 +22,7 @@ function CollapsibleSection({ title, badge, defaultOpen = true, children, accent
   const [open, setOpen] = useState(defaultOpen);
   return (
     <div
-      className={`qw-panel overflow-hidden ${accent ? 'border border-qw-accent/25 bg-qw-accent/5' : ''}`}
+      className={`qw-panel overflow-hidden ${accent ? 'border border-primary/25 bg-primary/5' : ''}`}
     >
       <button
         type="button"
@@ -30,13 +30,13 @@ function CollapsibleSection({ title, badge, defaultOpen = true, children, accent
         className="w-full flex items-center justify-between p-5 pb-0 text-left focus:outline-none group"
       >
         <h3
-          className={`font-display font-bold ${accent ? 'text-qw-accent' : 'text-white'} flex items-center gap-2`}
+          className={`font-headline font-bold ${accent ? 'text-primary' : 'text-on-surface'} flex items-center gap-2`}
         >
           {title}
-          {badge && <span className="text-qw-muted font-normal text-sm">{badge}</span>}
+          {badge && <span className="text-on-surface-variant font-normal text-sm">{badge}</span>}
         </h3>
         <span
-          className={`text-qw-muted text-sm transition-transform ${open ? 'rotate-0' : '-rotate-90'}`}
+          className={`text-on-surface-variant text-sm transition-transform ${open ? 'rotate-0' : '-rotate-90'}`}
         >
           ▼
         </span>
@@ -50,7 +50,7 @@ function CollapsibleSection({ title, badge, defaultOpen = true, children, accent
 const TrendArrow = ({ trend }) => (
   <span
     className={`text-sm ${
-      trend === 'rising' ? 'text-qw-win' : trend === 'falling' ? 'text-qw-loss' : 'text-qw-muted'
+      trend === 'rising' ? 'text-tertiary' : trend === 'falling' ? 'text-error' : 'text-on-surface-variant'
     }`}
   >
     {trend === 'rising' ? '↗' : trend === 'falling' ? '↘' : '→'}
@@ -62,10 +62,10 @@ const StreakBadge = ({ streak, type }) => {
   const isWin = type === 'W';
   return (
     <div
-      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded font-display font-bold text-xs mt-2 ${
+      className={`inline-flex items-center gap-1.5 px-2.5 py-1 font-headline font-bold text-xs mt-2 ${
         isWin
-          ? 'bg-qw-win/20 text-qw-win border border-qw-win/40'
-          : 'bg-qw-loss/20 text-qw-loss border border-qw-loss/40'
+          ? 'bg-qw-win/20 text-tertiary border border-qw-win/40'
+          : 'bg-qw-loss/20 text-error border border-qw-loss/40'
       }`}
     >
       <span>{isWin ? '🔥' : '❄️'}</span>
@@ -77,14 +77,14 @@ const StreakBadge = ({ streak, type }) => {
 const MapResultCard = ({ result }) => {
   const cls =
     result.result === 'W'
-      ? 'bg-qw-win/20 text-qw-win border-qw-win/30'
+      ? 'bg-qw-win/20 text-tertiary border-qw-win/30'
       : result.result === 'L'
-        ? 'bg-qw-loss/20 text-qw-loss border-qw-loss/30'
-        : 'bg-qw-border/20 text-qw-muted border-qw-border/30';
+        ? 'bg-qw-loss/20 text-error border-qw-loss/30'
+        : 'bg-outline-variant/20 text-on-surface-variant border-outline-variant/30';
   return (
     <div
       title={`vs ${result.opponent || '?'} · ${result.map} · ${result.sf} – ${result.sa}`}
-      className={`flex flex-col items-center justify-center rounded p-2.5 text-sm font-mono border cursor-default ${cls}`}
+      className={`flex flex-col items-center justify-center p-2.5 text-sm font-mono border cursor-default ${cls}`}
     >
       <span className="font-bold text-base">{result.result}</span>
       <span className="text-[11.5px] opacity-80 truncate max-w-full" title={result.map}>
@@ -105,10 +105,10 @@ const MapResultCard = ({ result }) => {
 function StatCell({ label, value, suffix, color }) {
   return (
     <div>
-      <div className="text-qw-muted text-[9px] uppercase tracking-wide">{label}</div>
-      <div className={`font-mono font-bold ${color || 'text-white'}`}>
+      <div className="text-on-surface-variant text-[9px] uppercase tracking-wide">{label}</div>
+      <div className={`font-mono font-bold ${color || 'text-on-surface'}`}>
         {value}
-        {suffix && <span className="text-qw-muted font-normal text-[9px]">{suffix}</span>}
+        {suffix && <span className="text-on-surface-variant font-normal text-[9px]">{suffix}</span>}
       </div>
     </div>
   );
@@ -117,24 +117,24 @@ function StatCell({ label, value, suffix, color }) {
 function WeaponRow({ label, taken, kills, dropped, acc }) {
   return (
     <div className="flex items-center gap-1 text-[11px] font-mono">
-      <span className="text-qw-accent font-display font-bold w-6">{label}</span>
-      <span className="text-qw-muted" title="Taken (weapon pickups)">
+      <span className="text-primary font-headline font-bold w-6">{label}</span>
+      <span className="text-on-surface-variant" title="Taken (weapon pickups)">
         T:
       </span>
-      <span className="text-white w-6">{taken}</span>
-      <span className="text-qw-muted" title="Kills (enemies killed holding this weapon)">
+      <span className="text-on-surface w-6">{taken}</span>
+      <span className="text-on-surface-variant" title="Kills (enemies killed holding this weapon)">
         K:
       </span>
-      <span className="text-qw-win w-6">{kills}</span>
-      <span className="text-qw-muted" title="Dropped (died while holding)">
+      <span className="text-tertiary w-6">{kills}</span>
+      <span className="text-on-surface-variant" title="Dropped (died while holding)">
         D:
       </span>
-      <span className="text-qw-loss w-6">{dropped}</span>
+      <span className="text-error w-6">{dropped}</span>
       {acc !== undefined && acc > 0 && (
         <>
-          <span className="text-qw-muted ml-1">Acc:</span>
+          <span className="text-on-surface-variant ml-1">Acc:</span>
           <span
-            className={acc >= 25 ? 'text-qw-win' : acc >= 18 ? 'text-yellow-400' : 'text-qw-muted'}
+            className={acc >= 25 ? 'text-tertiary' : acc >= 18 ? 'text-yellow-400' : 'text-on-surface-variant'}
           >
             {acc}%
           </span>
@@ -147,39 +147,39 @@ function WeaponRow({ label, taken, kills, dropped, acc }) {
 function DetailedPlayerCard({ player, globalStats }) {
   const trendColor =
     player.trend === 'hot'
-      ? 'text-qw-win'
+      ? 'text-tertiary'
       : player.trend === 'cold'
-        ? 'text-qw-loss'
-        : 'text-qw-muted';
+        ? 'text-error'
+        : 'text-on-surface-variant';
   const trendLabel = player.trend === 'hot' ? 'HOT' : player.trend === 'cold' ? 'COLD' : null;
   const trendIcon = player.trend === 'hot' ? '▲' : player.trend === 'cold' ? '▼' : null;
 
   return (
-    <div className="rounded border border-qw-border/30 bg-qw-dark/40 p-3 space-y-2">
+    <div className="border border-outline-variant/30 bg-surface-container-high/40 p-3 space-y-2">
       <div className="flex items-center justify-between">
-        <div className="font-semibold text-white text-sm truncate">{player.name}</div>
+        <div className="font-semibold text-on-surface text-sm truncate">{player.name}</div>
         <div className="flex items-center gap-1.5 flex-shrink-0">
           {trendLabel && (
-            <span className={`text-[10px] font-display font-bold ${trendColor}`}>
+            <span className={`text-[10px] font-headline font-bold ${trendColor}`}>
               {trendIcon} {trendLabel}
             </span>
           )}
-          <span className="text-qw-muted text-[10px]">{player.mapsPlayed} maps</span>
+          <span className="text-on-surface-variant text-[10px]">{player.mapsPlayed} maps</span>
         </div>
       </div>
 
       {globalStats && (
-        <div className="flex items-center gap-3 text-[10px] bg-qw-border/10 rounded px-2 py-1">
-          <span className="text-qw-muted">🌍</span>
+        <div className="flex items-center gap-3 text-[10px] bg-outline-variant/10 px-2 py-1">
+          <span className="text-on-surface-variant">🌍</span>
           {globalStats.eff != null && (
-            <span className="text-qw-muted">
+            <span className="text-on-surface-variant">
               Eff:{' '}
               <span
                 className={
                   globalStats.eff >= 50
-                    ? 'text-qw-win font-bold'
+                    ? 'text-tertiary font-bold'
                     : globalStats.eff < 40
-                      ? 'text-qw-loss'
+                      ? 'text-error'
                       : 'text-yellow-400'
                 }
               >
@@ -188,16 +188,16 @@ function DetailedPlayerCard({ player, globalStats }) {
             </span>
           )}
           {globalStats.avgDmg != null && (
-            <span className="text-qw-muted">
-              Dmg: <span className="text-white">{globalStats.avgDmg}</span>
+            <span className="text-on-surface-variant">
+              Dmg: <span className="text-on-surface">{globalStats.avgDmg}</span>
             </span>
           )}
           {globalStats.winRatePct != null && (
-            <span className="text-qw-muted">
-              Win: <span className="text-white">{globalStats.winRatePct}%</span>
+            <span className="text-on-surface-variant">
+              Win: <span className="text-on-surface">{globalStats.winRatePct}%</span>
             </span>
           )}
-          <span className="text-qw-muted">{globalStats.games}G</span>
+          <span className="text-on-surface-variant">{globalStats.games}G</span>
         </div>
       )}
 
@@ -206,17 +206,17 @@ function DetailedPlayerCard({ player, globalStats }) {
         <StatCell
           label="K/D"
           value={player.kdRatio}
-          color={player.kdRatio >= 1 ? 'text-qw-win' : 'text-qw-loss'}
+          color={player.kdRatio >= 1 ? 'text-tertiary' : 'text-error'}
         />
         <StatCell
           label="Eff"
           value={`${player.effPct}%`}
           color={
             player.effPct >= 50
-              ? 'text-qw-win'
+              ? 'text-tertiary'
               : player.effPct >= 40
                 ? 'text-yellow-400'
-                : 'text-qw-loss'
+                : 'text-error'
           }
         />
         <StatCell label="Damage" value={player.avgDmg} />
@@ -225,7 +225,7 @@ function DetailedPlayerCard({ player, globalStats }) {
       </div>
 
       {player.hasDetailedStats && (
-        <div className="border-t border-qw-border/20 pt-2 space-y-1">
+        <div className="border-t border-outline-variant/20 pt-2 space-y-1">
           <WeaponRow
             label="RL"
             taken={player.rlTaken}
@@ -243,15 +243,15 @@ function DetailedPlayerCard({ player, globalStats }) {
       )}
 
       {(player.ra > 0 || player.quad > 0) && (
-        <div className="flex gap-3 text-[10px] text-qw-muted border-t border-qw-border/20 pt-1.5">
+        <div className="flex gap-3 text-[10px] text-on-surface-variant border-t border-outline-variant/20 pt-1.5">
           {player.ra > 0 && (
             <span>
-              RA: <span className="text-white font-mono">{player.ra}</span>/opp
+              RA: <span className="text-on-surface font-mono">{player.ra}</span>/opp
             </span>
           )}
           {player.quad > 0 && (
             <span>
-              Quad: <span className="text-qw-accent font-mono">{player.quad}</span>/opp
+              Quad: <span className="text-primary font-mono">{player.quad}</span>/opp
             </span>
           )}
         </div>
@@ -265,7 +265,7 @@ function DetailedPlayerCard({ player, globalStats }) {
 function ExtH2HPanel({ data, tag1, tag2 }) {
   const rows = Array.isArray(data) ? data : data?.matches || data?.games || [];
   if (rows.length === 0)
-    return <p className="text-qw-muted text-xs italic">No global H2H data found.</p>;
+    return <p className="text-on-surface-variant text-xs italic">No global H2H data found.</p>;
   let wins1 = 0;
 
   // The H2H API returns results from teamA's perspective:
@@ -298,21 +298,21 @@ function ExtH2HPanel({ data, tag1, tag2 }) {
     <div>
       <div className="flex items-center justify-between mb-3">
         <div className="text-left">
-          <div className="text-xs text-qw-muted font-display uppercase tracking-wider">{tag1}</div>
+          <div className="text-xs text-on-surface-variant font-headline uppercase tracking-wider">{tag1}</div>
           <div
-            className={`text-2xl font-display font-bold leading-none ${wins1 > wins2 ? 'text-qw-win' : 'text-white'}`}
+            className={`text-2xl font-headline font-bold leading-none ${wins1 > wins2 ? 'text-tertiary' : 'text-on-surface'}`}
           >
             {wins1}
           </div>
         </div>
         <div className="text-center">
-          <div className="text-[10px] text-qw-muted">{rows.length} maps</div>
-          <div className="text-[10px] text-qw-muted">12 months</div>
+          <div className="text-[10px] text-on-surface-variant">{rows.length} maps</div>
+          <div className="text-[10px] text-on-surface-variant">12 months</div>
         </div>
         <div className="text-right">
-          <div className="text-xs text-qw-muted font-display uppercase tracking-wider">{tag2}</div>
+          <div className="text-xs text-on-surface-variant font-headline uppercase tracking-wider">{tag2}</div>
           <div
-            className={`text-2xl font-display font-bold leading-none ${wins2 > wins1 ? 'text-qw-win' : 'text-white'}`}
+            className={`text-2xl font-headline font-bold leading-none ${wins2 > wins1 ? 'text-tertiary' : 'text-on-surface'}`}
           >
             {wins2}
           </div>
@@ -321,17 +321,17 @@ function ExtH2HPanel({ data, tag1, tag2 }) {
 
       {rows.length > 0 && (
         <div className="flex items-center gap-2 mb-3">
-          <span className="text-[10px] font-mono text-qw-muted w-8 text-right">{winPct1}%</span>
-          <div className="flex-1 h-1.5 bg-qw-loss/30 rounded-full overflow-hidden">
-            <div className="h-full bg-qw-win rounded-full" style={{ width: `${winPct1}%` }} />
+          <span className="text-[10px] font-mono text-on-surface-variant w-8 text-right">{winPct1}%</span>
+          <div className="flex-1 h-1.5 bg-qw-loss/30 overflow-hidden">
+            <div className="h-full bg-qw-win" style={{ width: `${winPct1}%` }} />
           </div>
-          <span className="text-[10px] font-mono text-qw-muted w-8">{100 - winPct1}%</span>
+          <span className="text-[10px] font-mono text-on-surface-variant w-8">{100 - winPct1}%</span>
         </div>
       )}
 
       {hasMapInfo && (
         <div className="max-h-56 overflow-y-auto">
-          <div className="grid grid-cols-[1fr_auto_1fr] items-center text-[10px] font-mono text-qw-muted border-b border-qw-border/30 pb-1 mb-1 sticky top-0 bg-qw-panel">
+          <div className="grid grid-cols-[1fr_auto_1fr] items-center text-[10px] font-mono text-on-surface-variant border-b border-outline-variant/30 pb-1 mb-1 sticky top-0 bg-surface-container-high">
             <span className="text-left">{tag1}</span>
             <span className="text-center px-3">Map</span>
             <span className="text-right">{tag2}</span>
@@ -344,30 +344,30 @@ function ExtH2HPanel({ data, tag1, tag2 }) {
               >
                 <div className="flex items-center gap-2">
                   {hasScores && m.score1 != null && (
-                    <span className={m.tag1Won ? 'text-qw-win font-bold' : 'text-qw-muted'}>
+                    <span className={m.tag1Won ? 'text-tertiary font-bold' : 'text-on-surface-variant'}>
                       {m.score1}
                     </span>
                   )}
                   <span
-                    className={`text-sm font-bold ${m.tag1Won ? 'text-qw-win' : 'text-qw-loss'}`}
+                    className={`text-sm font-bold ${m.tag1Won ? 'text-tertiary' : 'text-error'}`}
                   >
                     {m.tag1Won ? 'W' : 'L'}
                   </span>
                 </div>
                 <div className="text-center px-3">
-                  <div className="text-qw-text text-xs">{m.map || '—'}</div>
+                  <div className="text-on-surface text-xs">{m.map || '—'}</div>
                   {hasDates && m.date && (
-                    <div className="text-[9px] text-qw-muted/50">{m.date}</div>
+                    <div className="text-[9px] text-on-surface-variant/50">{m.date}</div>
                   )}
                 </div>
                 <div className="flex items-center justify-end gap-2">
                   <span
-                    className={`text-sm font-bold ${!m.tag1Won ? 'text-qw-win' : 'text-qw-loss'}`}
+                    className={`text-sm font-bold ${!m.tag1Won ? 'text-tertiary' : 'text-error'}`}
                   >
                     {m.tag1Won ? 'L' : 'W'}
                   </span>
                   {hasScores && m.score2 != null && (
-                    <span className={!m.tag1Won ? 'text-qw-win font-bold' : 'text-qw-muted'}>
+                    <span className={!m.tag1Won ? 'text-tertiary font-bold' : 'text-on-surface-variant'}>
                       {m.score2}
                     </span>
                   )}
@@ -383,8 +383,8 @@ function ExtH2HPanel({ data, tag1, tag2 }) {
 
 function ExtLoadingOverlay() {
   return (
-    <div className="mt-3 flex items-center gap-2 text-qw-muted text-xs">
-      <span className="inline-block w-3 h-3 border border-qw-accent border-t-transparent rounded-full animate-spin flex-shrink-0" />
+    <div className="mt-3 flex items-center gap-2 text-on-surface-variant text-xs">
+      <span className="inline-block w-3 h-3 border border-primary border-t-transparent rounded-full animate-spin flex-shrink-0" />
       Loading global stats…
     </div>
   );
@@ -440,7 +440,7 @@ function MapStatsPanel({ stats, extMapsData, extLoading, showGlobal }) {
     const extStats = normalizeExtMaps(extMapsData);
     if (Object.keys(extStats).length === 0) {
       if (extLoading) return <ExtLoadingOverlay />;
-      return <p className="text-qw-muted text-xs italic">No global map data.</p>;
+      return <p className="text-on-surface-variant text-xs italic">No global map data.</p>;
     }
     return (
       <div className="space-y-2">
@@ -451,12 +451,12 @@ function MapStatsPanel({ stats, extMapsData, extLoading, showGlobal }) {
             const delta = localWR !== null ? Math.round((localWR - es.winRate) * 100) : null;
             const deltaClass =
               delta === null
-                ? 'text-qw-muted'
+                ? 'text-on-surface-variant'
                 : Math.abs(delta) < 3
-                  ? 'text-qw-muted'
+                  ? 'text-on-surface-variant'
                   : delta > 0
-                    ? 'text-qw-win'
-                    : 'text-qw-loss';
+                    ? 'text-tertiary'
+                    : 'text-error';
             const deltaText =
               delta === null
                 ? '—'
@@ -466,17 +466,17 @@ function MapStatsPanel({ stats, extMapsData, extLoading, showGlobal }) {
             return (
               <div key={mapName} className="space-y-0.5">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="font-mono text-qw-text">{mapName}</span>
+                  <span className="font-mono text-on-surface">{mapName}</span>
                   <div className="flex items-center gap-2 font-mono flex-shrink-0">
-                    <span className="text-qw-muted">
+                    <span className="text-on-surface-variant">
                       {es.wins}W–{es.losses}L
                     </span>
                     <span
-                      className={`w-8 text-right ${es.winRate >= 0.5 ? 'text-qw-win' : 'text-qw-loss'}`}
+                      className={`w-8 text-right ${es.winRate >= 0.5 ? 'text-tertiary' : 'text-error'}`}
                     >
                       {Math.round(es.winRate * 100)}%
                     </span>
-                    <span className="text-qw-muted text-[10px]">{es.played}G</span>
+                    <span className="text-on-surface-variant text-[10px]">{es.played}G</span>
                     <span
                       className={`w-10 text-right text-[10px] ${deltaClass}`}
                       title="Tournament vs Global Δ"
@@ -485,22 +485,22 @@ function MapStatsPanel({ stats, extMapsData, extLoading, showGlobal }) {
                     </span>
                   </div>
                 </div>
-                <div className="h-1.5 bg-qw-border rounded-full overflow-hidden">
+                <div className="h-1.5 bg-outline-variant overflow-hidden">
                   <div
-                    className={`h-full rounded-full ${es.winRate >= 0.5 ? 'bg-qw-win' : 'bg-qw-loss'}`}
+                    className={`h-full ${es.winRate >= 0.5 ? 'bg-qw-win' : 'bg-qw-loss'}`}
                     style={{ width: `${Math.round(es.winRate * 100)}%` }}
                   />
                 </div>
               </div>
             );
           })}
-        <p className="text-[10px] text-qw-muted mt-1">Δ = Tournament vs. Global win rate</p>
+        <p className="text-[10px] text-on-surface-variant mt-1">Δ = Tournament vs. Global win rate</p>
       </div>
     );
   }
 
   if (!stats || Object.keys(stats).length === 0) {
-    return <p className="text-qw-muted text-xs italic">No map data.</p>;
+    return <p className="text-on-surface-variant text-xs italic">No map data.</p>;
   }
   return (
     <div className="space-y-2">
@@ -509,18 +509,18 @@ function MapStatsPanel({ stats, extMapsData, extLoading, showGlobal }) {
         .map(([mapName, s]) => (
           <div key={mapName} className="space-y-0.5">
             <div className="flex items-center justify-between text-xs">
-              <span className="font-mono text-qw-text">{mapName}</span>
+              <span className="font-mono text-on-surface">{mapName}</span>
               <div className="flex items-center gap-3 font-mono flex-shrink-0">
-                <span className="text-qw-muted">
+                <span className="text-on-surface-variant">
                   {s.wins}W–{s.losses}L
                 </span>
                 <span
-                  className={`w-8 text-right ${s.winRate >= 0.5 ? 'text-qw-win' : 'text-qw-loss'}`}
+                  className={`w-8 text-right ${s.winRate >= 0.5 ? 'text-tertiary' : 'text-error'}`}
                 >
                   {Math.round(s.winRate * 100)}%
                 </span>
                 <span
-                  className={`w-10 text-right ${s.avgFragDiff >= 0 ? 'text-qw-win' : 'text-qw-loss'}`}
+                  className={`w-10 text-right ${s.avgFragDiff >= 0 ? 'text-tertiary' : 'text-error'}`}
                   title="Avg frag diff"
                 >
                   {s.avgFragDiff >= 0 ? '+' : ''}
@@ -528,9 +528,9 @@ function MapStatsPanel({ stats, extMapsData, extLoading, showGlobal }) {
                 </span>
               </div>
             </div>
-            <div className="h-1.5 bg-qw-border rounded-full overflow-hidden">
+            <div className="h-1.5 bg-outline-variant overflow-hidden">
               <div
-                className={`h-full rounded-full transition-all ${s.winRate >= 0.5 ? 'bg-qw-win' : 'bg-qw-loss'}`}
+                className={`h-full transition-all ${s.winRate >= 0.5 ? 'bg-qw-win' : 'bg-qw-loss'}`}
                 style={{ width: `${Math.round(s.winRate * 100)}%` }}
               />
             </div>
@@ -580,7 +580,7 @@ function PlayerSpotlightCard({
             { team: team2, extPlayers: extPlayers2 },
           ].map(({ team, extPlayers }) => (
             <div key={team}>
-              <div className="text-xs text-qw-muted font-display uppercase tracking-wider mb-1.5 truncate">
+              <div className="text-xs text-on-surface-variant font-headline uppercase tracking-wider mb-1.5 truncate">
                 {team} <span className="font-normal normal-case">(3mo global)</span>
               </div>
               {extPlayers
@@ -588,20 +588,20 @@ function PlayerSpotlightCard({
                 .map((ep, i) => {
                   const effColor =
                     ep.eff == null
-                      ? 'text-qw-muted'
+                      ? 'text-on-surface-variant'
                       : ep.eff >= 50
-                        ? 'text-qw-win'
+                        ? 'text-tertiary'
                         : ep.eff < 40
-                          ? 'text-qw-loss'
+                          ? 'text-error'
                           : 'text-yellow-400';
                   return (
                     <div
                       key={`${ep.name}-${i}`}
-                      className="flex items-center gap-2 py-1.5 text-xs border-b border-qw-border/20 last:border-0"
+                      className="flex items-center gap-2 py-1.5 text-xs border-b border-outline-variant/20 last:border-0"
                     >
                       <div className="flex-1 min-w-0">
-                        <div className="text-white truncate">{ep.name}</div>
-                        <div className="text-qw-muted text-[10px]">{ep.games}G global</div>
+                        <div className="text-on-surface truncate">{ep.name}</div>
+                        <div className="text-on-surface-variant text-[10px]">{ep.games}G global</div>
                       </div>
                       {ep.eff != null && (
                         <div className={`font-mono font-bold text-right flex-shrink-0 ${effColor}`}>
@@ -616,7 +616,7 @@ function PlayerSpotlightCard({
         </div>
       );
     }
-    return <p className="text-qw-muted text-xs italic">No player data available.</p>;
+    return <p className="text-on-surface-variant text-xs italic">No player data available.</p>;
   }
 
   // Main view — DetailedPlayerCard columns
@@ -629,7 +629,7 @@ function PlayerSpotlightCard({
   return (
     <div>
       {hasAnyWeapons && (
-        <div className="text-[10px] text-qw-muted mb-3 font-mono">
+        <div className="text-[10px] text-on-surface-variant mb-3 font-mono">
           T = Taken · K = Kills (enemy holding weapon) · D = Dropped
         </div>
       )}
@@ -637,7 +637,7 @@ function PlayerSpotlightCard({
         {teamColumns.map(({ team, players, extMap }) => (
           <div key={team}>
             <div
-              className="text-xs text-qw-muted font-display uppercase tracking-wider mb-2 truncate"
+              className="text-xs text-on-surface-variant font-headline uppercase tracking-wider mb-2 truncate"
               title={team}
             >
               {team}
@@ -645,7 +645,7 @@ function PlayerSpotlightCard({
             </div>
             <div className="space-y-2">
               {players.length === 0 ? (
-                <p className="text-qw-muted text-xs italic">No player data</p>
+                <p className="text-on-surface-variant text-xs italic">No player data</p>
               ) : (
                 players.map((p) => (
                   <DetailedPlayerCard
@@ -877,14 +877,14 @@ export default function DivisionCasterView({ division }) {
     return (
       <div className="space-y-4">
         <div className="qw-panel p-6">
-          <h2 className="font-display font-bold text-xl text-qw-accent mb-1">🎙️ Caster View</h2>
-          <p className="text-qw-muted text-sm mb-6">
+          <h2 className="font-headline font-bold text-xl text-primary mb-1">🎙️ Caster View</h2>
+          <p className="text-on-surface-variant text-sm mb-6">
             Pre-match analysis and talking points for casting.
           </p>
 
           {hasBracket && (
             <div className="mb-6">
-              <h3 className="text-xs text-qw-muted font-display uppercase tracking-wider mb-2">
+              <h3 className="font-headline text-[10px] uppercase tracking-widest font-bold text-on-surface-variant mb-2">
                 Bracket Matchups — Quick Pick
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -896,18 +896,18 @@ export default function DivisionCasterView({ division }) {
                       setTeam2(m.team2);
                       setExtData(null);
                     }}
-                    className="flex items-center justify-between gap-2 px-4 py-3 rounded border-2 border-qw-accent/40 bg-qw-accent/5 text-sm hover:border-qw-accent hover:bg-qw-accent/15 transition-all focus:outline-none focus:ring-2 focus:ring-qw-accent/50"
+                    className="flex items-center justify-between gap-2 px-4 py-3 border-2 border-primary/40 bg-primary/5 text-sm hover:border-primary hover:bg-primary/15 transition-all focus:outline-none focus:ring-2 focus:ring-primary/50"
                   >
-                    <span className="font-semibold text-white truncate">{m.team1}</span>
-                    <span className="text-qw-accent text-xs flex-shrink-0 font-bold">VS</span>
-                    <span className="font-semibold text-white truncate text-right">{m.team2}</span>
+                    <span className="font-semibold text-on-surface truncate">{m.team1}</span>
+                    <span className="text-primary text-xs flex-shrink-0 font-bold">VS</span>
+                    <span className="font-semibold text-on-surface truncate text-right">{m.team2}</span>
                   </button>
                 ))}
               </div>
             </div>
           )}
 
-          <h3 className="text-xs text-qw-muted font-display uppercase tracking-wider mb-2">
+          <h3 className="font-headline text-[10px] uppercase tracking-widest font-bold text-on-surface-variant mb-2">
             {hasBracket ? 'Or select any two teams' : 'Select teams to analyse'}
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -934,11 +934,11 @@ export default function DivisionCasterView({ division }) {
               },
             ].map(({ label, value, set, other }) => (
               <div key={label}>
-                <label className="block text-qw-muted text-sm mb-1">{label}</label>
+                <label className="block text-on-surface-variant text-sm mb-1">{label}</label>
                 <select
                   value={value}
                   onChange={(e) => set(e.target.value)}
-                  className="w-full bg-qw-dark border border-qw-border rounded px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-qw-accent/50"
+                  className="w-full bg-surface-container-high border border-outline-variant px-3 py-2 text-on-surface text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
                 >
                   <option value="">— Select team —</option>
                   {teams.map((t) => (
@@ -952,16 +952,16 @@ export default function DivisionCasterView({ division }) {
           </div>
 
           {!hasTeams && (
-            <p className="mt-4 text-qw-muted text-sm italic">
+            <p className="mt-4 text-on-surface-variant text-sm italic">
               No teams in this division yet. Add teams in the Teams tab first.
             </p>
           )}
           {hasTeams && !hasRawMaps && (
-            <div className="mt-4 p-3 rounded border border-qw-border bg-qw-dark/50 text-sm space-y-1">
-              <p className="text-qw-muted">
+            <div className="mt-4 p-3 border border-outline-variant bg-surface-container-high/50 text-sm space-y-1">
+              <p className="text-on-surface-variant">
                 No match results imported yet — local stats will be empty.
               </p>
-              <p className="text-qw-muted">
+              <p className="text-on-surface-variant">
                 You can still load historical data from the QW Stats API after selecting.
               </p>
             </div>
@@ -996,16 +996,16 @@ export default function DivisionCasterView({ division }) {
           <div className="flex items-center gap-3 min-w-0">
             <button
               onClick={clearSelection}
-              className="text-qw-muted hover:text-white transition-colors text-sm flex-shrink-0 focus:outline-none focus:ring-2 focus:ring-qw-accent/50 rounded px-1"
+              className="text-on-surface-variant hover:text-on-surface transition-colors text-sm flex-shrink-0 focus:outline-none focus:ring-2 focus:ring-primary/50 px-1"
             >
               ← Back
             </button>
-            <div className="font-display font-bold text-lg flex items-center gap-2 min-w-0">
-              <span className="text-white truncate" title={team1}>
+            <div className="font-headline font-bold text-lg flex items-center gap-2 min-w-0">
+              <span className="text-on-surface truncate" title={team1}>
                 {team1}
               </span>
-              <span className="text-qw-muted text-sm flex-shrink-0">vs</span>
-              <span className="text-white truncate" title={team2}>
+              <span className="text-on-surface-variant text-sm flex-shrink-0">vs</span>
+              <span className="text-on-surface truncate" title={team2}>
                 {team2}
               </span>
             </div>
@@ -1014,7 +1014,7 @@ export default function DivisionCasterView({ division }) {
           {/* Global toggle + Load button */}
           <div className="flex items-center gap-2 flex-shrink-0">
             {/* Single Tournament / Global toggle */}
-            <div className="flex rounded overflow-hidden border border-qw-border text-xs font-display">
+            <div className="flex overflow-hidden border border-outline-variant text-xs font-headline">
               {['tournament', 'global'].map((v) => (
                 <button
                   key={v}
@@ -1022,8 +1022,8 @@ export default function DivisionCasterView({ division }) {
                   disabled={extLoading || !extData}
                   className={`px-2.5 py-1 transition-colors capitalize ${
                     viewMode === v
-                      ? 'bg-qw-accent text-qw-dark font-bold'
-                      : 'bg-qw-border text-qw-muted hover:text-white'
+                      ? 'bg-primary-container text-on-primary-fixed font-bold'
+                      : 'bg-outline-variant text-on-surface-variant hover:text-on-surface'
                   } disabled:opacity-40 disabled:cursor-not-allowed`}
                 >
                   {v === 'global' ? '🌍 Global' : 'Tournament'}
@@ -1034,7 +1034,7 @@ export default function DivisionCasterView({ division }) {
               onClick={loadExtData}
               disabled={extLoading}
               title="Fetch historical stats from the QW Stats API"
-              className="px-3 py-1.5 text-xs rounded bg-qw-accent text-qw-dark font-semibold hover:bg-qw-accent/80 transition-all disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-qw-accent/50"
+              className="px-3 py-1.5 text-xs bg-primary-container text-on-primary-fixed font-semibold hover:bg-primary/80 transition-all disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-primary/50"
             >
               {extButtonLabel}
             </button>
@@ -1042,16 +1042,16 @@ export default function DivisionCasterView({ division }) {
         </div>
 
         {extError && (
-          <div className="mt-2 flex items-center gap-3 p-2.5 rounded border border-qw-loss/30 bg-qw-loss/5">
-            <span className="text-qw-loss text-sm flex-shrink-0">⚠</span>
-            <p className="text-qw-loss text-sm flex-1">
+          <div className="mt-2 flex items-center gap-3 p-2.5 border border-qw-loss/30 bg-qw-loss/5">
+            <span className="text-error text-sm flex-shrink-0">⚠</span>
+            <p className="text-error text-sm flex-1">
               Global stats unavailable — local data only.
               <span className="font-mono opacity-75 text-xs ml-2">{extError}</span>
             </p>
           </div>
         )}
         {extData && !extError && (
-          <p className="mt-2 text-qw-muted text-xs">
+          <p className="mt-2 text-on-surface-variant text-xs">
             🌍 Global stats loaded — use the toggle to switch views across all sections.
           </p>
         )}
@@ -1064,7 +1064,7 @@ export default function DivisionCasterView({ division }) {
             {insights.map((ins) => (
               <li
                 key={`${ins.type}-${ins.text.slice(0, 30)}`}
-                className="flex items-start gap-2 text-sm text-qw-text"
+                className="flex items-start gap-2 text-sm text-on-surface"
               >
                 <span
                   className="flex-shrink-0 mt-0.5"
@@ -1083,13 +1083,13 @@ export default function DivisionCasterView({ division }) {
       {/* ── Head to Head ── */}
       <CollapsibleSection title="Head to Head">
         {/* Toggle buttons */}
-        <div className="flex rounded overflow-hidden border border-qw-border text-xs font-display mb-4">
+        <div className="flex overflow-hidden border border-outline-variant text-xs font-headline mb-4">
           <button
             onClick={() => setH2hMode('tournament')}
             className={`flex-1 px-3 py-1.5 transition-colors ${
               h2hMode === 'tournament'
-                ? 'bg-qw-accent text-qw-dark font-bold'
-                : 'bg-qw-border text-qw-muted hover:text-white'
+                ? 'bg-primary-container text-on-primary-fixed font-bold'
+                : 'bg-outline-variant text-on-surface-variant hover:text-on-surface'
             }`}
           >
             Tournament Record
@@ -1099,8 +1099,8 @@ export default function DivisionCasterView({ division }) {
             disabled={!extData && !extLoading}
             className={`flex-1 px-3 py-1.5 transition-colors ${
               h2hMode === 'global'
-                ? 'bg-qw-accent text-qw-dark font-bold'
-                : 'bg-qw-border text-qw-muted hover:text-white'
+                ? 'bg-primary-container text-on-primary-fixed font-bold'
+                : 'bg-outline-variant text-on-surface-variant hover:text-on-surface'
             } disabled:opacity-40 disabled:cursor-not-allowed`}
           >
             🌍 Global H2H
@@ -1114,7 +1114,7 @@ export default function DivisionCasterView({ division }) {
           ) : extData?.h2h ? (
             <ExtH2HPanel data={extData.h2h} tag1={getTag(team1)} tag2={getTag(team2)} />
           ) : (
-            <p className="text-qw-muted text-xs italic">
+            <p className="text-on-surface-variant text-xs italic">
               No global H2H data — load QW Stats first.
             </p>
           )
@@ -1122,7 +1122,7 @@ export default function DivisionCasterView({ division }) {
           // Tournament H2H view
           <>
             {localH2H.totalMaps === 0 ? (
-              <p className="text-qw-muted text-sm italic">
+              <p className="text-on-surface-variant text-sm italic">
                 No previous meetings in this tournament's data.
               </p>
             ) : (
@@ -1130,40 +1130,40 @@ export default function DivisionCasterView({ division }) {
                 <div className="flex items-center justify-between mb-3">
                   <div className="text-left">
                     <div
-                      className="text-xs text-qw-muted font-display uppercase tracking-wider truncate max-w-[140px]"
+                      className="text-xs text-on-surface-variant font-headline uppercase tracking-wider truncate max-w-[140px]"
                       title={team1}
                     >
                       {team1}
                     </div>
                     <div
-                      className={`text-3xl font-display font-bold leading-none ${localH2H.team1Wins > localH2H.team2Wins ? 'text-qw-win' : 'text-white'}`}
+                      className={`text-3xl font-headline font-bold leading-none ${localH2H.team1Wins > localH2H.team2Wins ? 'text-tertiary' : 'text-on-surface'}`}
                     >
                       {localH2H.team1Wins}
                     </div>
                   </div>
                   <div className="text-center">
-                    <div className="text-[10px] text-qw-muted">{localH2H.totalMaps} maps</div>
-                    <div className="text-[10px] text-qw-muted">
+                    <div className="text-[10px] text-on-surface-variant">{localH2H.totalMaps} maps</div>
+                    <div className="text-[10px] text-on-surface-variant">
                       Frags: {localH2H.team1Frags} – {localH2H.team2Frags}
                     </div>
                   </div>
                   <div className="text-right">
                     <div
-                      className="text-xs text-qw-muted font-display uppercase tracking-wider truncate max-w-[140px] ml-auto"
+                      className="text-xs text-on-surface-variant font-headline uppercase tracking-wider truncate max-w-[140px] ml-auto"
                       title={team2}
                     >
                       {team2}
                     </div>
                     <div
-                      className={`text-3xl font-display font-bold leading-none ${localH2H.team2Wins > localH2H.team1Wins ? 'text-qw-win' : 'text-white'}`}
+                      className={`text-3xl font-headline font-bold leading-none ${localH2H.team2Wins > localH2H.team1Wins ? 'text-tertiary' : 'text-on-surface'}`}
                     >
                       {localH2H.team2Wins}
                     </div>
                   </div>
                 </div>
 
-                <div className="border-t border-qw-border/30 pt-3">
-                  <div className="grid grid-cols-[1fr_auto_1fr] items-center text-[10px] font-mono text-qw-muted border-b border-qw-border/20 pb-1 mb-1">
+                <div className="border-t border-outline-variant/30 pt-3">
+                  <div className="grid grid-cols-[1fr_auto_1fr] items-center text-[10px] font-mono text-on-surface-variant border-b border-outline-variant/20 pb-1 mb-1">
                     <span className="text-left truncate" title={team1}>
                       {getTag(team1)}
                     </span>
@@ -1183,32 +1183,32 @@ export default function DivisionCasterView({ division }) {
                         >
                           <div className="flex items-center gap-2">
                             <span
-                              className={`font-bold ${t1Won ? 'text-qw-win' : 'text-qw-muted'}`}
+                              className={`font-bold ${t1Won ? 'text-tertiary' : 'text-on-surface-variant'}`}
                             >
                               {m.score1}
                             </span>
                             <span
-                              className={`text-sm font-bold ${t1Won ? 'text-qw-win' : 'text-qw-loss'}`}
+                              className={`text-sm font-bold ${t1Won ? 'text-tertiary' : 'text-error'}`}
                             >
                               {t1Won ? 'W' : t2Won ? 'L' : 'D'}
                             </span>
                           </div>
                           <div className="text-center px-4">
-                            <div className="text-qw-text">{m.map}</div>
+                            <div className="text-on-surface">{m.map}</div>
                             {m.date && (
-                              <div className="text-[9px] text-qw-muted/50">
+                              <div className="text-[9px] text-on-surface-variant/50">
                                 {m.date.split(' ')[0]}
                               </div>
                             )}
                           </div>
                           <div className="flex items-center justify-end gap-2">
                             <span
-                              className={`text-sm font-bold ${t2Won ? 'text-qw-win' : 'text-qw-loss'}`}
+                              className={`text-sm font-bold ${t2Won ? 'text-tertiary' : 'text-error'}`}
                             >
                               {t2Won ? 'W' : t1Won ? 'L' : 'D'}
                             </span>
                             <span
-                              className={`font-bold ${t2Won ? 'text-qw-win' : 'text-qw-muted'}`}
+                              className={`font-bold ${t2Won ? 'text-tertiary' : 'text-on-surface-variant'}`}
                             >
                               {m.score2}
                             </span>
@@ -1241,26 +1241,26 @@ export default function DivisionCasterView({ division }) {
               ].map(({ team, extNorm, localForm }) => (
                 <div key={team}>
                   <div className="flex items-center justify-between mb-2">
-                    <span className="font-semibold text-white text-sm truncate" title={team}>
+                    <span className="font-semibold text-on-surface text-sm truncate" title={team}>
                       {team}
                     </span>
                   </div>
                   {extNorm ? (
                     <div className="space-y-2">
                       <div className="text-xs font-mono">
-                        <span className="text-qw-muted">Global:</span>{' '}
+                        <span className="text-on-surface-variant">Global:</span>{' '}
                         <span
                           className={
                             extNorm.winRatePct >= 50
-                              ? 'text-qw-win font-bold'
+                              ? 'text-tertiary font-bold'
                               : extNorm.winRatePct >= 40
                                 ? 'text-yellow-400'
-                                : 'text-qw-loss font-bold'
+                                : 'text-error font-bold'
                           }
                         >
                           {extNorm.winRatePct}% win rate
                         </span>
-                        <span className="text-qw-muted">
+                        <span className="text-on-surface-variant">
                           {' '}
                           ({extNorm.wins}W–{extNorm.losses}L, {extNorm.total} maps)
                         </span>
@@ -1275,10 +1275,10 @@ export default function DivisionCasterView({ division }) {
                           const isNeutral = Math.abs(delta) < 3;
                           return (
                             <div className="text-xs font-mono">
-                              <span className="text-qw-muted">Tournament:</span>{' '}
-                              <span className="text-white">{localPct}%</span>
+                              <span className="text-on-surface-variant">Tournament:</span>{' '}
+                              <span className="text-on-surface">{localPct}%</span>
                               <span
-                                className={`ml-2 font-bold ${isNeutral ? 'text-qw-muted' : delta > 0 ? 'text-qw-win' : 'text-qw-loss'}`}
+                                className={`ml-2 font-bold ${isNeutral ? 'text-on-surface-variant' : delta > 0 ? 'text-tertiary' : 'text-error'}`}
                               >
                                 {isNeutral ? '±0' : `${delta > 0 ? '+' : ''}${delta}`}% vs global
                               </span>
@@ -1287,7 +1287,7 @@ export default function DivisionCasterView({ division }) {
                         })()}
                     </div>
                   ) : (
-                    <p className="text-qw-muted text-xs italic">No global form data.</p>
+                    <p className="text-on-surface-variant text-xs italic">No global form data.</p>
                   )}
                 </div>
               ))}
@@ -1302,17 +1302,17 @@ export default function DivisionCasterView({ division }) {
             ].map(({ form, team }) => (
               <div key={team}>
                 <div className="flex items-center justify-between mb-2">
-                  <span className="font-semibold text-white text-base truncate" title={team}>
+                  <span className="font-semibold text-on-surface text-base truncate" title={team}>
                     {team}
                   </span>
                   <div className="flex items-center gap-2 flex-shrink-0">
                     <TrendArrow trend={form.trend} />
-                    <span className="font-mono text-qw-muted text-sm">{form.record}</span>
+                    <span className="font-mono text-on-surface-variant text-sm">{form.record}</span>
                   </div>
                 </div>
 
                 {form.last5Maps.length === 0 ? (
-                  <p className="text-qw-muted text-sm italic">No map data yet.</p>
+                  <p className="text-on-surface-variant text-sm italic">No map data yet.</p>
                 ) : (
                   <div
                     className="grid gap-1.5"
@@ -1324,7 +1324,7 @@ export default function DivisionCasterView({ division }) {
                   </div>
                 )}
 
-                <div className="mt-2 text-sm text-qw-muted">
+                <div className="mt-2 text-sm text-on-surface-variant">
                   Momentum:{' '}
                   <span className={getMomentumColor(form.momentum)}>
                     {getMomentumLabel(form.momentum)}
@@ -1332,9 +1332,9 @@ export default function DivisionCasterView({ division }) {
                   {form.streak >= 2 && form.streak < 3 && (
                     <span className="ml-3">
                       {form.streakType === 'W' ? (
-                        <span className="text-qw-win">{form.streak}W streak</span>
+                        <span className="text-tertiary">{form.streak}W streak</span>
                       ) : (
-                        <span className="text-qw-loss">{form.streak}L streak</span>
+                        <span className="text-error">{form.streak}L streak</span>
                       )}
                     </span>
                   )}
@@ -1358,7 +1358,7 @@ export default function DivisionCasterView({ division }) {
               { stats: mapStats2, extMaps: extData?.maps2, team: team2 },
             ].map(({ stats, extMaps, team }) => (
               <div key={team}>
-                <div className="font-semibold text-white text-sm truncate mb-2" title={team}>
+                <div className="font-semibold text-on-surface text-sm truncate mb-2" title={team}>
                   {team}
                 </div>
                 <MapStatsPanel
@@ -1385,23 +1385,23 @@ export default function DivisionCasterView({ division }) {
               <div className="mb-4 space-y-1.5 text-sm">
                 {hotPlayers.map((p) => (
                   <div key={`hot-${p.name}`} className="flex items-center gap-2">
-                    <span className="text-qw-win font-display font-bold text-xs">▲ HOT</span>
-                    <span className="text-white font-semibold">{p.name}</span>
-                    <span className="text-qw-muted">—</span>
-                    <span className="text-qw-muted">
-                      averaging <span className="text-qw-win font-mono">{p.fragsPerMap}</span>{' '}
+                    <span className="text-tertiary font-headline font-bold text-xs">▲ HOT</span>
+                    <span className="text-on-surface font-semibold">{p.name}</span>
+                    <span className="text-on-surface-variant">—</span>
+                    <span className="text-on-surface-variant">
+                      averaging <span className="text-tertiary font-mono">{p.fragsPerMap}</span>{' '}
                       frags/map in recent games, above their {p.mapsPlayed}-map tournament average
                     </span>
                   </div>
                 ))}
                 {coldPlayers.map((p) => (
                   <div key={`cold-${p.name}`} className="flex items-center gap-2">
-                    <span className="text-qw-loss font-display font-bold text-xs">▼ COLD</span>
-                    <span className="text-white font-semibold">{p.name}</span>
-                    <span className="text-qw-muted">—</span>
-                    <span className="text-qw-muted">
+                    <span className="text-error font-headline font-bold text-xs">▼ COLD</span>
+                    <span className="text-on-surface font-semibold">{p.name}</span>
+                    <span className="text-on-surface-variant">—</span>
+                    <span className="text-on-surface-variant">
                       recent output below their{' '}
-                      <span className="text-white font-mono">{p.fragsPerMap}</span> frags/map
+                      <span className="text-on-surface font-mono">{p.fragsPerMap}</span> frags/map
                       tournament average
                     </span>
                   </div>
@@ -1424,20 +1424,20 @@ export default function DivisionCasterView({ division }) {
       {/* ── Common Opponents (collapsed by default — secondary info) ── */}
       {commonOpp && commonOpp.breakdown.length > 0 && (
         <CollapsibleSection title="Common Opponents" defaultOpen={false}>
-          <p className="text-qw-muted text-xs mb-3">
+          <p className="text-on-surface-variant text-xs mb-3">
             {commonOpp.summary.commonCount} shared opponent
             {commonOpp.summary.commonCount !== 1 ? 's' : ''} —{' '}
-            <span className="text-qw-win">
+            <span className="text-tertiary">
               {team1}: {commonOpp.summary.team1Advantages} adv
             </span>
             {' · '}
-            <span className="text-qw-win">
+            <span className="text-tertiary">
               {team2}: {commonOpp.summary.team2Advantages} adv
             </span>
           </p>
           <table className="w-full text-xs">
             <thead>
-              <tr className="border-b border-qw-border/40 text-qw-muted">
+              <tr className="border-b border-outline-variant/40 text-on-surface-variant">
                 <th className="text-left py-1.5 font-normal pr-3">Opponent</th>
                 <th
                   className="text-center py-1.5 font-normal px-2 truncate max-w-[80px]"
@@ -1458,39 +1458,39 @@ export default function DivisionCasterView({ division }) {
               {commonOpp.breakdown
                 .slice(0, 5)
                 .map(({ opponent, team1Result, team2Result, advantage }) => (
-                  <tr key={opponent} className="border-b border-qw-border/20 last:border-0">
-                    <td className="py-1.5 font-mono text-qw-text pr-3" title={opponent}>
+                  <tr key={opponent} className="border-b border-outline-variant/20 last:border-0">
+                    <td className="py-1.5 font-mono text-on-surface pr-3" title={opponent}>
                       {opponent}
                     </td>
                     <td
-                      className={`py-1.5 text-center font-mono px-2 ${advantage === 'team1' ? 'text-qw-win font-bold' : 'text-qw-muted'}`}
+                      className={`py-1.5 text-center font-mono px-2 ${advantage === 'team1' ? 'text-tertiary font-bold' : 'text-on-surface-variant'}`}
                     >
                       {team1Result.wins}W–{team1Result.losses}L
                     </td>
                     <td
-                      className={`py-1.5 text-center font-mono px-2 ${advantage === 'team2' ? 'text-qw-win font-bold' : 'text-qw-muted'}`}
+                      className={`py-1.5 text-center font-mono px-2 ${advantage === 'team2' ? 'text-tertiary font-bold' : 'text-on-surface-variant'}`}
                     >
                       {team2Result.wins}W–{team2Result.losses}L
                     </td>
                     <td className="py-1.5 text-right pl-2 whitespace-nowrap">
                       {advantage === 'team1' && (
-                        <span className="text-qw-win text-[10px] font-display">
+                        <span className="text-tertiary text-[10px] font-headline">
                           {getTag(team1)} ▶
                         </span>
                       )}
                       {advantage === 'team2' && (
-                        <span className="text-qw-win text-[10px] font-display">
+                        <span className="text-tertiary text-[10px] font-headline">
                           ◀ {getTag(team2)}
                         </span>
                       )}
-                      {advantage === 'even' && <span className="text-qw-muted text-[10px]">—</span>}
+                      {advantage === 'even' && <span className="text-on-surface-variant text-[10px]">—</span>}
                     </td>
                   </tr>
                 ))}
             </tbody>
           </table>
           {commonOpp.breakdown.length > 5 && (
-            <p className="text-qw-muted text-[10px] mt-2">
+            <p className="text-on-surface-variant text-[10px] mt-2">
               +{commonOpp.breakdown.length - 5} more not shown
             </p>
           )}

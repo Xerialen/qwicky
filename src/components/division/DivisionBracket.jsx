@@ -144,14 +144,14 @@ function BracketMatch({
     if (e.key === 'Escape') cancelEditing();
   };
 
-  if (!match) return <div className="w-48 h-16 bg-qw-dark/30 rounded border border-qw-border/30" />;
+  if (!match) return <div className="w-48 h-16 bg-surface-container-high/30 border border-outline-variant/30" />;
 
   const renderScore = (score, isWinning) => {
     if (isEditingScore) return null; // Scores hidden during editing
     if (hasResult) {
       return (
         <span
-          className={`font-mono font-bold ${isWinning ? 'text-qw-win' : 'text-white'} cursor-pointer hover:text-qw-accent`}
+          className={`font-mono font-bold ${isWinning ? 'text-tertiary' : 'text-on-surface'} cursor-pointer hover:text-primary`}
           onClick={startEditing}
         >
           {score}
@@ -161,7 +161,7 @@ function BracketMatch({
     if (bothTeamsFilled && !hasResult) {
       return (
         <span
-          className="font-mono text-qw-muted/50 cursor-pointer hover:text-qw-accent"
+          className="font-mono text-on-surface-variant/50 cursor-pointer hover:text-primary"
           onClick={startEditing}
         >
           &ndash;
@@ -173,46 +173,46 @@ function BracketMatch({
 
   return (
     <div
-      className={`w-48 overflow-hidden rounded ${isGrandFinal ? 'ring-2 ring-qw-accent' : ''} ${isManual ? 'ring-1 ring-qw-accent/60' : ''}`}
+      className={`w-48 overflow-hidden ${isGrandFinal ? 'ring-2 ring-primary' : ''} ${isManual ? 'ring-1 ring-primary/60' : ''}`}
     >
       {showLabel && label && (
-        <div className="bg-qw-darker px-2 py-1 text-xs text-qw-muted text-center border-b border-qw-border">
+        <div className="bg-background px-2 py-1 text-xs text-on-surface-variant text-center border-b border-outline-variant">
           {label}
         </div>
       )}
       {isManual && (
-        <div className="bg-qw-accent/10 px-2 py-0.5 text-center border-b border-qw-accent/30">
-          <span className="text-[10px] font-display font-bold text-qw-accent tracking-wider">
+        <div className="bg-primary/10 px-2 py-0.5 text-center border-b border-primary/30">
+          <span className="text-[10px] font-headline font-bold text-primary tracking-wider">
             MANUAL
           </span>
         </div>
       )}
       <div
-        className={`flex items-center justify-between px-3 py-2 border border-qw-border ${winner === match.team1 ? 'bg-qw-win/20' : 'bg-qw-panel'} ${winner && winner !== match.team1 ? 'opacity-50' : ''}`}
+        className={`flex items-center justify-between px-3 py-2 border border-outline-variant ${winner === match.team1 ? 'bg-tertiary/20' : 'bg-surface-container-high'} ${winner && winner !== match.team1 ? 'opacity-50' : ''}`}
       >
         <input
           type="text"
           value={match.team1 || ''}
           onChange={(e) => onUpdateTeam(match.id, 'team1', e.target.value)}
           placeholder="Team 1"
-          className="bg-transparent border-none outline-none font-body font-semibold text-white w-28 placeholder:text-qw-muted/50 text-sm"
+          className="bg-transparent border-none outline-none font-body font-semibold text-on-surface w-28 placeholder:text-on-surface-variant/50 text-sm"
         />
         {renderScore(result?.s1, result?.s1 > result?.s2)}
       </div>
       <div
-        className={`flex items-center justify-between px-3 py-2 border border-t-0 border-qw-border ${winner === match.team2 ? 'bg-qw-win/20' : 'bg-qw-panel'} ${winner && winner !== match.team2 ? 'opacity-50' : ''}`}
+        className={`flex items-center justify-between px-3 py-2 border border-t-0 border-outline-variant ${winner === match.team2 ? 'bg-tertiary/20' : 'bg-surface-container-high'} ${winner && winner !== match.team2 ? 'opacity-50' : ''}`}
       >
         <input
           type="text"
           value={match.team2 || ''}
           onChange={(e) => onUpdateTeam(match.id, 'team2', e.target.value)}
           placeholder="Team 2"
-          className="bg-transparent border-none outline-none font-body font-semibold text-white w-28 placeholder:text-qw-muted/50 text-sm"
+          className="bg-transparent border-none outline-none font-body font-semibold text-on-surface w-28 placeholder:text-on-surface-variant/50 text-sm"
         />
         {renderScore(result?.s2, result?.s2 > result?.s1)}
       </div>
       {isEditingScore && (
-        <div className="bg-qw-darker border border-t-0 border-qw-border px-2 py-1.5">
+        <div className="bg-background border border-t-0 border-outline-variant px-2 py-1.5">
           <div className="flex items-center gap-1.5 mb-1">
             <input
               type="text"
@@ -235,9 +235,9 @@ function BracketMatch({
                 }
               }}
               autoFocus
-              className="w-10 h-6 px-1 py-0 bg-qw-dark border border-qw-border rounded text-center text-white text-sm font-mono leading-none"
+              className="w-10 h-6 px-1 py-0 bg-surface-container-high border border-outline-variant text-center text-on-surface text-sm font-mono leading-none"
             />
-            <span className="text-qw-muted text-sm font-bold">:</span>
+            <span className="text-on-surface-variant text-sm font-bold">:</span>
             <input
               type="text"
               inputMode="numeric"
@@ -258,18 +258,18 @@ function BracketMatch({
                   handleKeyDown(e);
                 }
               }}
-              className="w-10 h-6 px-1 py-0 bg-qw-dark border border-qw-border rounded text-center text-white text-sm font-mono leading-none"
+              className="w-10 h-6 px-1 py-0 bg-surface-container-high border border-outline-variant text-center text-on-surface text-sm font-mono leading-none"
             />
             <button
               onClick={saveScore}
-              className="ml-auto px-1.5 py-0.5 bg-qw-win/20 text-qw-win text-[10px] rounded hover:bg-qw-win/30"
+              className="ml-auto px-1.5 py-0.5 bg-tertiary/20 text-tertiary text-[10px] hover:bg-tertiary/30"
               title="Save (Enter)"
             >
               OK
             </button>
             <button
               onClick={cancelEditing}
-              className="px-1.5 py-0.5 bg-qw-dark text-qw-muted text-[10px] rounded hover:text-white"
+              className="px-1.5 py-0.5 bg-surface-container-high text-on-surface-variant text-[10px] hover:text-on-surface"
               title="Cancel (Esc)"
             >
               X
@@ -277,7 +277,7 @@ function BracketMatch({
             {isManual && (
               <button
                 onClick={clearOverride}
-                className="px-1.5 py-0.5 bg-red-900/30 text-red-400 text-[10px] rounded hover:bg-red-900/50"
+                className="px-1.5 py-0.5 bg-red-900/30 text-error text-[10px] rounded hover:bg-red-900/50"
                 title="Clear manual override"
               >
                 CLR
@@ -309,7 +309,7 @@ function SingleElimBracket({
       {hasR32 && (
         <>
           <div className="flex flex-col gap-4">
-            <div className="text-center font-display text-sm text-qw-accent mb-2">ROUND OF 32</div>
+            <div className="text-center font-headline text-sm text-primary mb-2">ROUND OF 32</div>
             <div className="flex flex-col gap-4">
               {bracket.winners.round32.map((match, idx) => (
                 <BracketMatch
@@ -327,8 +327,8 @@ function SingleElimBracket({
           <div className="flex flex-col justify-around h-full py-8">
             {Array.from({ length: 8 }).map((_, i) => (
               <div key={i} className="w-6 h-16 flex flex-col">
-                <div className="flex-1 border-b-2 border-r-2 border-qw-border rounded-br" />
-                <div className="flex-1 border-t-2 border-r-2 border-qw-border rounded-tr" />
+                <div className="flex-1 border-b-2 border-r-2 border-outline-variant rounded-br" />
+                <div className="flex-1 border-t-2 border-r-2 border-outline-variant rounded-tr" />
               </div>
             ))}
           </div>
@@ -339,7 +339,7 @@ function SingleElimBracket({
       {hasR16 && (
         <>
           <div className="flex flex-col gap-4">
-            <div className="text-center font-display text-sm text-qw-accent mb-2">ROUND OF 16</div>
+            <div className="text-center font-headline text-sm text-primary mb-2">ROUND OF 16</div>
             <div className="flex flex-col gap-8" style={{ paddingTop: hasR32 ? '20px' : '0' }}>
               {bracket.winners.round16.map((match, idx) => (
                 <BracketMatch
@@ -360,8 +360,8 @@ function SingleElimBracket({
           >
             {Array.from({ length: 4 }).map((_, i) => (
               <div key={i} className="w-6 h-32 flex flex-col">
-                <div className="flex-1 border-b-2 border-r-2 border-qw-border rounded-br" />
-                <div className="flex-1 border-t-2 border-r-2 border-qw-border rounded-tr" />
+                <div className="flex-1 border-b-2 border-r-2 border-outline-variant rounded-br" />
+                <div className="flex-1 border-t-2 border-r-2 border-outline-variant rounded-tr" />
               </div>
             ))}
           </div>
@@ -372,7 +372,7 @@ function SingleElimBracket({
       {hasQF && (
         <>
           <div className="flex flex-col gap-4">
-            <div className="text-center font-display text-sm text-qw-accent mb-2">
+            <div className="text-center font-headline text-sm text-primary mb-2">
               QUARTER FINALS
             </div>
             <div className="flex flex-col gap-8" style={{ paddingTop: hasR16 ? '52px' : '0' }}>
@@ -395,8 +395,8 @@ function SingleElimBracket({
           >
             {[0, 1].map((i) => (
               <div key={i} className="w-6 h-24 flex flex-col">
-                <div className="flex-1 border-b-2 border-r-2 border-qw-border rounded-br" />
-                <div className="flex-1 border-t-2 border-r-2 border-qw-border rounded-tr" />
+                <div className="flex-1 border-b-2 border-r-2 border-outline-variant rounded-br" />
+                <div className="flex-1 border-t-2 border-r-2 border-outline-variant rounded-tr" />
               </div>
             ))}
           </div>
@@ -405,7 +405,7 @@ function SingleElimBracket({
 
       {/* Semi Finals */}
       <div className="flex flex-col gap-4">
-        <div className="text-center font-display text-sm text-qw-accent mb-2">SEMI FINALS</div>
+        <div className="text-center font-headline text-sm text-primary mb-2">SEMI FINALS</div>
         <div
           className="flex flex-col"
           style={{
@@ -436,14 +436,14 @@ function SingleElimBracket({
         }}
       >
         <div className="w-6 h-full flex flex-col">
-          <div className="flex-1 border-b-2 border-r-2 border-qw-border rounded-br" />
-          <div className="flex-1 border-t-2 border-r-2 border-qw-border rounded-tr" />
+          <div className="flex-1 border-b-2 border-r-2 border-outline-variant rounded-br" />
+          <div className="flex-1 border-t-2 border-r-2 border-outline-variant rounded-tr" />
         </div>
       </div>
 
       {/* Final */}
       <div className="flex flex-col gap-4">
-        <div className="text-center font-display text-sm text-qw-accent mb-2">FINAL</div>
+        <div className="text-center font-headline text-sm text-primary mb-2">FINAL</div>
         <div
           className="flex items-center"
           style={{
@@ -483,7 +483,7 @@ function DoubleElimBracket({
     <div className="space-y-8">
       {/* Winners Bracket */}
       <div>
-        <h4 className="font-display text-lg text-qw-win mb-4 flex items-center gap-2">
+        <h4 className="font-headline text-lg text-tertiary mb-4 flex items-center gap-2">
           <span>🏆</span> WINNERS BRACKET
         </h4>
         <div className="overflow-x-auto pb-4">
@@ -492,7 +492,7 @@ function DoubleElimBracket({
             {hasR32 && bracket.winners?.round32 && (
               <>
                 <div className="flex flex-col gap-4">
-                  <div className="text-center text-xs text-qw-muted mb-1">W-R32</div>
+                  <div className="text-center text-xs text-on-surface-variant mb-1">W-R32</div>
                   <div className="flex flex-col gap-4">
                     {bracket.winners.round32.map((match) => (
                       <BracketMatch
@@ -510,8 +510,8 @@ function DoubleElimBracket({
                 <div className="flex flex-col justify-around h-full py-4">
                   {Array.from({ length: 8 }).map((_, i) => (
                     <div key={i} className="w-4 h-16 flex flex-col">
-                      <div className="flex-1 border-b-2 border-r-2 border-qw-win/50 rounded-br" />
-                      <div className="flex-1 border-t-2 border-r-2 border-qw-win/50 rounded-tr" />
+                      <div className="flex-1 border-b-2 border-r-2 border-tertiary/50 rounded-br" />
+                      <div className="flex-1 border-t-2 border-r-2 border-tertiary/50 rounded-tr" />
                     </div>
                   ))}
                 </div>
@@ -522,7 +522,7 @@ function DoubleElimBracket({
             {hasR16 && bracket.winners?.round16 && (
               <>
                 <div className="flex flex-col gap-4">
-                  <div className="text-center text-xs text-qw-muted mb-1">W-R16</div>
+                  <div className="text-center text-xs text-on-surface-variant mb-1">W-R16</div>
                   <div
                     className="flex flex-col gap-6"
                     style={{ paddingTop: hasR32 ? '16px' : '0' }}
@@ -546,8 +546,8 @@ function DoubleElimBracket({
                 >
                   {Array.from({ length: 4 }).map((_, i) => (
                     <div key={i} className="w-4 h-24 flex flex-col">
-                      <div className="flex-1 border-b-2 border-r-2 border-qw-win/50 rounded-br" />
-                      <div className="flex-1 border-t-2 border-r-2 border-qw-win/50 rounded-tr" />
+                      <div className="flex-1 border-b-2 border-r-2 border-tertiary/50 rounded-br" />
+                      <div className="flex-1 border-t-2 border-r-2 border-tertiary/50 rounded-tr" />
                     </div>
                   ))}
                 </div>
@@ -558,7 +558,7 @@ function DoubleElimBracket({
             {hasQF && bracket.winners?.quarterFinals && (
               <>
                 <div className="flex flex-col gap-4">
-                  <div className="text-center text-xs text-qw-muted mb-1">W-QF</div>
+                  <div className="text-center text-xs text-on-surface-variant mb-1">W-QF</div>
                   <div
                     className="flex flex-col gap-6"
                     style={{ paddingTop: hasR16 ? '36px' : '0' }}
@@ -582,8 +582,8 @@ function DoubleElimBracket({
                 >
                   {[0, 1].map((i) => (
                     <div key={i} className="w-4 h-16 flex flex-col">
-                      <div className="flex-1 border-b-2 border-r-2 border-qw-win/50 rounded-br" />
-                      <div className="flex-1 border-t-2 border-r-2 border-qw-win/50 rounded-tr" />
+                      <div className="flex-1 border-b-2 border-r-2 border-tertiary/50 rounded-br" />
+                      <div className="flex-1 border-t-2 border-r-2 border-tertiary/50 rounded-tr" />
                     </div>
                   ))}
                 </div>
@@ -592,7 +592,7 @@ function DoubleElimBracket({
 
             {/* W-SF */}
             <div className="flex flex-col gap-4">
-              <div className="text-center text-xs text-qw-muted mb-1">W-SF</div>
+              <div className="text-center text-xs text-on-surface-variant mb-1">W-SF</div>
               <div
                 className="flex flex-col gap-12"
                 style={{
@@ -615,14 +615,14 @@ function DoubleElimBracket({
 
             <div className="flex items-center h-48" style={{ paddingTop: hasQF ? '36px' : '0' }}>
               <div className="w-4 h-24 flex flex-col">
-                <div className="flex-1 border-b-2 border-r-2 border-qw-win/50 rounded-br" />
-                <div className="flex-1 border-t-2 border-r-2 border-qw-win/50 rounded-tr" />
+                <div className="flex-1 border-b-2 border-r-2 border-tertiary/50 rounded-br" />
+                <div className="flex-1 border-t-2 border-r-2 border-tertiary/50 rounded-tr" />
               </div>
             </div>
 
             {/* W-Final */}
             <div className="flex flex-col gap-4">
-              <div className="text-center text-xs text-qw-muted mb-1">W-FINAL</div>
+              <div className="text-center text-xs text-on-surface-variant mb-1">W-FINAL</div>
               <div style={{ paddingTop: hasQF ? '68px' : '32px' }}>
                 <BracketMatch
                   match={bracket.winners?.final}
@@ -640,7 +640,7 @@ function DoubleElimBracket({
 
       {/* Losers Bracket */}
       <div>
-        <h4 className="font-display text-lg text-qw-loss mb-4 flex items-center gap-2">
+        <h4 className="font-headline text-lg text-error mb-4 flex items-center gap-2">
           <span>💀</span> LOSERS BRACKET
         </h4>
         <div className="overflow-x-auto pb-4">
@@ -649,7 +649,7 @@ function DoubleElimBracket({
             {bracket.losers?.round1 && (
               <>
                 <div className="flex flex-col gap-4">
-                  <div className="text-center text-xs text-qw-muted mb-1">L-R1</div>
+                  <div className="text-center text-xs text-on-surface-variant mb-1">L-R1</div>
                   <div className="flex flex-col gap-6">
                     {bracket.losers.round1.map((match) => (
                       <BracketMatch
@@ -665,7 +665,7 @@ function DoubleElimBracket({
                   </div>
                 </div>
                 <div className="flex items-center h-32 pt-6">
-                  <div className="w-4 border-t-2 border-qw-loss/50" />
+                  <div className="w-4 border-t-2 border-error/50" />
                 </div>
               </>
             )}
@@ -674,7 +674,7 @@ function DoubleElimBracket({
             {hasQF && bracket.losers?.round2 && (
               <>
                 <div className="flex flex-col gap-4">
-                  <div className="text-center text-xs text-qw-muted mb-1">L-R2</div>
+                  <div className="text-center text-xs text-on-surface-variant mb-1">L-R2</div>
                   <div className="flex flex-col gap-6">
                     {bracket.losers.round2.map((match) => (
                       <BracketMatch
@@ -691,8 +691,8 @@ function DoubleElimBracket({
                 </div>
                 <div className="flex items-center h-32 pt-6">
                   <div className="w-4 h-16 flex flex-col">
-                    <div className="flex-1 border-b-2 border-r-2 border-qw-loss/50 rounded-br" />
-                    <div className="flex-1 border-t-2 border-r-2 border-qw-loss/50 rounded-tr" />
+                    <div className="flex-1 border-b-2 border-r-2 border-error/50 rounded-br" />
+                    <div className="flex-1 border-t-2 border-r-2 border-error/50 rounded-tr" />
                   </div>
                 </div>
               </>
@@ -702,7 +702,7 @@ function DoubleElimBracket({
             {hasQF && bracket.losers?.round3 && (
               <>
                 <div className="flex flex-col gap-4">
-                  <div className="text-center text-xs text-qw-muted mb-1">L-R3</div>
+                  <div className="text-center text-xs text-on-surface-variant mb-1">L-R3</div>
                   <div className="pt-8">
                     {bracket.losers.round3.map((match) => (
                       <BracketMatch
@@ -718,7 +718,7 @@ function DoubleElimBracket({
                   </div>
                 </div>
                 <div className="flex items-center h-24 pt-8">
-                  <div className="w-4 border-t-2 border-qw-loss/50" />
+                  <div className="w-4 border-t-2 border-error/50" />
                 </div>
               </>
             )}
@@ -726,7 +726,7 @@ function DoubleElimBracket({
             {/* L-Final */}
             {bracket.losers?.final && (
               <div className="flex flex-col gap-4">
-                <div className="text-center text-xs text-qw-muted mb-1">L-FINAL</div>
+                <div className="text-center text-xs text-on-surface-variant mb-1">L-FINAL</div>
                 <div className="pt-8">
                   <BracketMatch
                     match={bracket.losers.final}
@@ -745,12 +745,12 @@ function DoubleElimBracket({
 
       {/* Grand Final */}
       <div>
-        <h4 className="font-display text-lg text-qw-accent mb-4 flex items-center gap-2">
+        <h4 className="font-headline text-lg text-primary mb-4 flex items-center gap-2">
           <span>👑</span> GRAND FINAL
         </h4>
         <div className="flex items-start gap-6">
           <div className="flex flex-col gap-2">
-            <div className="text-center text-xs text-qw-muted">Grand Final</div>
+            <div className="text-center text-xs text-on-surface-variant">Grand Final</div>
             <BracketMatch
               match={bracket.grandFinal}
               schedule={schedule}
@@ -760,7 +760,7 @@ function DoubleElimBracket({
               isGrandFinal={true}
               roundHint="grand-final"
             />
-            <div className="text-center text-xs text-qw-muted mt-1">
+            <div className="text-center text-xs text-on-surface-variant mt-1">
               Winners bracket team has advantage
             </div>
           </div>
@@ -768,10 +768,10 @@ function DoubleElimBracket({
           {bracketResetEnabled && (
             <>
               <div className="flex items-center pt-8">
-                <div className="w-6 border-t-2 border-dashed border-qw-accent/50" />
+                <div className="w-6 border-t-2 border-dashed border-primary/50" />
               </div>
               <div className="flex flex-col gap-2">
-                <div className="text-center text-xs text-qw-muted">Reset (if needed)</div>
+                <div className="text-center text-xs text-on-surface-variant">Reset (if needed)</div>
                 <BracketMatch
                   match={bracket.bracketReset}
                   schedule={schedule}
@@ -794,7 +794,7 @@ function DoubleElimBracket({
 function MultiTierBracketView({ tiers, schedule, onUpdateTierTeam, onUpdateTierScore }) {
   if (!tiers || tiers.length === 0) {
     return (
-      <div className="text-center py-8 text-qw-muted">
+      <div className="text-center py-8 text-on-surface-variant">
         No playoff tiers configured. Go to Setup to add tiers.
       </div>
     );
@@ -816,7 +816,7 @@ function MultiTierBracketView({ tiers, schedule, onUpdateTierTeam, onUpdateTierS
         };
 
         return (
-          <div key={tier.id} className="qw-panel p-6">
+          <div key={tier.id} className="bg-surface-container-high p-6">
             <div className="flex items-center gap-3 mb-4">
               <span className="text-2xl">
                 {tier.id === 'gold'
@@ -828,8 +828,8 @@ function MultiTierBracketView({ tiers, schedule, onUpdateTierTeam, onUpdateTierS
                       : '🏅'}
               </span>
               <div>
-                <h3 className="font-display text-lg text-qw-accent">{tier.name}</h3>
-                <p className="text-xs text-qw-muted">
+                <h3 className="font-headline text-lg text-primary">{tier.name}</h3>
+                <p className="text-xs text-on-surface-variant">
                   Positions {tier.positions} • {tierTeamCount} teams •{' '}
                   {tierIsDoubleElim ? 'Double' : 'Single'} Elimination
                 </p>
@@ -1169,18 +1169,18 @@ export default function DivisionBracket({ division, updateDivision }) {
       <div className="space-y-6">
         {/* Collapsible Standings Section */}
         {(division.format === 'groups' || division.format === 'multi-tier') && (
-          <div className="qw-panel overflow-hidden">
+          <div className="bg-surface-container-high overflow-hidden">
             <button
               onClick={() => setShowStandings(!showStandings)}
-              className="w-full flex items-center justify-between px-4 py-3 bg-qw-dark border-b border-qw-border hover:bg-qw-dark/80 transition-colors"
+              className="w-full flex items-center justify-between px-4 py-3 bg-surface-container-high border-b border-outline-variant hover:bg-surface-container-high/80 transition-colors"
             >
               <div className="flex items-center gap-2">
                 <span className="text-lg">🏆</span>
-                <h3 className="font-display font-bold text-qw-accent">GROUP STANDINGS</h3>
-                <span className="text-xs text-qw-muted">(used for playoff seeding)</span>
+                <h3 className="font-headline font-bold text-primary">GROUP STANDINGS</h3>
+                <span className="text-xs text-on-surface-variant">(used for playoff seeding)</span>
               </div>
               <span
-                className={`text-qw-accent transition-transform duration-200 ${showStandings ? 'rotate-180' : ''}`}
+                className={`text-primary transition-transform duration-200 ${showStandings ? 'rotate-180' : ''}`}
               >
                 ▼
               </span>
@@ -1195,10 +1195,10 @@ export default function DivisionBracket({ division, updateDivision }) {
 
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-qw-muted text-sm">
+            <p className="text-on-surface-variant text-sm">
               Multi-Tier Playoffs • {(division.playoffTiers || []).length} tiers
             </p>
-            <p className="text-qw-muted text-xs mt-1">
+            <p className="text-on-surface-variant text-xs mt-1">
               Enter team names. Scores auto-update from playoff matches.
             </p>
           </div>
@@ -1207,7 +1207,7 @@ export default function DivisionBracket({ division, updateDivision }) {
               <button
                 onClick={handleSeedBracket}
                 disabled={!groupStageComplete}
-                className="qw-btn-secondary text-sm flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
+                className="bg-surface-container-high border border-outline-variant px-3 py-1.5 text-sm flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
                 title={
                   groupStageComplete
                     ? 'Seed bracket from group standings'
@@ -1217,7 +1217,7 @@ export default function DivisionBracket({ division, updateDivision }) {
                 <span>🏅</span> Seed Bracket
               </button>
             )}
-            <button onClick={handleReset} className="text-sm text-red-400 hover:text-red-300">
+            <button onClick={handleReset} className="text-sm text-error hover:text-red-300">
               Reset All Brackets
             </button>
           </div>
@@ -1232,8 +1232,8 @@ export default function DivisionBracket({ division, updateDivision }) {
 
         {/* Show playoff matches from all tiers */}
         {schedule.filter((m) => m.round !== 'group' && m.maps?.length > 0).length > 0 && (
-          <div className="qw-panel p-4">
-            <h3 className="font-display text-sm text-qw-accent mb-2">PLAYOFF RESULTS</h3>
+          <div className="bg-surface-container-high p-4">
+            <h3 className="font-headline text-sm text-primary mb-2">PLAYOFF RESULTS</h3>
             <div className="flex flex-wrap gap-2">
               {schedule
                 .filter((m) => m.round !== 'group' && m.maps?.length > 0)
@@ -1247,10 +1247,10 @@ export default function DivisionBracket({ division, updateDivision }) {
                   return (
                     <span
                       key={m.id}
-                      className="px-2 py-1 bg-qw-dark rounded text-xs font-mono text-qw-muted"
+                      className="px-2 py-1 bg-surface-container-high rounded text-xs font-mono text-on-surface-variant"
                     >
-                      {m.team1} <span className={s1 > s2 ? 'text-qw-win' : ''}>{s1}</span>-
-                      <span className={s2 > s1 ? 'text-qw-win' : ''}>{s2}</span> {m.team2}
+                      {m.team1} <span className={s1 > s2 ? 'text-tertiary' : ''}>{s1}</span>-
+                      <span className={s2 > s1 ? 'text-tertiary' : ''}>{s2}</span> {m.team2}
                     </span>
                   );
                 })}
@@ -1266,18 +1266,18 @@ export default function DivisionBracket({ division, updateDivision }) {
     <div className="space-y-6">
       {/* Collapsible Standings Section */}
       {division.format === 'groups' && (
-        <div className="qw-panel overflow-hidden">
+        <div className="bg-surface-container-high overflow-hidden">
           <button
             onClick={() => setShowStandings(!showStandings)}
-            className="w-full flex items-center justify-between px-4 py-3 bg-qw-dark border-b border-qw-border hover:bg-qw-dark/80 transition-colors"
+            className="w-full flex items-center justify-between px-4 py-3 bg-surface-container-high border-b border-outline-variant hover:bg-surface-container-high/80 transition-colors"
           >
             <div className="flex items-center gap-2">
               <span className="text-lg">🏆</span>
-              <h3 className="font-display font-bold text-qw-accent">GROUP STANDINGS</h3>
-              <span className="text-xs text-qw-muted">(used for playoff seeding)</span>
+              <h3 className="font-headline font-bold text-primary">GROUP STANDINGS</h3>
+              <span className="text-xs text-on-surface-variant">(used for playoff seeding)</span>
             </div>
             <span
-              className={`text-qw-accent transition-transform duration-200 ${showStandings ? 'rotate-180' : ''}`}
+              className={`text-primary transition-transform duration-200 ${showStandings ? 'rotate-180' : ''}`}
             >
               ▼
             </span>
@@ -1292,10 +1292,10 @@ export default function DivisionBracket({ division, updateDivision }) {
 
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-qw-muted text-sm">
+          <p className="text-on-surface-variant text-sm">
             {isDoubleElim ? 'Double Elimination' : 'Single Elimination'} • {teamCount} teams
           </p>
-          <p className="text-qw-muted text-xs mt-1">
+          <p className="text-on-surface-variant text-xs mt-1">
             Enter team names. Scores auto-update from playoff matches.
           </p>
         </div>
@@ -1304,7 +1304,7 @@ export default function DivisionBracket({ division, updateDivision }) {
             <button
               onClick={handleSeedBracket}
               disabled={!groupStageComplete}
-              className="qw-btn-secondary text-sm flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="bg-surface-container-high border border-outline-variant px-3 py-1.5 text-sm flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
               title={
                 groupStageComplete
                   ? 'Seed bracket from group standings'
@@ -1314,13 +1314,13 @@ export default function DivisionBracket({ division, updateDivision }) {
               <span>🏅</span> Seed Bracket
             </button>
           )}
-          <button onClick={handleReset} className="text-sm text-red-400 hover:text-red-300">
+          <button onClick={handleReset} className="text-sm text-error hover:text-red-300">
             Reset Bracket
           </button>
         </div>
       </div>
 
-      <div className="qw-panel p-6 overflow-x-auto">
+      <div className="bg-surface-container-high p-6 overflow-x-auto">
         {isLegacyFormat ? (
           // Render legacy single elim format
           <SingleElimBracket
@@ -1361,8 +1361,8 @@ export default function DivisionBracket({ division, updateDivision }) {
 
       {/* Show playoff matches */}
       {schedule.filter((m) => m.round !== 'group' && m.maps?.length > 0).length > 0 && (
-        <div className="qw-panel p-4">
-          <h3 className="font-display text-sm text-qw-accent mb-2">PLAYOFF RESULTS</h3>
+        <div className="bg-surface-container-high p-4">
+          <h3 className="font-headline text-sm text-primary mb-2">PLAYOFF RESULTS</h3>
           <div className="flex flex-wrap gap-2">
             {schedule
               .filter((m) => m.round !== 'group' && m.maps?.length > 0)
@@ -1376,10 +1376,10 @@ export default function DivisionBracket({ division, updateDivision }) {
                 return (
                   <span
                     key={m.id}
-                    className="px-2 py-1 bg-qw-dark rounded text-xs font-mono text-qw-muted"
+                    className="px-2 py-1 bg-surface-container-high rounded text-xs font-mono text-on-surface-variant"
                   >
-                    {m.team1} <span className={s1 > s2 ? 'text-qw-win' : ''}>{s1}</span>-
-                    <span className={s2 > s1 ? 'text-qw-win' : ''}>{s2}</span> {m.team2}
+                    {m.team1} <span className={s1 > s2 ? 'text-tertiary' : ''}>{s1}</span>-
+                    <span className={s2 > s1 ? 'text-tertiary' : ''}>{s2}</span> {m.team2}
                   </span>
                 );
               })}

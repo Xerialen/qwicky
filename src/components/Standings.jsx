@@ -11,8 +11,8 @@ export default function Standings({ matches }) {
     return (
       <div className="qw-panel p-12 text-center">
         <div className="text-6xl mb-4">🏆</div>
-        <h2 className="font-display text-2xl text-white mb-2">No Standings Yet</h2>
-        <p className="text-qw-muted">Fetch some games to calculate standings</p>
+        <h2 className="font-headline text-2xl text-on-surface mb-2">No Standings Yet</h2>
+        <p className="text-on-surface-variant">Fetch some games to calculate standings</p>
       </div>
     );
   }
@@ -20,11 +20,11 @@ export default function Standings({ matches }) {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="font-display font-bold text-2xl text-white flex items-center gap-3">
-          <span className="text-qw-accent">🏆</span>
+        <h2 className="font-headline font-bold text-2xl text-on-surface flex items-center gap-3">
+          <span className="text-primary">🏆</span>
           Group Stage Standings
         </h2>
-        <div className="text-qw-muted font-mono text-sm">
+        <div className="text-on-surface-variant font-mono text-sm">
           {standings.length} team{standings.length !== 1 ? 's' : ''}
         </div>
       </div>
@@ -32,7 +32,7 @@ export default function Standings({ matches }) {
       <div className="qw-panel overflow-hidden">
         <table className="w-full">
           <thead>
-            <tr className="bg-qw-dark">
+            <tr className="bg-surface-container-high">
               <th className="text-center w-12">#</th>
               <th className="text-left">Team</th>
               <th className="text-center w-16">P</th>
@@ -54,24 +54,24 @@ export default function Standings({ matches }) {
                   key={team.name}
                   className={`
                     transition-colors
-                    ${idx === 0 ? 'bg-qw-accent/10' : ''}
+                    ${idx === 0 ? 'bg-primary/10' : ''}
                     ${isTop && idx !== 0 ? 'bg-qw-win/5' : ''}
-                    hover:bg-qw-accent/5
+                    hover:bg-primary/5
                   `}
                 >
                   {/* Position */}
                   <td className="text-center">
                     <span
                       className={`
-                      inline-flex items-center justify-center w-8 h-8 rounded-full font-display font-bold
+                      inline-flex items-center justify-center w-8 h-8 rounded-full font-headline font-bold
                       ${
                         idx === 0
-                          ? 'bg-qw-accent text-qw-dark'
+                          ? 'bg-primary text-qw-dark'
                           : idx === 1
                             ? 'bg-gray-400 text-qw-dark'
                             : idx === 2
-                              ? 'bg-amber-700 text-white'
-                              : 'bg-qw-border text-qw-muted'
+                              ? 'bg-amber-700 text-on-surface'
+                              : 'bg-outline-variant text-on-surface-variant'
                       }
                     `}
                     >
@@ -83,7 +83,7 @@ export default function Standings({ matches }) {
                   <td>
                     <span
                       className={`font-body font-semibold text-lg
-                      ${idx === 0 ? 'text-qw-accent' : 'text-white'}
+                      ${idx === 0 ? 'text-primary' : 'text-on-surface'}
                     `}
                     >
                       {team.name}
@@ -91,29 +91,29 @@ export default function Standings({ matches }) {
                   </td>
 
                   {/* Played */}
-                  <td className="text-center text-qw-muted">{team.played}</td>
+                  <td className="text-center text-on-surface-variant">{team.played}</td>
 
                   {/* Wins */}
-                  <td className="text-center text-qw-win font-semibold">{team.matchesWon}</td>
+                  <td className="text-center text-tertiary font-semibold">{team.matchesWon}</td>
 
                   {/* Draws */}
                   <td className="text-center text-qw-draw">{team.matchesDraw}</td>
 
                   {/* Losses */}
-                  <td className="text-center text-qw-loss">{team.matchesLost}</td>
+                  <td className="text-center text-error">{team.matchesLost}</td>
 
                   {/* Maps Won/Lost */}
                   <td className="text-center font-mono">
-                    <span className="text-qw-win">{team.mapsWon}</span>
-                    <span className="text-qw-muted mx-1">-</span>
-                    <span className="text-qw-loss">{team.mapsLost}</span>
+                    <span className="text-tertiary">{team.mapsWon}</span>
+                    <span className="text-on-surface-variant mx-1">-</span>
+                    <span className="text-error">{team.mapsLost}</span>
                   </td>
 
                   {/* Map Difference */}
                   <td className="text-center font-mono font-semibold">
                     <span
                       className={
-                        mapDiff > 0 ? 'text-qw-win' : mapDiff < 0 ? 'text-qw-loss' : 'text-qw-muted'
+                        mapDiff > 0 ? 'text-tertiary' : mapDiff < 0 ? 'text-error' : 'text-on-surface-variant'
                       }
                     >
                       {mapDiff > 0 ? '+' : ''}
@@ -125,8 +125,8 @@ export default function Standings({ matches }) {
                   <td className="text-center">
                     <span
                       className={`
-                      font-display font-bold text-lg
-                      ${idx === 0 ? 'text-qw-accent' : 'text-white'}
+                      font-headline font-bold text-lg
+                      ${idx === 0 ? 'text-primary' : 'text-on-surface'}
                     `}
                     >
                       {team.points}
@@ -142,20 +142,20 @@ export default function Standings({ matches }) {
       {/* Legend */}
       <div className="flex items-center justify-center gap-6 text-sm">
         <div className="flex items-center gap-2">
-          <span className="font-display text-qw-muted">P</span>
-          <span className="text-qw-muted">= Played</span>
+          <span className="font-headline text-on-surface-variant">P</span>
+          <span className="text-on-surface-variant">= Played</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="font-display text-qw-win">W</span>
-          <span className="text-qw-muted">= Wins (3 pts)</span>
+          <span className="font-headline text-tertiary">W</span>
+          <span className="text-on-surface-variant">= Wins (3 pts)</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="font-display text-qw-draw">D</span>
-          <span className="text-qw-muted">= Draws (1 pt)</span>
+          <span className="font-headline text-qw-draw">D</span>
+          <span className="text-on-surface-variant">= Draws (1 pt)</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="font-display text-qw-loss">L</span>
-          <span className="text-qw-muted">= Losses</span>
+          <span className="font-headline text-error">L</span>
+          <span className="text-on-surface-variant">= Losses</span>
         </div>
       </div>
     </div>

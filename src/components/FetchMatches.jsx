@@ -110,8 +110,8 @@ export default function FetchMatches({ matches, setMatches }) {
           className={`px-4 py-2 rounded font-body font-semibold transition-all
             ${
               mode === 'single'
-                ? 'bg-qw-accent text-qw-dark'
-                : 'bg-qw-panel border border-qw-border text-qw-muted hover:text-white'
+                ? 'bg-primary text-qw-dark'
+                : 'bg-surface-container-high border border-outline-variant text-on-surface-variant hover:text-on-surface'
             }`}
         >
           Single Fetch
@@ -121,8 +121,8 @@ export default function FetchMatches({ matches, setMatches }) {
           className={`px-4 py-2 rounded font-body font-semibold transition-all
             ${
               mode === 'batch'
-                ? 'bg-qw-accent text-qw-dark'
-                : 'bg-qw-panel border border-qw-border text-qw-muted hover:text-white'
+                ? 'bg-primary text-qw-dark'
+                : 'bg-surface-container-high border border-outline-variant text-on-surface-variant hover:text-on-surface'
             }`}
         >
           Batch Fetch
@@ -131,7 +131,7 @@ export default function FetchMatches({ matches, setMatches }) {
 
       {/* Input Forms */}
       <div className="qw-panel p-6">
-        <h2 className="font-display font-bold text-xl mb-4 text-qw-accent flex items-center gap-2">
+        <h2 className="font-headline font-bold text-xl mb-4 text-primary flex items-center gap-2">
           <span>⚡</span>
           {mode === 'single' ? 'Fetch Single Game' : 'Batch Fetch Games'}
         </h2>
@@ -143,7 +143,7 @@ export default function FetchMatches({ matches, setMatches }) {
               value={gameId}
               onChange={(e) => setGameId(e.target.value)}
               placeholder="Enter Game ID..."
-              className="flex-1 bg-qw-dark border border-qw-border rounded px-4 py-2 font-mono text-white focus:border-qw-accent focus:outline-none focus:ring-1 focus:ring-qw-accent"
+              className="flex-1 bg-surface-container-high border border-outline-variant rounded px-4 py-2 font-mono text-on-surface focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
               disabled={loading}
             />
             <button
@@ -183,7 +183,7 @@ export default function FetchMatches({ matches, setMatches }) {
               onChange={(e) => setBatchIds(e.target.value)}
               placeholder="Enter Game IDs (one per line or comma-separated)..."
               rows={5}
-              className="w-full bg-qw-dark border border-qw-border rounded px-4 py-2 font-mono text-white focus:border-qw-accent focus:outline-none focus:ring-1 focus:ring-qw-accent resize-none"
+              className="w-full bg-surface-container-high border border-outline-variant rounded px-4 py-2 font-mono text-on-surface focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary resize-none"
               disabled={loading}
             />
             <button
@@ -227,28 +227,28 @@ export default function FetchMatches({ matches, setMatches }) {
 
         {/* Last Fetched Preview */}
         {lastFetched && (
-          <div className="mt-4 p-4 bg-qw-dark rounded border border-qw-border">
-            <h3 className="font-display text-sm text-qw-accent mb-2">LAST FETCHED</h3>
+          <div className="mt-4 p-4 bg-surface-container-high rounded border border-outline-variant">
+            <h3 className="font-headline text-sm text-primary mb-2">LAST FETCHED</h3>
             <div className="grid grid-cols-2 gap-4 font-mono text-sm">
               <div>
-                <span className="text-qw-muted">ID:</span>
-                <span className="ml-2 text-white">{lastFetched.id}</span>
+                <span className="text-on-surface-variant">ID:</span>
+                <span className="ml-2 text-on-surface">{lastFetched.id}</span>
               </div>
               <div>
-                <span className="text-qw-muted">Map:</span>
-                <span className="ml-2 text-white">{lastFetched.map}</span>
+                <span className="text-on-surface-variant">Map:</span>
+                <span className="ml-2 text-on-surface">{lastFetched.map}</span>
               </div>
               <div>
-                <span className="text-qw-muted">Date:</span>
-                <span className="ml-2 text-white">{lastFetched.date}</span>
+                <span className="text-on-surface-variant">Date:</span>
+                <span className="ml-2 text-on-surface">{lastFetched.date}</span>
               </div>
               <div>
-                <span className="text-qw-muted">Mode:</span>
-                <span className="ml-2 text-white">{lastFetched.mode}</span>
+                <span className="text-on-surface-variant">Mode:</span>
+                <span className="ml-2 text-on-surface">{lastFetched.mode}</span>
               </div>
               <div className="col-span-2">
-                <span className="text-qw-muted">Teams:</span>
-                <span className="ml-2 text-white">
+                <span className="text-on-surface-variant">Teams:</span>
+                <span className="ml-2 text-on-surface">
                   {lastFetched.teams[0]} ({lastFetched.scores[lastFetched.teams[0]] || 0}) vs{' '}
                   {lastFetched.teams[1]} ({lastFetched.scores[lastFetched.teams[1]] || 0})
                 </span>
@@ -261,14 +261,14 @@ export default function FetchMatches({ matches, setMatches }) {
       {/* Fetched Matches List */}
       <div className="qw-panel p-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="font-display font-bold text-xl text-qw-accent flex items-center gap-2">
+          <h2 className="font-headline font-bold text-xl text-primary flex items-center gap-2">
             <span>📦</span>
             Fetched Matches ({matches.length})
           </h2>
           {matches.length > 0 && (
             <button
               onClick={handleClearAll}
-              className="qw-btn-secondary px-3 py-1 text-sm rounded border border-red-500/50 text-red-400 hover:bg-red-500/20"
+              className="qw-btn-secondary px-3 py-1 text-sm rounded border border-red-500/50 text-error hover:bg-red-500/20"
             >
               Clear All
             </button>
@@ -276,7 +276,7 @@ export default function FetchMatches({ matches, setMatches }) {
         </div>
 
         {matches.length === 0 ? (
-          <div className="text-center py-12 text-qw-muted">
+          <div className="text-center py-12 text-on-surface-variant">
             <div className="text-4xl mb-2">📭</div>
             <p className="font-body">No matches fetched yet</p>
             <p className="text-sm">Enter a Game ID above to get started</p>
@@ -286,17 +286,17 @@ export default function FetchMatches({ matches, setMatches }) {
             {matches.map((match, idx) => (
               <div
                 key={match.id}
-                className="flex items-center justify-between p-3 bg-qw-dark rounded border border-qw-border hover:border-qw-accent/50 transition-colors group"
+                className="flex items-center justify-between p-3 bg-surface-container-high rounded border border-outline-variant hover:border-primary/50 transition-colors group"
               >
                 <div className="flex items-center gap-4">
-                  <span className="text-qw-muted font-mono text-sm w-8">#{idx + 1}</span>
+                  <span className="text-on-surface-variant font-mono text-sm w-8">#{idx + 1}</span>
                   <div>
-                    <div className="font-body font-semibold text-white">
+                    <div className="font-body font-semibold text-on-surface">
                       {match.teams[0]}
-                      <span className="text-qw-accent mx-2">vs</span>
+                      <span className="text-primary mx-2">vs</span>
                       {match.teams[1]}
                     </div>
-                    <div className="flex gap-4 text-sm text-qw-muted font-mono">
+                    <div className="flex gap-4 text-sm text-on-surface-variant font-mono">
                       <span>{match.map}</span>
                       <span>•</span>
                       <span>
@@ -309,7 +309,7 @@ export default function FetchMatches({ matches, setMatches }) {
                 </div>
                 <button
                   onClick={() => handleRemoveMatch(match.id)}
-                  className="opacity-0 group-hover:opacity-100 p-2 text-red-400 hover:text-red-300 hover:bg-red-500/20 rounded transition-all"
+                  className="opacity-0 group-hover:opacity-100 p-2 text-error hover:text-red-300 hover:bg-red-500/20 rounded transition-all"
                   title="Remove match"
                 >
                   ✕

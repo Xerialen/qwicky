@@ -49,8 +49,8 @@ export default function DivisionManager({
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="font-display font-bold text-2xl text-white flex items-center gap-3">
-          <span className="text-qw-accent">📁</span>
+        <h2 className="font-headline font-bold text-2xl text-on-surface flex items-center gap-3">
+          <span className="text-primary">📁</span>
           Division Manager
         </h2>
         <button onClick={() => setShowAddForm(!showAddForm)} className="qw-btn">
@@ -61,16 +61,16 @@ export default function DivisionManager({
       {/* Add Division Form */}
       {showAddForm && (
         <div className="qw-panel p-6">
-          <h3 className="font-display text-lg text-qw-accent mb-4">CREATE NEW DIVISION</h3>
+          <h3 className="font-headline text-lg text-primary mb-4">CREATE NEW DIVISION</h3>
           <form onSubmit={handleAddDivision} className="space-y-4">
             <div>
-              <label className="block text-qw-muted text-sm mb-1">Division Name</label>
+              <label className="block text-on-surface-variant text-sm mb-1">Division Name</label>
               <input
                 type="text"
                 value={newDivName}
                 onChange={(e) => setNewDivName(e.target.value)}
                 placeholder="e.g., Division 1"
-                className="w-full bg-qw-dark border border-qw-border rounded px-4 py-2 text-white"
+                className="w-full bg-surface-container-high border border-outline-variant rounded px-4 py-2 text-on-surface"
                 autoFocus
               />
             </div>
@@ -78,14 +78,14 @@ export default function DivisionManager({
             {/* Quick suggestions */}
             {availableSuggestions.length > 0 && (
               <div>
-                <label className="block text-qw-muted text-sm mb-2">Quick select:</label>
+                <label className="block text-on-surface-variant text-sm mb-2">Quick select:</label>
                 <div className="flex flex-wrap gap-2">
                   {availableSuggestions.slice(0, 4).map((name) => (
                     <button
                       key={name}
                       type="button"
                       onClick={() => setNewDivName(name)}
-                      className="px-3 py-1 bg-qw-dark border border-qw-border rounded text-sm text-qw-muted hover:text-white hover:border-qw-accent transition-colors"
+                      className="px-3 py-1 bg-surface-container-high border border-outline-variant rounded text-sm text-on-surface-variant hover:text-on-surface hover:border-primary transition-colors"
                     >
                       {name}
                     </button>
@@ -104,7 +104,7 @@ export default function DivisionManager({
                   setShowAddForm(false);
                   setNewDivName('');
                 }}
-                className="px-4 py-2 rounded border border-qw-border text-qw-muted hover:text-white"
+                className="px-4 py-2 rounded border border-outline-variant text-on-surface-variant hover:text-on-surface"
               >
                 Cancel
               </button>
@@ -117,8 +117,8 @@ export default function DivisionManager({
       {divisions.length === 0 ? (
         <div className="qw-panel p-12 text-center">
           <div className="text-6xl mb-4">📁</div>
-          <h3 className="font-display text-2xl text-white mb-2">No Divisions Yet</h3>
-          <p className="text-qw-muted mb-6">
+          <h3 className="font-headline text-2xl text-on-surface mb-2">No Divisions Yet</h3>
+          <p className="text-on-surface-variant mb-6">
             Create divisions to organize your tournament. Each division has its own teams, schedule,
             and standings.
           </p>
@@ -139,17 +139,17 @@ export default function DivisionManager({
             return (
               <div
                 key={div.id}
-                className={`qw-panel overflow-hidden transition-all ${isActive ? 'ring-2 ring-qw-accent' : ''}`}
+                className={`qw-panel overflow-hidden transition-all ${isActive ? 'ring-2 ring-primary' : ''}`}
               >
                 {/* Header */}
-                <div className="flex items-center justify-between p-4 bg-qw-dark border-b border-qw-border">
+                <div className="flex items-center justify-between p-4 bg-surface-container-high border-b border-outline-variant">
                   <div className="flex items-center gap-3">
-                    <span className="w-10 h-10 rounded bg-qw-accent/20 flex items-center justify-center font-display font-bold text-qw-accent text-lg">
+                    <span className="w-10 h-10 rounded bg-primary/20 flex items-center justify-center font-headline font-bold text-primary text-lg">
                       {idx + 1}
                     </span>
                     <div>
-                      <h3 className="font-display font-bold text-white">{div.name}</h3>
-                      <p className="text-xs text-qw-muted">
+                      <h3 className="font-headline font-bold text-on-surface">{div.name}</h3>
+                      <p className="text-xs text-on-surface-variant">
                         {div.format === 'groups' ? 'Groups → Playoffs' : div.format}
                       </p>
                     </div>
@@ -163,27 +163,27 @@ export default function DivisionManager({
                 <div className="p-4">
                   <div className="grid grid-cols-3 gap-4 mb-4">
                     <div className="text-center">
-                      <div className="font-display font-bold text-2xl text-white">
+                      <div className="font-headline font-bold text-2xl text-on-surface">
                         {div.teams?.length || 0}
                       </div>
-                      <div className="text-xs text-qw-muted">Teams</div>
+                      <div className="text-xs text-on-surface-variant">Teams</div>
                     </div>
                     <div className="text-center">
-                      <div className="font-display font-bold text-2xl text-white">
+                      <div className="font-headline font-bold text-2xl text-on-surface">
                         {div.numGroups || 2}
                       </div>
-                      <div className="text-xs text-qw-muted">Groups</div>
+                      <div className="text-xs text-on-surface-variant">Groups</div>
                     </div>
                     <div className="text-center">
-                      <div className="font-display font-bold text-2xl text-white">
+                      <div className="font-headline font-bold text-2xl text-on-surface">
                         {completedMatches}/{totalMatches}
                       </div>
-                      <div className="text-xs text-qw-muted">Matches</div>
+                      <div className="text-xs text-on-surface-variant">Matches</div>
                     </div>
                   </div>
 
                   {/* Format info */}
-                  <div className="flex items-center justify-between text-sm text-qw-muted mb-4">
+                  <div className="flex items-center justify-between text-sm text-on-surface-variant mb-4">
                     <span>Groups: Bo{div.groupStageBestOf}</span>
                     <span>
                       QF/SF: Bo{div.playoffQFBestOf}/{div.playoffSFBestOf}
@@ -192,10 +192,10 @@ export default function DivisionManager({
                   </div>
 
                   {/* Actions */}
-                  <div className="flex items-center justify-between pt-3 border-t border-qw-border">
+                  <div className="flex items-center justify-between pt-3 border-t border-outline-variant">
                     <button
                       onClick={() => duplicateDivision(div.id)}
-                      className="text-sm text-qw-muted hover:text-white flex items-center gap-1"
+                      className="text-sm text-on-surface-variant hover:text-on-surface flex items-center gap-1"
                       title="Duplicate settings (not data)"
                     >
                       <span>📋</span> Duplicate Settings
@@ -216,8 +216,8 @@ export default function DivisionManager({
       {/* Tips */}
       {divisions.length > 0 && (
         <div className="qw-panel p-4">
-          <h3 className="font-display text-sm text-qw-accent mb-2">TIPS</h3>
-          <ul className="text-qw-muted text-sm space-y-1">
+          <h3 className="font-headline text-sm text-primary mb-2">TIPS</h3>
+          <ul className="text-on-surface-variant text-sm space-y-1">
             <li>• Each division has its own teams, schedule, standings, and bracket</li>
             <li>• Use "Duplicate Settings" to create a new division with the same format</li>
             <li>• Click "Open" to manage a division's teams, schedule, and results</li>
