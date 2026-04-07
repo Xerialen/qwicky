@@ -1,36 +1,95 @@
-import { createClient } from '@libsql/client/web';
+// Turso client using HTTP API directly (no @libsql/client dependency).
+// This avoids compatibility issues with Vercel serverless.
 
-let client = null;
+const TURSO_URL = () => {
+  const url = process.env.TURSO_DB_URL || '';
+  return url.replace(/^libsql:\/\//, 'https://') + '/v2/pipeline';
+};
+const TURSO_TOKEN = () => process.env.TURSO_AUTH_TOKEN;
 
-export function getClient() {
-  if (!client) {
-    const url = process.env.TURSO_DB_URL;
-    const authToken = process.env.TURSO_AUTH_TOKEN;
-    if (!url || !authToken) {
-      throw new Error(`Turso not configured: url=${!!url}, token=${!!authToken}`);
-    }
-    // @libsql/client/web needs https:// URL, not libsql://
-    const httpUrl = url.replace(/^libsql:\/\//, 'https://');
-    client = createClient({ url: httpUrl, authToken });
+async function tursoQuery(sql, args = []) {
+  const stmts = [{
+    type: 'execute',
+    stmt: {
+      sql,
+      args: args.map(a => {
+        if (a === null || a === undefined) return { type: 'null' };
+        if (typeof a === 'number') return { type: 'integer', value: String(a) };
+        return { type: 'text', value: String(a) };
+      }),
+    },
+  }, { type: 'close' }];
+
+  const res = await fetch(TURSO_URL(), {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${TURSO_TOKEN()}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ requests: stmts }),
+    signal: AbortSignal.timeout(15000),
+  });
+
+  if (!res.ok) {
+    throw new Error(`Turso HTTP ${res.status}`);
   }
-  return client;
+
+  const data = await res.json();
+  const result = data.results?.[0]?.response?.result;
+  if (!result) {
+    const err = data.results?.[0]?.response?.error;
+    throw new Error(err?.message || 'Turso query failed');
+  }
+
+  // Convert Turso row format to plain objects
+  const cols = result.cols.map(c => c.name);
+  return result.rows.map(row =>
+    Object.fromEntries(cols.map((name, i) => [name, row[i]?.value ?? null]))
+  );
+}
+
+async function tursoBatch(statements) {
+  const reqs = statements.map(({ sql, args = [] }) => ({
+    type: 'execute',
+    stmt: {
+      sql,
+      args: args.map(a => {
+        if (a === null || a === undefined) return { type: 'null' };
+        if (typeof a === 'number') return { type: 'integer', value: String(a) };
+        return { type: 'text', value: String(a) };
+      }),
+    },
+  }));
+  reqs.push({ type: 'close' });
+
+  const res = await fetch(TURSO_URL(), {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${TURSO_TOKEN()}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ requests: reqs }),
+    signal: AbortSignal.timeout(30000),
+  });
+
+  if (!res.ok) {
+    throw new Error(`Turso batch HTTP ${res.status}`);
+  }
 }
 
 export async function getGameByHubId(hubId) {
-  const c = getClient();
-  const r = await c.execute({
-    sql: `SELECT g.sha256, g.mode, g.map, g.date, g.duration, g.server,
-                 g.team1, g.team2, g.score1, g.score2, g.winner, g.raw_ktxstats
-          FROM games g
-          JOIN hub_ids h ON g.sha256 = h.sha256
-          WHERE h.hub_id = ?`,
-    args: [hubId],
-  });
-  return r.rows.length > 0 ? r.rows[0] : null;
+  const rows = await tursoQuery(
+    `SELECT g.sha256, g.mode, g.map, g.date, g.duration, g.server,
+            g.team1, g.team2, g.score1, g.score2, g.winner, g.raw_ktxstats
+     FROM games g
+     JOIN hub_ids h ON g.sha256 = h.sha256
+     WHERE h.hub_id = ?`,
+    [hubId]
+  );
+  return rows.length > 0 ? rows[0] : null;
 }
 
 export async function insertGame({ hubId, sha256, mode, ktxstats }) {
-  const c = getClient();
   const data = typeof ktxstats === 'string' ? JSON.parse(ktxstats) : ktxstats;
   const raw = typeof ktxstats === 'string' ? ktxstats : JSON.stringify(ktxstats);
   const players = data.players || [];
@@ -65,7 +124,7 @@ export async function insertGame({ hubId, sha256, mode, ktxstats }) {
       sql: `INSERT OR IGNORE INTO games (sha256, mode, map, date, duration, server,
             team1, team2, score1, score2, winner, raw_ktxstats)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      args: [sha256, mode, data.map || '', data.date || '', data.duration || null,
+      args: [sha256, mode, data.map || '', data.date || '', data.duration || 0,
              data.hostname || '', team1, team2, score1, score2, winner, raw],
     },
   ];
@@ -111,7 +170,7 @@ export async function insertGame({ hubId, sha256, mode, ktxstats }) {
   }
 
   try {
-    await c.batch(batch);
+    await tursoBatch(batch);
     return true;
   } catch (err) {
     console.error('[Turso] Insert failed:', err.message);
@@ -120,51 +179,47 @@ export async function insertGame({ hubId, sha256, mode, ktxstats }) {
 }
 
 export async function discoverGames({ mode, startDate, endDate, teamAliases1, teamAliases2 }) {
-  const c = getClient();
   const allAliases = [...teamAliases1, ...teamAliases2];
   const placeholders = allAliases.map(() => '?').join(',');
 
-  const r = await c.execute({
-    sql: `SELECT g.sha256, g.mode, g.map, g.date, g.duration, g.server,
-                 g.team1, g.team2, g.score1, g.score2, g.winner, h.hub_id
-          FROM games g
-          LEFT JOIN hub_ids h ON g.sha256 = h.sha256
-          WHERE g.mode = ?
-            AND g.date >= ?
-            AND g.date <= ?
-            AND (g.team1 IN (${placeholders}) OR g.team2 IN (${placeholders}))
-          ORDER BY g.date`,
-    args: [mode, startDate, endDate, ...allAliases, ...allAliases],
-  });
+  const rows = await tursoQuery(
+    `SELECT g.sha256, g.mode, g.map, g.date, g.duration, g.server,
+            g.team1, g.team2, g.score1, g.score2, g.winner, h.hub_id
+     FROM games g
+     LEFT JOIN hub_ids h ON g.sha256 = h.sha256
+     WHERE g.mode = ?
+       AND g.date >= ?
+       AND g.date <= ?
+       AND (g.team1 IN (${placeholders}) OR g.team2 IN (${placeholders}))
+     ORDER BY g.date`,
+    [mode, startDate, endDate, ...allAliases, ...allAliases]
+  );
 
   const set1 = new Set(teamAliases1.map(a => a.toLowerCase()));
   const set2 = new Set(teamAliases2.map(a => a.toLowerCase()));
 
-  return r.rows.filter(g => {
-    const t1 = g.team1.toLowerCase();
-    const t2 = g.team2.toLowerCase();
+  return rows.filter(g => {
+    const t1 = (g.team1 || '').toLowerCase();
+    const t2 = (g.team2 || '').toLowerCase();
     return (set1.has(t1) && set2.has(t2)) || (set1.has(t2) && set2.has(t1));
   });
 }
 
 export async function getGamePlayers(sha256) {
-  const c = getClient();
-  const r = await c.execute({
-    sql: `SELECT player_name, team FROM player_games WHERE sha256 = ?`,
-    args: [sha256],
-  });
-  return r.rows;
+  return tursoQuery(
+    `SELECT player_name, team FROM player_games WHERE sha256 = ?`,
+    [sha256]
+  );
 }
 
 export async function getTeamAliases(teamName) {
-  const c = getClient();
-  const r = await c.execute({
-    sql: `SELECT alias FROM team_aliases
-          WHERE canonical = (SELECT canonical FROM team_aliases WHERE alias = ?)`,
-    args: [teamName],
-  });
-  if (r.rows.length > 0) {
-    return r.rows.map(row => row.alias);
+  const rows = await tursoQuery(
+    `SELECT alias FROM team_aliases
+     WHERE canonical = (SELECT canonical FROM team_aliases WHERE alias = ?)`,
+    [teamName]
+  );
+  if (rows.length > 0) {
+    return rows.map(row => row.alias);
   }
   return [teamName];
 }
