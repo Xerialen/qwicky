@@ -388,6 +388,50 @@ function scoreTimeOfDay(timestamp) {
 }
 
 /**
+ * Score roster overlap between tournament roster and actual game players.
+ * Returns 0-40 points.
+ */
+export function scoreRosterOverlap(rosterTeam1, rosterTeam2, gamePlayers) {
+  function normalizeForMatch(name) {
+    return normalizeQW(name).toLowerCase().replace(/[^a-z0-9]/g, '');
+  }
+
+  function overlapCount(roster, players) {
+    const normalizedRoster = roster.map(normalizeForMatch);
+    const normalizedPlayers = players.map(normalizeForMatch);
+    return normalizedRoster.filter(r => normalizedPlayers.some(p => p === r)).length;
+  }
+
+  function sideScore(matched, total) {
+    if (total === 0) return 0;
+    const ratio = matched / total;
+    if (ratio >= 1.0) return 20;
+    if (ratio >= 0.75) return 15;
+    if (ratio >= 0.5) return 5;
+    return 0;
+  }
+
+  const team1Players = gamePlayers
+    .filter(p => p.side === 'team1')
+    .map(p => p.name);
+  const team2Players = gamePlayers
+    .filter(p => p.side === 'team2')
+    .map(p => p.name);
+
+  const match1 = overlapCount(rosterTeam1, team1Players);
+  const match2 = overlapCount(rosterTeam2, team2Players);
+
+  // Also try swapped sides
+  const match1Swap = overlapCount(rosterTeam1, team2Players);
+  const match2Swap = overlapCount(rosterTeam2, team1Players);
+
+  const scoreNormal = sideScore(match1, rosterTeam1.length) + sideScore(match2, rosterTeam2.length);
+  const scoreSwapped = sideScore(match1Swap, rosterTeam1.length) + sideScore(match2Swap, rosterTeam2.length);
+
+  return Math.max(scoreNormal, scoreSwapped);
+}
+
+/**
  * Group games into series by team pair and time proximity.
  * Games between the same two teams within 3 hours = one series.
  */

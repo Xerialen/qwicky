@@ -1,81 +1,17 @@
 // api/discover-games.mjs
-// Tournament game discovery endpoint.
-// Queries ParadokS QW Stats API (primary) or Hub Supabase (fallback)
-// for games matching scheduled matchups, applies confidence model.
-//
-// POST /api/discover-games
-// Body: { tournamentId, divisionId? }
-//
-// Returns: { ok, candidates: [{ series, confidence, games }], summary }
-
+// Tournament game discovery — queries Turso QW Stats database.
 import { createClient } from '@supabase/supabase-js';
 import {
-  normalizeQW, resolveTeamTag, applyHardGates,
-  scoreConfidence, groupIntoSeries,
+  normalizeQW, applyHardGates, scoreConfidence, groupIntoSeries,
+  scoreRosterOverlap,
 } from '../src/utils/confidenceModel.js';
 import { requireAdminAuth } from './_auth.mjs';
+import { discoverGames, getGamePlayers, getTeamAliases } from './lib/tursoClient.mjs';
 
 const supabase = createClient(
   process.env.QWICKY_SUPABASE_URL,
   process.env.QWICKY_SUPABASE_SERVICE_KEY
 );
-
-const QW_STATS_API = 'https://qw-api.poker-affiliate.org';
-const HUB_SUPABASE = 'https://ncsphkjfominimxztjip.supabase.co/rest/v1';
-// SUPABASE_KEY: Hub Supabase anon key — consistent with api/game/[gameId].mjs
-const HUB_KEY = process.env.SUPABASE_KEY;
-
-// ── Fetch games from ParadokS API ───────────────────────────────────────────
-
-async function fetchFromParadoks(tag1, tag2, months = 6) {
-  try {
-    const url = `${QW_STATS_API}/api/h2h?teamA=${encodeURIComponent(tag1)}&teamB=${encodeURIComponent(tag2)}&months=${months}&limit=50`;
-    const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
-    if (!res.ok) return null;
-    const data = await res.json();
-    return (data.games || []).map(g => ({
-      id: g.id,
-      timestamp: g.playedAt,
-      map: g.map,
-      teams: [
-        { name: data.teamA, frags: g.teamAFrags },
-        { name: data.teamB, frags: g.teamBFrags },
-      ],
-      matchtag: g.matchtag || null,
-      players: g.players || [],
-      _source: 'paradoks',
-    }));
-  } catch {
-    return null;
-  }
-}
-
-// ── Fetch games from Hub Supabase (fallback) ────────────────────────────────
-
-async function fetchFromHub(tag1, tag2, startDate, endDate) {
-  try {
-    // Query by team_names which is a lowercased text array for search
-    const url = `${HUB_SUPABASE}/v1_games?mode=eq.4on4&timestamp=gte.${startDate}T00:00:00Z&timestamp=lte.${endDate}T23:59:59Z&select=id,timestamp,map,matchtag,teams,players,hostname&order=timestamp.asc&limit=200`;
-    const res = await fetch(url, {
-      headers: { apikey: HUB_KEY, Authorization: `Bearer ${HUB_KEY}` },
-      signal: AbortSignal.timeout(10000),
-    });
-    if (!res.ok) return [];
-    const games = await res.json();
-
-    // Filter to games where both tags appear
-    const n1 = normalizeQW(tag1);
-    const n2 = normalizeQW(tag2);
-    return games.filter(g => {
-      const teamNames = (g.teams || []).map(t => normalizeQW(typeof t === 'object' ? t.name : t));
-      return teamNames.some(t => t === n1) && teamNames.some(t => t === n2);
-    });
-  } catch {
-    return [];
-  }
-}
-
-// ── Main handler ────────────────────────────────────────────────────────────
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -85,17 +21,14 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
   if (!await requireAdminAuth(req, res)) return;
-  if (!HUB_KEY) return res.status(500).json({ error: 'SUPABASE_KEY environment variable is not set' });
 
   const { tournamentId, divisionId, config: directConfig } = req.body || {};
 
-  // Accept direct config (for testing) or load from Supabase
   let tournamentConfig;
 
   if (directConfig) {
     tournamentConfig = directConfig;
   } else if (tournamentId) {
-    // Load from Supabase
     const { data: tournament } = await supabase
       .from('tournaments').select('*').eq('id', tournamentId).single();
     if (!tournament) return res.status(404).json({ error: 'Tournament not found' });
@@ -106,9 +39,6 @@ export default async function handler(req, res) {
       .from('teams').select('*').eq('tournament_id', tournamentId);
     const { data: matches } = await supabase
       .from('matches').select('*').eq('tournament_id', tournamentId);
-    const { data: aliases } = await supabase
-      .from('team_aliases').select('*')
-      .or(`tournament_id.eq.${tournamentId},is_global.eq.true`);
 
     tournamentConfig = {
       name: tournament.name,
@@ -116,7 +46,6 @@ export default async function handler(req, res) {
       startDate: tournament.settings?.startDate || '',
       endDate: tournament.settings?.endDate || '',
       mapPool: tournament.settings?.mapPool || ['dm2', 'dm3', 'e1m2', 'schloss', 'phantombase'],
-      tagPatterns: tournament.settings?.discoveryConfig?.tagPatterns || [],
       threshold: tournament.settings?.discoveryConfig?.confidenceThreshold || 70,
       divisions: (divisions || []).map(div => ({
         id: div.id,
@@ -126,7 +55,6 @@ export default async function handler(req, res) {
         isPlayoffs: div.format === 'single-elim' || div.format === 'double-elim',
         bestOf: div.group_stage_best_of || 3,
       })),
-      aliasMap: Object.fromEntries((aliases || []).map(a => [normalizeQW(a.alias), a.canonical.toLowerCase()])),
     };
   } else {
     return res.status(400).json({ error: 'tournamentId or config required' });
@@ -135,111 +63,131 @@ export default async function handler(req, res) {
   const allCandidates = [];
   const summary = { scanned: 0, passed: 0, rejected: 0, byRejection: {} };
 
-  // Process each division (or filter to one)
   const divisionsToProcess = divisionId
     ? tournamentConfig.divisions.filter(d => d.id === divisionId)
     : tournamentConfig.divisions;
 
   for (const div of divisionsToProcess) {
     const mapPool = new Set(tournamentConfig.mapPool);
-    const processedIds = new Set();
+    const processedSha = new Set();
 
-    // Build unique matchups to scan
+    // Build matchups
     const matchups = new Set();
     if (div.isPlayoffs) {
-      // Playoffs: scan every team pair in the division
       for (let i = 0; i < div.teams.length; i++) {
         for (let j = i + 1; j < div.teams.length; j++) {
           matchups.add(`${div.teams[i].name}|||${div.teams[j].name}`);
         }
       }
     } else {
-      // Groups: scan only scheduled matchups
       for (const match of div.schedule) {
-        if (match.status === 'completed') continue; // Skip already completed
+        if (match.status === 'completed') continue;
         matchups.add(`${match.team1}|||${match.team2}`);
       }
     }
 
-    // For each matchup, fetch and score games
     for (const matchupKey of matchups) {
       const [t1Name, t2Name] = matchupKey.split('|||');
       const t1 = div.teams.find(t => t.name === t1Name);
       const t2 = div.teams.find(t => t.name === t2Name);
       if (!t1 || !t2) continue;
 
-      const tag1 = normalizeQW(t1.tag || t1.name);
-      const tag2 = normalizeQW(t2.tag || t2.name);
-      if (!tag1 || !tag2) continue;
+      const tag1 = t1.tag || t1.name;
+      const tag2 = t2.tag || t2.name;
 
-      // Fetch games: ParadokS first, Hub fallback
-      let games = await fetchFromParadoks(tag1, tag2);
-      let source = 'paradoks';
+      // Resolve aliases from Turso
+      const aliases1 = await getTeamAliases(tag1);
+      const aliases2 = await getTeamAliases(tag2);
 
-      if (!games || games.length === 0) {
-        games = await fetchFromHub(tag1, tag2, tournamentConfig.startDate, tournamentConfig.endDate);
-        source = 'hub';
-      }
+      const allAliases1 = [...new Set([...aliases1, tag1, normalizeQW(tag1)])];
+      const allAliases2 = [...new Set([...aliases2, tag2, normalizeQW(tag2)])];
+
+      // Query Turso
+      const games = await discoverGames({
+        mode: tournamentConfig.mode,
+        startDate: tournamentConfig.startDate,
+        endDate: tournamentConfig.endDate || new Date().toISOString().split('T')[0],
+        teamAliases1: allAliases1,
+        teamAliases2: allAliases2,
+      });
 
       if (!games || games.length === 0) continue;
 
-      // Filter by date range
-      const startMs = new Date(tournamentConfig.startDate).getTime();
-      const endMs = tournamentConfig.endDate
-        ? new Date(tournamentConfig.endDate).getTime()
-        : Date.now();
-
-      const dateFiltered = games.filter(g => {
-        const t = new Date(g.timestamp || g.date).getTime();
-        return t >= startMs && t <= endMs;
-      });
-
-      // Apply hard gates + scoring
-      const config = {
-        teams: div.teams,
-        mapPool,
-        mode: tournamentConfig.mode,
-        schedule: div.schedule,
-        isPlayoffs: div.isPlayoffs,
-        processedIds,
-        aliasMap: tournamentConfig.aliasMap || {},
-      };
-
       const passing = [];
-      for (const game of dateFiltered) {
+      for (const game of games) {
+        if (processedSha.has(game.sha256)) continue;
         summary.scanned++;
-        const gateResult = applyHardGates(game, config);
 
+        const gameObj = {
+          id: game.hub_id || game.sha256,
+          timestamp: game.date,
+          map: game.map,
+          teams: [
+            { name: game.team1, frags: game.score1 },
+            { name: game.team2, frags: game.score2 },
+          ],
+          _source: 'turso',
+        };
+
+        const config = {
+          teams: div.teams,
+          mapPool,
+          mode: tournamentConfig.mode,
+          schedule: div.schedule,
+          isPlayoffs: div.isPlayoffs,
+          processedIds: processedSha,
+          aliasMap: {},
+        };
+
+        const gateResult = applyHardGates(gameObj, config);
         if (!gateResult.pass) {
           summary.rejected++;
-          summary.byRejection[gateResult.rejectedBy] = (summary.byRejection[gateResult.rejectedBy] || 0) + 1;
+          summary.byRejection[gateResult.rejectedBy] =
+            (summary.byRejection[gateResult.rejectedBy] || 0) + 1;
           continue;
         }
 
-        processedIds.add(String(game.id));
-        game._resolved1 = gateResult.team1.team.name;
-        game._resolved2 = gateResult.team2.team.name;
+        processedSha.add(game.sha256);
+        gameObj._resolved1 = gateResult.team1?.team?.name || game.team1;
+        gameObj._resolved2 = gateResult.team2?.team?.name || game.team2;
 
-        passing.push({ game, gateResult });
+        // Roster scoring
+        let rosterScore = 0;
+        const roster1 = t1.players || [];
+        const roster2 = t2.players || [];
+        if (roster1.length > 0 && roster2.length > 0) {
+          const gamePlayers = await getGamePlayers(game.sha256);
+          const labeledPlayers = gamePlayers.map(p => ({
+            name: p.player_name,
+            side: p.team.toLowerCase() === game.team1.toLowerCase() ? 'team1' : 'team2',
+          }));
+          rosterScore = scoreRosterOverlap(roster1, roster2, labeledPlayers);
+        }
+
+        passing.push({ game: gameObj, gateResult, rosterScore });
         summary.passed++;
       }
 
-      // Group into series and score
       if (passing.length > 0) {
         const passGames = passing.map(p => p.game);
         const series = groupIntoSeries(passGames);
 
         for (const s of series) {
-          // Score each game in the series
           const scoredGames = s.games.map(game => {
-            const gateResult = passing.find(p => p.game.id === game.id)?.gateResult;
-            const score = scoreConfidence(game, gateResult, {
+            const p = passing.find(pp => pp.game.id === game.id);
+            const score = scoreConfidence(game, p?.gateResult, {
               schedule: div.schedule,
               seriesMapCount: s.games.length,
               expectedBestOf: div.bestOf || 3,
-              tagPatterns: tournamentConfig.tagPatterns,
             });
-            return { ...game, confidence: score };
+
+            const totalWithRoster = Math.min(100,
+              score.total + (p?.rosterScore || 0));
+
+            return {
+              ...game,
+              confidence: { ...score, roster: p?.rosterScore || 0, total: totalWithRoster },
+            };
           });
 
           const avgConfidence = Math.round(
@@ -252,7 +200,7 @@ export default async function handler(req, res) {
             team2: s.team2,
             mapCount: s.games.length,
             avgConfidence,
-            source,
+            source: 'turso',
             games: scoredGames.map(g => ({
               id: g.id,
               map: g.map,
@@ -266,7 +214,6 @@ export default async function handler(req, res) {
     }
   }
 
-  // Sort by confidence
   allCandidates.sort((a, b) => b.avgConfidence - a.avgConfidence);
 
   return res.json({
