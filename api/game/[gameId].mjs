@@ -15,6 +15,7 @@ export default async function handler(req, res) {
 
   try {
     // 1. Try Turso
+    console.log(`[game/${gameId}] TURSO_DB_URL set:`, !!process.env.TURSO_DB_URL, 'url prefix:', (process.env.TURSO_DB_URL || '').substring(0, 20));
     const cached = await getGameByHubId(Number(gameId));
     if (cached && cached.raw_ktxstats) {
       return res.json({ status: 'success', data: JSON.parse(cached.raw_ktxstats) });

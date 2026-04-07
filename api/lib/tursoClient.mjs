@@ -4,10 +4,14 @@ let client = null;
 
 export function getClient() {
   if (!client) {
-    client = createClient({
-      url: process.env.TURSO_DB_URL,
-      authToken: process.env.TURSO_AUTH_TOKEN,
-    });
+    const url = process.env.TURSO_DB_URL;
+    const authToken = process.env.TURSO_AUTH_TOKEN;
+    if (!url || !authToken) {
+      throw new Error(`Turso not configured: url=${!!url}, token=${!!authToken}`);
+    }
+    // @libsql/client/web needs https:// URL, not libsql://
+    const httpUrl = url.replace(/^libsql:\/\//, 'https://');
+    client = createClient({ url: httpUrl, authToken });
   }
   return client;
 }
