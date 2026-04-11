@@ -348,6 +348,7 @@ function App() {
   const [activeTab, setActiveTab] = useState('info'); // info, divisions, division
   const [activeSubTab, setActiveSubTab] = useState('setup'); // section tabs in header
   const [initialSubTab, setInitialSubTab] = useState(null);
+  const [showSettings, setShowSettings] = useState(false);
 
   // Get active division
   const activeDivision = tournament.divisions.find((d) => d.id === activeDivisionId);
@@ -627,6 +628,7 @@ function App() {
         importTournament={importTournament}
         resetTournament={resetTournament}
         onGoHome={() => setAppMode('landing')}
+        onOpenSettings={() => setShowSettings(true)}
         activeSubTab={activeSubTab}
         setActiveSubTab={setActiveSubTab}
       />
@@ -650,6 +652,41 @@ function App() {
       </div>
 
       <StatusBar />
+
+      {showSettings && (
+        <div
+          data-testid="settings-modal"
+          className="fixed inset-0 bg-black/70 z-40 flex items-start justify-center p-4 overflow-y-auto"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowSettings(false);
+          }}
+        >
+          <div className="bg-background w-full max-w-5xl my-8 shadow-2xl border border-outline-variant">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-outline-variant sticky top-0 bg-background z-10">
+              <h2 className="font-headline text-lg text-primary uppercase tracking-widest">Tournament Settings</h2>
+              <button
+                onClick={() => setShowSettings(false)}
+                className="text-on-surface-variant hover:text-on-surface text-2xl leading-none"
+                aria-label="Close settings"
+              >
+                &times;
+              </button>
+            </div>
+            <div className="p-6">
+              <TournamentInfo
+                tournament={tournament}
+                updateTournament={(updates) => setTournament((prev) => ({ ...prev, ...updates }))}
+                onNavigateToDivision={(divId, subTab) => {
+                  setActiveDivisionId(divId);
+                  setInitialSubTab(subTab || 'schedule');
+                  setActiveTab('division');
+                  setShowSettings(false);
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

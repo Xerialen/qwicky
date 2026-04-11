@@ -19,6 +19,7 @@ export default function Header({
   importTournament,
   resetTournament,
   onGoHome,
+  onOpenSettings,
   // Division sub-tab (forwarded to DivisionView)
   activeSubTab,
   setActiveSubTab,
@@ -133,9 +134,10 @@ export default function Header({
             <MaterialIcon name="save" />
           </button>
           <button
-            onClick={resetTournament}
+            onClick={onOpenSettings}
             className="p-2 text-on-surface-variant/50 hover:text-on-surface-variant hover:bg-surface-container-high transition-colors"
             title="Settings"
+            aria-label="Open tournament settings"
           >
             <MaterialIcon name="settings" />
           </button>

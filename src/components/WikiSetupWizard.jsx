@@ -40,6 +40,22 @@ export default function WikiSetupWizard({ tournament, updateTournament, onClose 
   const [existingPages, setExistingPages] = useState(null); // { title: boolean }
   const [checkingPages, setCheckingPages] = useState(false);
 
+  // Phase 1: inheritance tracking
+  const [inheritedFrom, setInheritedFrom] = useState(null);
+  const [inheritedKeys, setInheritedKeys] = useState(new Set());
+  const [inheritedDivisionNames, setInheritedDivisionNames] = useState([]);
+  const [inheritWarning, setInheritWarning] = useState(null);
+
+  const setInfoboxField = useCallback((key, value) => {
+    setInfobox((p) => ({ ...p, [key]: value }));
+    setInheritedKeys((prev) => {
+      if (!prev.has(key)) return prev;
+      const next = new Set(prev);
+      next.delete(key);
+      return next;
+    });
+  }, []);
+
   // Derived
   const divisionNames = (tournament.divisions || []).map((d) => d.name);
   const seasonPage =
@@ -117,6 +133,7 @@ export default function WikiSetupWizard({ tournament, updateTournament, onClose 
   const handleSelectTournament = async (root) => {
     setSelectedRoot(root);
     setScanLoading(true);
+    setInheritWarning(null);
 
     try {
       const res = await fetch(`/api/wiki?action=scan&prefix=${encodeURIComponent(root)}`);
@@ -142,7 +159,48 @@ export default function WikiSetupWizard({ tournament, updateTournament, onClose 
         const divPage = (data.pages || []).find((p) =>
           p.title.startsWith(lastSeason + '/Division')
         );
-        if (divPage?.boilerplate?.navbox) setNavbox(divPage.boilerplate.navbox);
+        if (divPage?.boilerplate?.navbox) {
+          setNavbox(divPage.boilerplate.navbox);
+          setInheritedKeys((prev) => new Set([...prev, 'navbox']));
+          setInheritedFrom(lastSeason);
+        }
+
+        // Phase 1: fetch the last season's overview to inherit full infobox
+        try {
+          const pageRes = await fetch(`/api/wiki?action=fetch-page&title=${encodeURIComponent(lastSeason)}`);
+          if (pageRes.ok) {
+            const pageData = await pageRes.json();
+            if (pageData.ok) {
+              if (!pageData.infobox) {
+                setInheritWarning(`Could not parse prior season infobox from ${lastSeason}. Please fill in manually.`);
+              } else {
+                const inherited = { ...pageData.infobox };
+                if (inherited.year && /^\d{4}$/.test(inherited.year)) {
+                  inherited.year = String(parseInt(inherited.year) + 1);
+                }
+                const keys = new Set();
+                const SKIP = new Set(['sdate', 'edate', 'team_number', 'map1', 'map2', 'map3', 'map4', 'map5']);
+                setInfobox((prev) => {
+                  const merged = { ...prev };
+                  for (const [k, v] of Object.entries(inherited)) {
+                    if (v && !SKIP.has(k)) {
+                      merged[k] = v;
+                      keys.add(k);
+                    }
+                  }
+                  return merged;
+                });
+                setInheritedKeys((prev) => new Set([...prev, ...keys]));
+                setInheritedFrom(lastSeason);
+                if (pageData.divisionNames?.length) {
+                  setInheritedDivisionNames(pageData.divisionNames);
+                }
+              }
+            }
+          }
+        } catch {
+          // Graceful degradation — leave fields blank for manual entry
+        }
       } else {
         setSeasonName('Season 1');
       }
@@ -275,6 +333,17 @@ export default function WikiSetupWizard({ tournament, updateTournament, onClose 
     }
     setScaffoldLoading(false);
   };
+
+  // ── Inherited-from badge ────────────────────────────────────────────────────
+  const InheritedBadge = ({ fieldKey }) =>
+    inheritedKeys.has(fieldKey) ? (
+      <span
+        className="inline-flex items-center gap-0.5 ml-1 text-[10px] text-tertiary border border-tertiary/40 rounded px-1 py-0.5"
+        title={`Inherited from ${inheritedFrom || 'prior season'}. Edit to override.`}
+      >
+        ↩ inherited
+      </span>
+    ) : null;
 
   // ── Spinner component ───────────────────────────────────────────────────────
   const Spinner = () => (
@@ -550,6 +619,11 @@ export default function WikiSetupWizard({ tournament, updateTournament, onClose 
           {step === 2 && (
             <div className="space-y-4">
               <h3 className="font-headline text-sm text-on-surface">Tournament Metadata</h3>
+              {inheritWarning && (
+                <div className="p-3 bg-amber-900/20 border border-amber-500/30 rounded text-xs text-amber-300">
+                  {inheritWarning}
+                </div>
+              )}
               <p className="text-sm text-on-surface-variant">
                 These fields populate the{' '}
                 <code className="text-primary">{'{{Infobox league}}'}</code> template. Format,
@@ -558,20 +632,34 @@ export default function WikiSetupWizard({ tournament, updateTournament, onClose 
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs text-on-surface-variant block mb-1">Display Name</label>
+                  <label className="text-xs text-on-surface-variant block mb-1">
+                    Display Name
+                    <InheritedBadge fieldKey="name" />
+                  </label>
                   <input
                     type="text"
                     value={infobox.name}
-                    onChange={(e) => setInfobox((p) => ({ ...p, name: e.target.value }))}
+                    onChange={(e) => setInfoboxField('name', e.target.value)}
                     className="w-full bg-background text-on-surface p-2 rounded border border-outline-variant focus:border-primary outline-none text-sm"
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-on-surface-variant block mb-1">Navbox Template</label>
+                  <label className="text-xs text-on-surface-variant block mb-1">
+                    Navbox Template
+                    <InheritedBadge fieldKey="navbox" />
+                  </label>
                   <input
                     type="text"
                     value={navbox}
-                    onChange={(e) => setNavbox(e.target.value)}
+                    onChange={(e) => {
+                      setNavbox(e.target.value);
+                      setInheritedKeys((prev) => {
+                        if (!prev.has('navbox')) return prev;
+                        const next = new Set(prev);
+                        next.delete('navbox');
+                        return next;
+                      });
+                    }}
                     placeholder="e.g. TB4 Navbox (leave empty if none)"
                     className="w-full bg-background text-on-surface p-2 rounded border border-outline-variant focus:border-primary outline-none text-sm"
                   />
@@ -579,51 +667,64 @@ export default function WikiSetupWizard({ tournament, updateTournament, onClose 
                 <div className="col-span-2">
                   <label className="text-xs text-on-surface-variant block mb-1">
                     Organizers (wiki markup)
+                    <InheritedBadge fieldKey="organizer" />
                   </label>
                   <input
                     type="text"
                     value={infobox.organizer || ''}
-                    onChange={(e) => setInfobox((p) => ({ ...p, organizer: e.target.value }))}
+                    onChange={(e) => setInfoboxField('organizer', e.target.value)}
                     placeholder="{{player|Nas|flag=se}} {{player|peppe|flag=se}}"
                     className="w-full bg-background text-on-surface p-2 rounded border border-outline-variant focus:border-primary outline-none text-sm"
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-on-surface-variant block mb-1">Website</label>
+                  <label className="text-xs text-on-surface-variant block mb-1">
+                    Website
+                    <InheritedBadge fieldKey="website" />
+                  </label>
                   <input
                     type="text"
                     value={infobox.website || ''}
-                    onChange={(e) => setInfobox((p) => ({ ...p, website: e.target.value }))}
+                    onChange={(e) => setInfoboxField('website', e.target.value)}
                     placeholder="thebig4.se"
                     className="w-full bg-background text-on-surface p-2 rounded border border-outline-variant focus:border-primary outline-none text-sm"
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-on-surface-variant block mb-1">Discord</label>
+                  <label className="text-xs text-on-surface-variant block mb-1">
+                    Discord
+                    <InheritedBadge fieldKey="discord" />
+                  </label>
                   <input
                     type="text"
                     value={infobox.discord || ''}
-                    onChange={(e) => setInfobox((p) => ({ ...p, discord: e.target.value }))}
+                    onChange={(e) => setInfoboxField('discord', e.target.value)}
                     placeholder="http://discord.quake.world"
                     className="w-full bg-background text-on-surface p-2 rounded border border-outline-variant focus:border-primary outline-none text-sm"
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-on-surface-variant block mb-1">Image</label>
+                  <label className="text-xs text-on-surface-variant block mb-1">
+                    Image
+                    <InheritedBadge fieldKey="image" />
+                  </label>
                   <input
                     type="text"
                     value={infobox.image || ''}
-                    onChange={(e) => setInfobox((p) => ({ ...p, image: e.target.value }))}
+                    onChange={(e) => setInfoboxField('image', e.target.value)}
                     placeholder="TB4-S2-icon.png"
                     className="w-full bg-background text-on-surface p-2 rounded border border-outline-variant focus:border-primary outline-none text-sm"
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-on-surface-variant block mb-1">Prize Pool</label>
+                  <label className="text-xs text-on-surface-variant block mb-1">
+                    Prize Pool
+                    <InheritedBadge fieldKey="prizepool" />
+                  </label>
                   <input
                     type="text"
                     value={infobox.prizepool || ''}
-                    onChange={(e) => setInfobox((p) => ({ ...p, prizepool: e.target.value }))}
+                    onChange={(e) => setInfoboxField('prizepool', e.target.value)}
                     className="w-full bg-background text-on-surface p-2 rounded border border-outline-variant focus:border-primary outline-none text-sm"
                   />
                 </div>
