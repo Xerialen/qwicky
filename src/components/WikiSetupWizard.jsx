@@ -6,6 +6,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { publishDivisionWiki } from '../services/wikiPublisher';
+import { supabase } from '../services/supabaseClient';
 
 export default function WikiSetupWizard({ tournament, updateTournament, onClose }) {
   const [step, setStep] = useState(1);
@@ -145,7 +146,24 @@ export default function WikiSetupWizard({ tournament, updateTournament, onClose 
   const handleSelectTournament = async (root) => {
     setSelectedRoot(root);
     setScanLoading(true);
+
+    // Reset any prior inheritance state so switching from one result to another
+    // doesn't carry stale badges, navbox, or inherited values forward.
     setInheritWarning(null);
+    setInheritedFrom(null);
+    setInheritedKeys(new Set());
+    setInheritedDivisionNames([]);
+    setNavbox('');
+    setInfobox((prev) => ({
+      ...prev,
+      // keep the user's original name (from QWICKY tournament state)
+      organizer: '',
+      website: '',
+      discord: '',
+      image: '',
+      twitch: '',
+      prizepool: '',
+    }));
 
     try {
       const res = await fetch(`/api/wiki?action=scan&prefix=${encodeURIComponent(root)}`);
@@ -191,7 +209,9 @@ export default function WikiSetupWizard({ tournament, updateTournament, onClose 
                   inherited.year = String(parseInt(inherited.year) + 1);
                 }
                 const keys = new Set();
-                const SKIP = new Set(['sdate', 'edate', 'team_number', 'map1', 'map2', 'map3', 'map4', 'map5']);
+                // Skip QWICKY-derived fields AND the display name, which must stay
+                // anchored to the current tournament rather than copied from the prior season.
+                const SKIP = new Set(['name', 'sdate', 'edate', 'team_number', 'map1', 'map2', 'map3', 'map4', 'map5']);
                 setInfobox((prev) => {
                   const merged = { ...prev };
                   for (const [k, v] of Object.entries(inherited)) {
@@ -276,18 +296,34 @@ export default function WikiSetupWizard({ tournament, updateTournament, onClose 
       ...tournament,
       settings: { ...(tournament.settings || {}), wikiAutoPublish: true },
     };
+    // publish-section is a WRITE action gated by requireAdminAuth on the server,
+    // so we need to pass the current session access_token.
+    let token = null;
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      token = session?.access_token ?? null;
+    } catch {}
+
+    let ok = 0;
+    let failed = 0;
     for (const div of divisions) {
       if (!div.wikiConfig?.enabled) continue;
       setPublishProgress(`Publishing ${div.name}…`);
       try {
-        await publishDivisionWiki(div, activeTournament);
+        const results = await publishDivisionWiki(div, activeTournament, token);
+        const anyFailed = (results || []).some((r) => r.ok === false);
+        if (anyFailed) failed++;
+        else ok++;
       } catch (err) {
         console.error('publish-current failed for', div.name, err);
+        failed++;
       }
     }
-    setPublishProgress(
-      `Published ${divisions.filter((d) => d.wikiConfig?.enabled).length} division(s).`
-    );
+    if (failed > 0) {
+      setPublishProgress(`Published ${ok} division(s); ${failed} failed (check browser console).`);
+    } else {
+      setPublishProgress(`Published ${ok} division(s).`);
+    }
   };
 
   const handleScaffold = async () => {

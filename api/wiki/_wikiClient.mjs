@@ -248,16 +248,21 @@ export function extractInfobox(wikitext) {
   const body = stripped.slice(startIdx, i);
   const fields = {};
 
-  // Split on `|` at brace depth 0 (so pipes inside nested templates are kept)
+  // Split on `|` at depth 0. Track both {{...}} and [[...]] depth so pipes
+  // inside nested templates or wikitext links (e.g. [[Player:Nas|Nas]]) are
+  // kept inside the current chunk.
   const chunks = [];
   let buf = '';
-  let d = 0;
+  let templateDepth = 0;
+  let linkDepth = 0;
   for (let j = 0; j < body.length; j++) {
     const two = body.slice(j, j + 2);
-    if (two === '{{') { d++; buf += two; j++; continue; }
-    if (two === '}}') { d--; buf += two; j++; continue; }
+    if (two === '{{') { templateDepth++; buf += two; j++; continue; }
+    if (two === '}}') { templateDepth--; buf += two; j++; continue; }
+    if (two === '[[') { linkDepth++; buf += two; j++; continue; }
+    if (two === ']]') { linkDepth--; buf += two; j++; continue; }
     const ch = body[j];
-    if (ch === '|' && d === 0) {
+    if (ch === '|' && templateDepth === 0 && linkDepth === 0) {
       chunks.push(buf);
       buf = '';
       continue;
