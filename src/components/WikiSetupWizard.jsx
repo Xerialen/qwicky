@@ -292,6 +292,32 @@ export default function WikiSetupWizard({ tournament, updateTournament, onClose 
     return pages;
   };
 
+  // Local wikitext assembler for the Step 3 preview only. The real scaffold
+  // still goes through the server (api/wiki/_boilerplate.mjs).
+  const buildOverviewPreview = () => {
+    const pages = buildPages();
+    const fullInfobox = buildFullInfobox();
+    const parts = [];
+    if (navbox) parts.push(`{{${navbox}}}`);
+    if (Object.keys(fullInfobox).length > 0) {
+      const lines = ['{{Infobox league'];
+      for (const [k, v] of Object.entries(fullInfobox)) {
+        if (v !== '' && v !== undefined && v !== null) lines.push(`|${k}=${v}`);
+      }
+      lines.push('}}');
+      parts.push(lines.join('\n'));
+    }
+    const tabsLines = ['{{Tabs static'];
+    pages.forEach((p, i) => {
+      tabsLines.push(`|name${i + 1}=${p.name}`);
+      tabsLines.push(`|link${i + 1}=${p.link}`);
+    });
+    tabsLines.push('|This=1');
+    tabsLines.push('}}');
+    parts.push(tabsLines.join('\n'));
+    return parts.join('\n\n');
+  };
+
   const runPublishCurrent = async (divisions) => {
     if (!publishCurrent) return;
     const activeTournament = {
@@ -937,6 +963,18 @@ export default function WikiSetupWizard({ tournament, updateTournament, onClose 
                   <Spinner /> Checking existing pages on wiki...
                 </div>
               )}
+
+              <details className="text-xs">
+                <summary className="cursor-pointer text-on-surface-variant hover:text-on-surface">
+                  Preview overview page
+                </summary>
+                <pre
+                  data-testid="overview-preview"
+                  className="mt-2 p-3 bg-background border border-outline-variant/50 rounded overflow-x-auto text-[11px] font-mono whitespace-pre-wrap text-on-surface-variant"
+                >
+                  {buildOverviewPreview()}
+                </pre>
+              </details>
 
               <div className="space-y-1">
                 {buildPages().map((page, i) => {
