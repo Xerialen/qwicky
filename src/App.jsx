@@ -473,6 +473,7 @@ function App() {
         return (
           <Dashboard
             tournament={tournament}
+            updateTournament={(updates) => setTournament((prev) => ({ ...prev, ...updates }))}
             onNavigateToDivision={(divId, subTab) => {
               setActiveDivisionId(divId);
               setInitialSubTab(subTab || 'schedule');

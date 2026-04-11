@@ -1,9 +1,14 @@
+import { useState } from 'react';
 import MaterialIcon from './ui/MaterialIcon';
 import HudPanel from './ui/HudPanel';
 import SectionLabel from './ui/SectionLabel';
+import WikiSetupWizard from './WikiSetupWizard';
 
-export default function Dashboard({ tournament, onNavigateToDivision }) {
+export default function Dashboard({ tournament, updateTournament, onNavigateToDivision }) {
   const divisions = tournament.divisions || [];
+  const [showWikiWizard, setShowWikiWizard] = useState(false);
+  const [bannerDismissed, setBannerDismissed] = useState(false);
+  const wikiConnected = tournament.wikiConfig?.enabled === true;
 
   // Calculate stats
   const totalTeams = divisions.reduce((sum, d) => sum + (d.teams?.length || 0), 0);
@@ -36,6 +41,42 @@ export default function Dashboard({ tournament, onNavigateToDivision }) {
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
+      {!wikiConnected && !bannerDismissed && (
+        <div
+          data-testid="wiki-connect-banner"
+          className="qw-panel p-4 flex items-center gap-4 border-l-4 border-primary"
+        >
+          <div className="flex-1">
+            <div className="text-on-surface font-semibold text-sm">
+              This tournament isn't connected to the wiki yet.
+            </div>
+            <div className="text-on-surface-variant text-xs mt-1">
+              Set it up so results auto-publish as games are approved.
+            </div>
+          </div>
+          <button
+            onClick={() => setShowWikiWizard(true)}
+            className="qw-btn px-4 py-2 text-sm"
+          >
+            Connect to Wiki
+          </button>
+          <button
+            onClick={() => setBannerDismissed(true)}
+            className="qw-btn-secondary px-3 py-2 text-xs"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+
+      {showWikiWizard && (
+        <WikiSetupWizard
+          tournament={tournament}
+          updateTournament={updateTournament}
+          onClose={() => setShowWikiWizard(false)}
+        />
+      )}
+
       {/* Header HUD Stats */}
       <section className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 border-b-2 border-surface-container-high pb-6">
         <div>
