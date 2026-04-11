@@ -394,9 +394,14 @@ export default function WikiSetupWizard({ tournament, updateTournament, onClose 
         // (e.g. QWICKY "Premier" maps to wiki "Division 1"), so name matching fails.
         // effectiveDivisionNames is in the same order as tournament.divisions.
         const divisionPages = pages.filter((p) => p.type === 'division');
-        const updatedDivisions = (tournament.divisions || []).map((div, idx) => {
+        const tournamentDivisions = tournament.divisions || [];
+        const unpaired = [];
+        const updatedDivisions = tournamentDivisions.map((div, idx) => {
           const divPage = divisionPages[idx];
-          if (!divPage) return div;
+          if (!divPage) {
+            unpaired.push(div.name);
+            return div;
+          }
           return {
             ...div,
             wikiConfig: {
@@ -408,6 +413,15 @@ export default function WikiSetupWizard({ tournament, updateTournament, onClose 
             },
           };
         });
+        if (unpaired.length > 0) {
+          console.warn(
+            `Wiki setup: ${unpaired.length} division(s) could not be paired with a scaffold page and will NOT auto-publish: ${unpaired.join(', ')}. ` +
+              `This happens when there are more QWICKY divisions than scaffold pages.`
+          );
+          setPublishProgress(
+            `Warning: ${unpaired.length} division(s) not connected to wiki — see console.`
+          );
+        }
         updateTournament({ divisions: updatedDivisions });
 
         // Sync to Supabase
