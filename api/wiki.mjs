@@ -15,6 +15,7 @@ import {
   createWikiClient, searchPages, listPages,
   getSections, getPageContent, findBoilerplateBoundary,
   editPage, findSectionByHeading,
+  extractInfobox, extractDivisionNames,
 } from './wiki/_wikiClient.mjs';
 import { assembleBoilerplate } from './wiki/_boilerplate.mjs';
 import { createClient } from '@supabase/supabase-js';
@@ -128,6 +129,30 @@ async function handleGetSections(req, res) {
   const client = createWikiClient();
   const result = await getSections(client, page);
   return res.status(200).json(result);
+}
+
+async function handleFetchPage(req, res) {
+  if (req.method !== 'GET') return res.status(405).json({ ok: false, error: 'GET only' });
+
+  const { title } = req.query || {};
+  if (!title) return res.status(400).json({ ok: false, error: 'title parameter required' });
+
+  const client = createWikiClient();
+  const page = await getPageContent(client, title);
+  if (!page.exists) {
+    return res.status(404).json({ ok: false, exists: false, error: 'Page not found' });
+  }
+
+  const infobox = extractInfobox(page.content);
+  const divisionNames = extractDivisionNames(page.content);
+
+  return res.status(200).json({
+    ok: true,
+    exists: true,
+    content: page.content,
+    infobox,
+    divisionNames,
+  });
 }
 
 async function handleScaffold(req, res) {
@@ -430,6 +455,7 @@ async function handleConfigDivision(req, res) {
 const actions = {
   'scan': handleScan,
   'get-sections': handleGetSections,
+  'fetch-page': handleFetchPage,
   'scaffold': handleScaffold,
   'publish': handlePublish,
   'publish-section': handlePublishSection,
