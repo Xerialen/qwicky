@@ -208,6 +208,97 @@ export async function findSectionByHeading(client, pageTitle, heading) {
 }
 
 /**
+ * Extract {{Infobox league}} fields from wikitext with full support for:
+ * - multi-line values
+ * - nested templates in values (e.g., organizer={{player|Nas|flag=se}})
+ * - pipe-escaped values
+ * - HTML comments
+ *
+ * Walks balanced braces to find the closing }} of the Infobox.
+ * Returns null if no {{Infobox league}} found or if brace walk fails.
+ *
+ * @param {string} wikitext
+ * @returns {Object|null}
+ */
+export function extractInfobox(wikitext) {
+  if (!wikitext) return null;
+  // Strip HTML comments to simplify parsing
+  const stripped = wikitext.replace(/<!--[\s\S]*?-->/g, '');
+
+  const openRe = /\{\{\s*Infobox\s+league\s*\n?/i;
+  const openMatch = stripped.match(openRe);
+  if (!openMatch) return null;
+
+  const startIdx = openMatch.index + openMatch[0].length;
+  let depth = 1;
+  let i = startIdx;
+  while (i < stripped.length - 1) {
+    const pair = stripped.slice(i, i + 2);
+    if (pair === '{{') { depth++; i += 2; continue; }
+    if (pair === '}}') {
+      depth--;
+      if (depth === 0) break;
+      i += 2;
+      continue;
+    }
+    i++;
+  }
+  if (depth !== 0) return null;
+
+  const body = stripped.slice(startIdx, i);
+  const fields = {};
+
+  // Split on `|` at brace depth 0 (so pipes inside nested templates are kept)
+  const chunks = [];
+  let buf = '';
+  let d = 0;
+  for (let j = 0; j < body.length; j++) {
+    const two = body.slice(j, j + 2);
+    if (two === '{{') { d++; buf += two; j++; continue; }
+    if (two === '}}') { d--; buf += two; j++; continue; }
+    const ch = body[j];
+    if (ch === '|' && d === 0) {
+      chunks.push(buf);
+      buf = '';
+      continue;
+    }
+    buf += ch;
+  }
+  if (buf) chunks.push(buf);
+
+  for (const chunk of chunks) {
+    const eq = chunk.indexOf('=');
+    if (eq === -1) continue;
+    const key = chunk.slice(0, eq).trim();
+    const value = chunk.slice(eq + 1).trim();
+    if (key) fields[key] = value;
+  }
+
+  return Object.keys(fields).length > 0 ? fields : null;
+}
+
+/**
+ * Extract division page names from a season overview's {{Tabs static}} template.
+ * Returns tab names that start with "Division" (case-insensitive).
+ *
+ * @param {string} wikitext
+ * @returns {string[]}
+ */
+export function extractDivisionNames(wikitext) {
+  if (!wikitext) return [];
+  const tabsMatch = wikitext.match(/\{\{\s*Tabs static\s*\n([\s\S]*?)\n\}\}/i);
+  if (!tabsMatch) return [];
+  const names = [];
+  const re = /\|\s*name\d+\s*=\s*([^\n|]+)/g;
+  let m;
+  while ((m = re.exec(tabsMatch[1])) !== null) {
+    const name = m[1].trim();
+    if (/^Division\b/i.test(name)) names.push(name);
+  }
+  return names;
+}
+
+/**
  * Detect the boilerplate boundary in a page's content.
  * Returns the byte position where the body content starts (after navbox/infobox/tabs).
  */
