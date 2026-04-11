@@ -49,6 +49,7 @@ export default function WikiSetupWizard({ tournament, updateTournament, onClose 
   const [inheritWarning, setInheritWarning] = useState(null);
   const [publishCurrent, setPublishCurrent] = useState(false);
   const [publishProgress, setPublishProgress] = useState(null);
+  const [remappedDivisionNames, setRemappedDivisionNames] = useState(null);
 
   const setInfoboxField = useCallback((key, value) => {
     setInfobox((p) => ({ ...p, [key]: value }));
@@ -62,6 +63,7 @@ export default function WikiSetupWizard({ tournament, updateTournament, onClose 
 
   // Derived
   const divisionNames = (tournament.divisions || []).map((d) => d.name);
+  const effectiveDivisionNames = remappedDivisionNames || divisionNames;
   const seasonPage =
     entryMode === 'url'
       ? directPath
@@ -282,7 +284,7 @@ export default function WikiSetupWizard({ tournament, updateTournament, onClose 
 
   const buildPages = () => {
     const pages = [{ name: 'Overview', link: seasonPage, type: 'overview' }];
-    for (const divName of divisionNames) {
+    for (const divName of effectiveDivisionNames) {
       pages.push({ name: divName, link: `${seasonPage}/${divName}`, type: 'division' });
     }
     pages.push({ name: 'Playoffs', link: `${seasonPage}/Playoffs`, type: 'playoffs' });
@@ -697,6 +699,53 @@ export default function WikiSetupWizard({ tournament, updateTournament, onClose 
                 <code className="text-primary">{'{{Infobox league}}'}</code> template. Format,
                 dates, maps, and team count are auto-derived.
               </p>
+
+              {inheritedDivisionNames.length > 0 &&
+                inheritedDivisionNames.length === divisionNames.length &&
+                inheritedDivisionNames.some((n, i) => n !== divisionNames[i]) && (
+                  <div
+                    data-testid="division-remap-panel"
+                    className="p-3 bg-background border border-primary/30 rounded space-y-2"
+                  >
+                    <div className="text-xs text-on-surface-variant">
+                      Your QWICKY divisions are named differently from the prior wiki season.
+                    </div>
+                    <table className="w-full text-xs">
+                      <thead className="text-on-surface-variant">
+                        <tr>
+                          <th className="text-left py-1">QWICKY</th>
+                          <th className="text-left py-1">Wiki (prior season)</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {divisionNames.map((q, i) => (
+                          <tr key={q}>
+                            <td className="text-on-surface py-0.5">{q}</td>
+                            <td className="text-primary py-0.5">{inheritedDivisionNames[i]}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    <div className="flex gap-2 pt-1">
+                      <button
+                        onClick={() => setRemappedDivisionNames(null)}
+                        className={`qw-btn-secondary text-xs px-3 py-1 ${
+                          remappedDivisionNames === null ? 'border-primary' : ''
+                        }`}
+                      >
+                        Use QWICKY names
+                      </button>
+                      <button
+                        onClick={() => setRemappedDivisionNames([...inheritedDivisionNames])}
+                        className={`qw-btn-secondary text-xs px-3 py-1 ${
+                          remappedDivisionNames ? 'border-primary' : ''
+                        }`}
+                      >
+                        Use wiki names
+                      </button>
+                    </div>
+                  </div>
+                )}
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
