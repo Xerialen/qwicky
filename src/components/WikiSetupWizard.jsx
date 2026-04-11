@@ -5,6 +5,7 @@
 // Step 3: Preview and create page structure
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { publishDivisionWiki } from '../services/wikiPublisher';
 
 export default function WikiSetupWizard({ tournament, updateTournament, onClose }) {
   const [step, setStep] = useState(1);
@@ -45,6 +46,8 @@ export default function WikiSetupWizard({ tournament, updateTournament, onClose 
   const [inheritedKeys, setInheritedKeys] = useState(new Set());
   const [inheritedDivisionNames, setInheritedDivisionNames] = useState([]);
   const [inheritWarning, setInheritWarning] = useState(null);
+  const [publishCurrent, setPublishCurrent] = useState(false);
+  const [publishProgress, setPublishProgress] = useState(null);
 
   const setInfoboxField = useCallback((key, value) => {
     setInfobox((p) => ({ ...p, [key]: value }));
@@ -66,6 +69,15 @@ export default function WikiSetupWizard({ tournament, updateTournament, onClose 
         : selectedRoot
           ? `${selectedRoot}/${seasonName}`
           : seasonName;
+
+  // Phase 1: default publish-current-state checkbox based on whether the tournament has content
+  useEffect(() => {
+    if (step !== 3) return;
+    const hasContent = (tournament.divisions || []).some(
+      (d) => (d.schedule || []).some((m) => m.status === 'completed')
+    );
+    setPublishCurrent(hasContent);
+  }, [step, tournament.divisions]);
 
   // ── Check which pages already exist when entering Step 3 ─────────────────
   useEffect(() => {
@@ -256,6 +268,26 @@ export default function WikiSetupWizard({ tournament, updateTournament, onClose 
     pages.push({ name: 'Playoffs', link: `${seasonPage}/Playoffs`, type: 'playoffs' });
     pages.push({ name: 'Information', link: `${seasonPage}/Information`, type: 'information' });
     return pages;
+  };
+
+  const runPublishCurrent = async (divisions) => {
+    if (!publishCurrent) return;
+    const activeTournament = {
+      ...tournament,
+      settings: { ...(tournament.settings || {}), wikiAutoPublish: true },
+    };
+    for (const div of divisions) {
+      if (!div.wikiConfig?.enabled) continue;
+      setPublishProgress(`Publishing ${div.name}…`);
+      try {
+        await publishDivisionWiki(div, activeTournament);
+      } catch (err) {
+        console.error('publish-current failed for', div.name, err);
+      }
+    }
+    setPublishProgress(
+      `Published ${divisions.filter((d) => d.wikiConfig?.enabled).length} division(s).`
+    );
   };
 
   const handleScaffold = async () => {
@@ -867,6 +899,28 @@ export default function WikiSetupWizard({ tournament, updateTournament, onClose 
                 </div>
               )}
 
+              {!scaffoldResult?.ok && (
+                <div className="flex items-start gap-2 text-xs p-3 bg-background rounded border border-outline-variant/50">
+                  <input
+                    id="publish-current-state"
+                    type="checkbox"
+                    checked={publishCurrent}
+                    onChange={(e) => setPublishCurrent(e.target.checked)}
+                    className="mt-0.5"
+                  />
+                  <label htmlFor="publish-current-state" className="text-on-surface-variant">
+                    Also publish current QWICKY data to these pages now
+                    <div className="text-[11px] text-on-surface-variant/80 mt-0.5">
+                      Prevents pages from being born empty. Unchecked if the tournament has no matches yet.
+                    </div>
+                  </label>
+                </div>
+              )}
+
+              {publishProgress && (
+                <div className="text-xs text-on-surface-variant py-1">{publishProgress}</div>
+              )}
+
               {scaffoldResult && (
                 <div
                   className={`p-3 rounded border text-sm ${
@@ -929,7 +983,15 @@ export default function WikiSetupWizard({ tournament, updateTournament, onClose 
                     )}
                   </button>
                 ) : (
-                  <button onClick={onClose} className="qw-btn px-6 py-2 text-sm flex-1">
+                  <button
+                    onClick={async () => {
+                      if (publishCurrent) {
+                        await runPublishCurrent(tournament.divisions || []);
+                      }
+                      onClose();
+                    }}
+                    className="qw-btn px-6 py-2 text-sm flex-1"
+                  >
                     Done
                   </button>
                 )}
