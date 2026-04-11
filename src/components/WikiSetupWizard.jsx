@@ -315,7 +315,10 @@ export default function WikiSetupWizard({ tournament, updateTournament, onClose 
     tabsLines.push('|This=1');
     tabsLines.push('}}');
     parts.push(tabsLines.join('\n'));
-    return parts.join('\n\n');
+    // Match what scaffold sends: server assembles boilerplate + '\n\n' + contentBody,
+    // and the client currently passes '{{Abbr/TBD}}' as contentBody at handleScaffold.
+    // Include it here so the preview matches the created page exactly.
+    return parts.join('\n\n') + '\n\n{{Abbr/TBD}}';
   };
 
   const runPublishCurrent = async (divisions) => {
@@ -386,8 +389,13 @@ export default function WikiSetupWizard({ tournament, updateTournament, onClose 
         };
         updateTournament({ wikiConfig });
 
-        const updatedDivisions = (tournament.divisions || []).map((div) => {
-          const divPage = pages.find((p) => p.name === div.name && p.type === 'division');
+        // Pair QWICKY divisions with scaffolded pages by index, not by name.
+        // When the user picks "Use wiki names", divPage.name differs from div.name
+        // (e.g. QWICKY "Premier" maps to wiki "Division 1"), so name matching fails.
+        // effectiveDivisionNames is in the same order as tournament.divisions.
+        const divisionPages = pages.filter((p) => p.type === 'division');
+        const updatedDivisions = (tournament.divisions || []).map((div, idx) => {
+          const divPage = divisionPages[idx];
           if (!divPage) return div;
           return {
             ...div,

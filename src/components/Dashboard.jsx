@@ -8,7 +8,10 @@ export default function Dashboard({ tournament, updateTournament, onNavigateToDi
   const divisions = tournament.divisions || [];
   const [showWikiWizard, setShowWikiWizard] = useState(false);
   const [bannerDismissed, setBannerDismissed] = useState(false);
-  const wikiConnected = tournament.wikiConfig?.enabled === true;
+  // Treat any truthy `enabled` as connected to match how TournamentInfo.jsx
+  // renders the "Connected to wiki" indicator. Prevents a banner/settings
+  // disagreement if wikiConfig.enabled drifts to a string or other truthy.
+  const wikiConnected = !!tournament.wikiConfig?.enabled;
 
   // Calculate stats
   const totalTeams = divisions.reduce((sum, d) => sum + (d.teams?.length || 0), 0);
