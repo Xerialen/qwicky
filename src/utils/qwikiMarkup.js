@@ -204,6 +204,27 @@ function generateStandingsWiki(standings, teams, division, options) {
   return wiki;
 }
 
+// Format a YYYY-MM-DD date string into Liquipedia's expected format:
+// "Month DD, YYYY 23:59 {{Abbr/CEST}}". The Liquipedia countdown JS parses
+// that shape; it can't handle the hyphenated YYYY-MM-DD form and prints
+// "ERROR" next to the date when parsing fails.
+function formatLiquipediaDate(ymd) {
+  const months = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December',
+  ];
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(ymd || '');
+  if (!m) return `${ymd} 23:59 {{Abbr/CET}}`;
+  const year = parseInt(m[1], 10);
+  const monthIdx = parseInt(m[2], 10) - 1;
+  const day = parseInt(m[3], 10);
+  // Europe uses CEST (UTC+2) from last Sunday of March to last Sunday of
+  // October, CET (UTC+1) otherwise. A month-level approximation is fine for
+  // match schedule dates — April–October → CEST, November–March → CET.
+  const tz = monthIdx >= 3 && monthIdx <= 9 ? 'CEST' : 'CET';
+  return `${months[monthIdx]} ${day}, ${year} 23:59 {{Abbr/${tz}}}`;
+}
+
 // Generate Liquipedia MatchList format
 function generateMatchListWiki(schedule, teams, _division, _options) {
   const groupMatches = schedule.filter((m) => m.round === 'group' && m.maps?.length > 0);
@@ -239,10 +260,13 @@ function generateMatchListWiki(schedule, teams, _division, _options) {
 
         const winner = s1 > s2 ? 1 : s2 > s1 ? 2 : '';
 
-        // Add week title for first match of each week
+        // Add week title for first match of each week. The date format
+        // must be "Month DD, YYYY HH:MM {{Abbr/TZ}}" — the Liquipedia
+        // countdown JS can't parse YYYY-MM-DD and renders "ERROR" when it
+        // fails. Use CEST for Apr–Oct, CET otherwise (Europe DST).
         const titleLine =
           matchIdx === 0
-            ? `|title=Week ${weekIdx + 1}\n|date=${weekDate} 23:59 {{Abbr/CET}}\n`
+            ? `|title=Week ${weekIdx + 1}\n|date=${formatLiquipediaDate(weekDate)}\n`
             : '';
 
         wiki += `|match${matchNum}={{MatchMaps\n`;

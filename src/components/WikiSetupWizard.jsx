@@ -394,6 +394,7 @@ export default function WikiSetupWizard({ tournament, updateTournament, onClose 
         // (e.g. QWICKY "Premier" maps to wiki "Division 1"), so name matching fails.
         // effectiveDivisionNames is in the same order as tournament.divisions.
         const divisionPages = pages.filter((p) => p.type === 'division');
+        const playoffsPage = pages.find((p) => p.type === 'playoffs');
         const tournamentDivisions = tournament.divisions || [];
         const unpaired = [];
         const updatedDivisions = tournamentDivisions.map((div, idx) => {
@@ -402,15 +403,21 @@ export default function WikiSetupWizard({ tournament, updateTournament, onClose 
             unpaired.push(div.name);
             return div;
           }
+          // Division page gets a single 'full' target (standings + matches
+          // combined) so they don't overwrite each other — each target is a
+          // full-body publish, and two full-body publishes to the same page
+          // with no section heading would leave only the last one.
+          const targets = [
+            { type: 'full', page: divPage.link, section: '' },
+          ];
+          // Playoffs page gets a bracket target for the first division only
+          // (single shared Playoffs page for the tournament).
+          if (playoffsPage && idx === 0) {
+            targets.push({ type: 'bracket', page: playoffsPage.link, section: '' });
+          }
           return {
             ...div,
-            wikiConfig: {
-              enabled: true,
-              targets: [
-                { type: 'standings', page: divPage.link, section: '' },
-                { type: 'matches', page: divPage.link, section: '' },
-              ],
-            },
+            wikiConfig: { enabled: true, targets },
           };
         });
         if (unpaired.length > 0) {
